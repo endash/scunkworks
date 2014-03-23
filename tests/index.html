@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Sproutcore Tests</title>
+  <link rel="stylesheet" href="qunit/qunit.css">
+  <link rel="stylesheet" href="view.css">
+  <script src="qunit/qunit.js"></script>
+  <script src="minispade.js"></script>
+  <script src="legacy.js"></script>
+  <script src="../dist/sproutcore-spade.js"></script>
+  <script src="sproutcore-tests.js"></script>
+  <script src="https://code.jquery.com/jquery-2.1.0.js"></script>
+</head>
+<body>
+  <div id="qunit"></div>
+  <div id="qunit-fixture"></div>
+
+  <script>
+    var frameworks = ['sproutcore-runtime', 'sproutcore-foundation'],
+      len = frameworks.length,
+      frameworkName, re, match, idx;
+
+    for (idx=0; idx<len; idx++) {
+      frameworkName = frameworks[idx];
+      re = new RegExp('^'+frameworkName+'/([^/]+)');
+
+      minispade.require(frameworkName);
+
+      for (moduleName in minispade.modules) {
+        if (!minispade.modules.hasOwnProperty(moduleName)) { continue; }
+
+        match = moduleName.match(re);
+        if (match) {
+          if (match[1] === '~tests') {
+            minispade.require(moduleName);
+          }
+        }
+      }
+    }
+  </script>
+</body>
+</html>
