@@ -5,11 +5,11 @@
 // License:   Licensed under MIT license (see license.js)
 // ==========================================================================
 
-require('sproutcore-foundation/panes/pane');
-require('sproutcore-foundation/panes/keyboard');
-require('sproutcore-foundation/panes/layout');
-require('sproutcore-foundation/panes/manipulation');
-require('sproutcore-foundation/panes/visibility');
+require('sproutcore-views/panes/pane');
+require('sproutcore-views/panes/keyboard');
+require('sproutcore-views/panes/layout');
+require('sproutcore-views/panes/manipulation');
+require('sproutcore-views/panes/visibility');
 
 /** @class
 

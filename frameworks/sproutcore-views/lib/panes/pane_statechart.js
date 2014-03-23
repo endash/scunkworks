@@ -1,4 +1,4 @@
-require("sproutcore-foundation/panes/pane");
+require("sproutcore-views/panes/pane");
 
 /**
   Adds SC.Pane specific processes.

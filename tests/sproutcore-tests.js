@@ -1,4 +1,10636 @@
-minispade.register('sproutcore-foundation/~tests/ext/object_test', function() {// // ==========================================================================
+minispade.register('sproutcore-views/~tests/main_pane', function() {// ==========================================================================
+// Project:   SproutCore - JavaScript Application Framework
+// Copyright: ©2006-2011 Strobe Inc. and contributors.
+//            ©2008-2011 Apple Inc. All rights reserved.
+// License:   Licensed under MIT license (see license.js)
+// ==========================================================================
+// ========================================================================
+// MainPane Unit Tests
+// ========================================================================
+/*globals module test ok isObj equals expects */
+
+// ..........................................................
+// BASE TESTS
+//
+// These tests exercise the API.  See below for tests that cover edge
+// conditions.  If you find a bug, we recommend that you add a test in the
+// edge case section.
+
+(function() {
+  var FRAME = { x: 10, y: 10, width: 30, height: 30 } ;
+
+  var pane, view ; // test globals
+
+  module('SC.MainPane', {
+    setup: function() {
+      pane = SC.MainPane.create();
+    },
+
+    teardown: function() {
+      pane.remove();
+      pane.destroy();
+    }
+  });
+
+  test("should not be attached before calling append()", function() {
+    equal(pane.get('isPaneAttached'), NO) ;
+  });
+
+  test("should attach when calling append()", function() {
+    pane.append() ;
+    equal(pane.get('isPaneAttached'), YES) ;
+  });
+
+  test("appending should make pane main & key", function() {
+    pane.append();
+    var r = pane.get('rootResponder');
+    equal(r.get('mainPane'), pane, 'should become mainPane');
+    equal(r.get('keyPane'), pane, 'should become keyPane');
+  });
+})();
+
+});minispade.register('sproutcore-views/~tests/mixins/action_support', function() {// ==========================================================================
+// Project:   SproutCore - JavaScript Application Framework
+// Copyright: ©2006-2011 Strobe Inc. and contributors.
+//            ©2008-2011 Apple Inc. All rights reserved.
+// License:   Licensed under MIT license (see license.js)
+// ==========================================================================
+/*global module test equals context ok same */
+
+(function() {
+  var target, pane, sendActionSpy, view;
+
+  module("SC.ActionSupport", {
+    setup: function() {
+      target = SC.Object.create({
+        mainAction: function() {},
+        someAction: function() {}
+      });
+
+      var rootResponder = {sendAction: function(){} };
+      sendActionSpy = CoreTest.spyOn(rootResponder, 'sendAction');
+
+      pane = SC.Object.create({
+        rootResponder: rootResponder
+      });
+
+      view = SC.View.createWithMixins(SC.ActionSupport, {
+        action: null,
+        zomgAction: null,
+        pane: pane,
+
+        someEvent: function() {
+          return this.fireAction(this.get('zomgAction'));
+        }
+      });
+    },
+
+    teardown: function() {
+      target = pane = sendActionSpy = view = null;
+    }
+  });
+
+
+  // ..........................................................
+  // No Parameters
+  //
+
+  test("no paramaters - only action set", function() {
+    var expectedAction = 'someAction';
+
+    view.set('action', expectedAction);
+    view.fireAction();
+
+    ok(sendActionSpy.wasCalledWith(expectedAction, null, view, pane, null, view), 'triggers the action');
+  });
+
+  test("no paramaters - action and target set", function() {
+    var expectedAction = 'someAction';
+
+    view.set('target', target);
+    view.set('action', expectedAction);
+    view.fireAction();
+
+    ok(sendActionSpy.wasCalledWith(expectedAction, target, view, pane, null, view), 'triggers the action');
+  });
+
+
+  // ..........................................................
+  // Actions Parameter
+  //
+
+  test("action parameter - only action set", function() {
+    var expectedAction = 'someAction';
+
+    view.set('zomgAction', expectedAction);
+    view.someEvent();
+
+    ok(sendActionSpy.wasCalledWith(expectedAction, null, view, pane, null, view), 'triggers the action');
+  });
+
+  test("action parameter - action and target set", function() {
+    var expectedAction = 'someAction';
+
+    view.set('target', target);
+    view.set('zomgAction', expectedAction);
+    view.someEvent();
+
+    ok(sendActionSpy.wasCalledWith(expectedAction, target, view, pane, null, view), 'triggers the action');
+  });
+
+
+  // ..........................................................
+  // Action Context
+  //
+
+  test("context", function() {
+    var expectedAction = 'someAction';
+    var context = {zomg: "context"};
+
+    view.set('action', expectedAction);
+    view.set('actionContext', context)
+    view.fireAction();
+
+    ok(sendActionSpy.wasCalledWith(expectedAction, null, view, pane, context, view), 'triggers the action');
+  });
+
+})();
+});minispade.register('sproutcore-views/~tests/pane/append_remove', function() {// ==========================================================================
+// Project:   SproutCore - JavaScript Application Framework
+// Copyright: ©2006-2011 Strobe Inc. and contributors.
+//            ©2008-2011 Apple Inc. All rights reserved.
+// License:   Licensed under MIT license (see license.js)
+// ==========================================================================
+// ==========================================================================
+// Project:   SproutCore - JavaScript Application Framework
+// Copyright: ©2006-2011 Apple Inc. and contributors.
+// License:   Licensed under MIT license (see license.js)
+// ==========================================================================
+
+/*global module test equals context ok same $ htmlbody */
+
+// ..........................................................
+// appendTo()
+//
+module("SC.Pane#appendTo", {
+  setup: function(){
+    htmlbody('<div id="appendtest"></div>');
+  },
+  teardown: function(){
+    clearHtmlbody()
+  }
+});
+
+test("adding to document for first time - appendTo(elem)", function() {
+  var pane = SC.Pane.create();
+  ok(!pane.get('layer'), 'precond - does not yet have layer');
+  ok(!pane.get('isVisibleInWindow'), 'precond - isVisibleInWindow = NO');
+
+  var elem = $('body').get(0);
+  ok(elem, 'precond - found element to add to');
+
+  // now add
+  pane.appendTo(elem);
+  var layer = pane.get('layer');
+  ok(layer, 'should create layer');
+  equal(layer.parentNode, elem, 'layer should belong to parent');
+  ok(pane.get('isVisibleInWindow'), 'isVisibleInWindow should  = YES');
+  ok(pane.rootResponder, 'should have rootResponder');
+
+  // Clean up.
+  pane.destroy();
+});
+
+test("adding to document for first time - appendTo(string)", function() {
+  var pane = SC.Pane.create();
+  ok(!pane.get('layer'), 'precond - does not yet have layer');
+  ok(!pane.get('isVisibleInWindow'), 'precond - isVisibleInWindow = NO');
+
+  // now add
+  pane.appendTo("#appendtest");
+  var layer = pane.get('layer');
+  ok(layer, 'should create layer');
+  equal(layer.parentNode, jQuery("#appendtest")[0], 'layer should belong to parent');
+  ok(pane.get('isVisibleInWindow'), 'isVisibleInWindow should  = YES');
+  ok(pane.rootResponder, 'should have rootResponder');
+
+  // Clean up.
+  pane.destroy();
+});
+
+test("adding to document for first time - appendTo(jquery)", function() {
+  var pane = SC.Pane.create();
+  ok(!pane.get('layer'), 'precond - does not yet have layer');
+  ok(!pane.get('isVisibleInWindow'), 'precond - isVisibleInWindow = NO');
+
+  // now add
+  pane.appendTo(jQuery("#appendtest"));
+  var layer = pane.get('layer');
+  ok(layer, 'should create layer');
+  equal(layer.parentNode, jQuery("#appendtest")[0], 'layer should belong to parent');
+  ok(pane.get('isVisibleInWindow'), 'isVisibleInWindow should  = YES');
+  ok(pane.rootResponder, 'should have rootResponder');
+
+  // Clean up.
+  pane.destroy();
+});
+
+test("adding to document for first time - prependTo(elem)", function() {
+  var pane = SC.Pane.create();
+  ok(!pane.get('layer'), 'precond - does not yet have layer');
+  ok(!pane.get('isVisibleInWindow'), 'precond - isVisibleInWindow = NO');
+
+  var elem = $('body').get(0);
+  ok(elem, 'precond - found element to add to');
+
+  // now add
+  pane.prependTo(elem);
+  var layer = pane.get('layer');
+  ok(layer, 'should create layer');
+  equal(layer.parentNode, elem, 'layer should belong to parent');
+  ok(pane.get('isVisibleInWindow'), 'isVisibleInWindow should  = YES');
+  ok(pane.rootResponder, 'should have rootResponder');
+
+  // Clean up.
+  pane.destroy();
+});
+
+test("adding to document for first time - prependTo(string)", function() {
+  var pane = SC.Pane.create();
+  ok(!pane.get('layer'), 'precond - does not yet have layer');
+  ok(!pane.get('isVisibleInWindow'), 'precond - isVisibleInWindow = NO');
+
+  // now add
+  pane.prependTo("#appendtest");
+  var layer = pane.get('layer');
+  ok(layer, 'should create layer');
+  equal(layer.parentNode, jQuery("#appendtest")[0], 'layer should belong to parent');
+  ok(pane.get('isVisibleInWindow'), 'isVisibleInWindow should  = YES');
+  ok(pane.rootResponder, 'should have rootResponder');
+
+  // Clean up.
+  pane.destroy();
+});
+
+test("adding to document for first time - prependTo(jquery)", function() {
+  var pane = SC.Pane.create();
+  ok(!pane.get('layer'), 'precond - does not yet have layer');
+  ok(!pane.get('isVisibleInWindow'), 'precond - isVisibleInWindow = NO');
+
+  // now add
+  pane.prependTo(jQuery("#appendtest"));
+  var layer = pane.get('layer');
+  ok(layer, 'should create layer');
+  equal(layer.parentNode, jQuery("#appendtest")[0], 'layer should belong to parent');
+  ok(pane.get('isVisibleInWindow'), 'isVisibleInWindow should  = YES');
+  ok(pane.rootResponder, 'should have rootResponder');
+
+  // Clean up.
+  pane.destroy();
+});
+
+
+test("adding a pane twice should have no effect", function() {
+  var cnt = 0;
+  var pane = SC.Pane.create();
+  pane._tmp_paneDidAttach = pane.paneDidAttach;
+  pane.paneDidAttach = function() {
+    cnt++;
+    return this._tmp_paneDidAttach.apply(this, arguments);
+  };
+
+  pane.append();
+  pane.append();
+  equal(cnt, 1, 'should only append once');
+
+  // Clean up.
+  pane.destroy();
+});
+
+test("adding/remove/adding pane", function() {
+  var pane = SC.Pane.create();
+  var elem1 = $('body').get(0), elem2 = $('#appendtest').get(0);
+  ok(elem1 && elem2, 'precond - has elem1 && elem2');
+
+  pane.appendTo(elem1);
+  var layer = pane.get('layer');
+  ok(layer, 'has layer');
+  equal(layer.parentNode, elem1, 'layer belongs to parent');
+  ok(pane.get('isVisibleInWindow'), 'isVisibleInWindow is YES before remove');
+  pane.remove();
+  ok(!pane.get('isVisibleInWindow'), 'isVisibleInWindow is NO');
+
+  pane.appendTo(elem2);
+  layer = pane.get('layer');
+  equal(layer.parentNode, elem2, 'layer moved to new parent');
+  ok(pane.get('isVisibleInWindow'), 'isVisibleInWindow should  = YES');
+  ok(pane.rootResponder, 'should have rootResponder');
+
+  // Clean up.
+  pane.destroy();
+});
+
+test("removeFromParent throws an exception", function() {
+  var pane, exceptionCaught = false;
+
+  try {
+    pane = SC.Pane.create();
+    pane.append();
+    pane.removeFromParent();
+  } catch(e) {
+    exceptionCaught = (e instanceof SC.Error);
+  } finally {
+    pane.remove();
+  }
+
+  ok(exceptionCaught, "trying to call removeFromParent on a pane throws an exception");
+
+  // Clean up.
+  pane.destroy();
+});
+
+// ..........................................................
+// remove()
+//
+module("SC.Pane#remove");
+
+test("removes pane from DOM", function() {
+  var pane = SC.Pane.create();
+  var elem = $('body').get(0);
+  var layer;
+
+  pane.appendTo(elem);
+  layer = pane.get('layer');
+  ok(elem, 'precond - found element to add to');
+
+  pane.remove();
+  ok(layer.parentNode !== elem, 'layer no longer belongs to parent');
+  ok(!pane.get('isVisibleInWindow'), 'isVisibleInWindow is NO');
+
+  // Clean up.
+  pane.destroy();
+});
+
+
+// ..........................................................
+// SPECIAL CASES
+//
+
+test("updates frame and clippingFrame when loading MainPane", function() {
+
+  // needs a fixed layout size to make sure the sizes stay constant
+  var pane = SC.MainPane.create();
+  var w = SC.RootResponder.responder.computeWindowSize().width;
+
+  // add the pane to the main window.  should resize the frames
+  SC.run(function() {
+    pane.append();
+  });
+
+  // should equal window size
+  equal(pane.get('frame').width, w, 'frame width should have changed');
+  equal(pane.get('clippingFrame').width, w, 'clippingFrame width should have changed');
+
+  // Clean up.
+  pane.destroy();
+});
+
+
+});minispade.register('sproutcore-views/~tests/pane/child_view', function() {// ==========================================================================
+// Project:   SproutCore - JavaScript Application Framework
+// Copyright: ©2006-2011 Strobe Inc. and contributors.
+//            ©2008-2011 Apple Inc. All rights reserved.
+// License:   Licensed under MIT license (see license.js)
+// ==========================================================================
+/*global ok, equals, expect, test, module*/
+
+
+module("SC.Pane - childViews");
+
+test("SC.Pane should not attempt to recompute visibility on child views that do not have visibility support", function () {
+  var pane = SC.Pane.create({
+    childViews: ['noVisibility'],
+
+    noVisibility: SC.CoreView
+  });
+
+  // tomdale insists on slowing down the tests with extra scope chain traversals
+  var errored = NO;
+
+  try {
+    pane.append();
+  } catch (e) {
+    errored = YES;
+  }
+
+  ok(!errored, "appending a pane with child views without visibility does not result in an error");
+  pane.remove();
+
+  // Clean up.
+  pane.destroy();
+});
+
+test("SC.Pane should only render once when appended.", function () {
+  var pane = SC.Pane.create({
+    childViews: ['child'],
+
+    paneValue: null,
+
+    render: function () {
+      ok(true, 'Render was called once on pane.');
+    },
+
+    child: SC.View.extend({
+      childValueBinding: SC.Binding.oneWay('.pane.paneValue').transform(
+        function (paneValue) {
+          equal(paneValue, 'bar', "Bound value should be set once to 'bar'");
+
+          return paneValue;
+        }),
+      render: function () {
+        ok(true, 'Render was called once on child.');
+      }
+    })
+  });
+
+  SC.run(function () {
+    pane.append();
+
+    pane.set('paneValue', 'foo');
+    pane.set('paneValue', 'bar');
+  });
+
+  pane.remove();
+
+  expect(3);
+
+  // Clean up.
+  pane.destroy();
+});
+
+});minispade.register('sproutcore-views/~tests/pane/design_mode_test', function() {// ==========================================================================
+// Project:   SproutCore
+// Copyright: @2012 7x7 Software, Inc.
+// License:   Licensed under MIT license (see license.js)
+// ==========================================================================
+/*globals CoreTest, module, test, equals, same*/
+
+
+var pane, view1, view2, view3, view4, view5;
+
+
+// Localized layout.
+SC.metricsFor('English', {
+  'Medium.left': 0.25,
+  'Medium.right': 0.25,
+});
+
+var largeLayout = { top: 0, bottom: 0, centerX: 0, width: 100 },
+  mediumLayout = { top: 0, bottom: 0, left: 0.25, right: 0.25 },
+  normalLayout = { top: 0, bottom: 0, left: 0, right: 0 },
+  smallLayout = { top: 0, bottom: 0, left: 10, right: 10 };
+
+var DesignModeTestView = SC.View.extend({
+
+  modeAdjust: {
+    s: { layout: { left: 10, right: 10 } },
+    m: { layout: "Medium".locLayout() },
+    l: { layout: { left: null, right: null, centerX: 0, width: 100 } }
+  },
+
+  init: function () {
+    this._super();
+
+    // Stub the set method.
+    this.set = CoreTest.stub('setDesignMode', {
+      action: SC.View.prototype.set,
+      expect: function (callCount) {
+        var i, setDesignModeCount = 0;
+
+        for (i = this.history.length - 1; i >= 0; i--) {
+          if (this.history[i][1] === 'designMode') {
+            setDesignModeCount++;
+          }
+        }
+
+        equal(setDesignModeCount, callCount, "set('designMode', ...) should have been called %@ times.".fmt(callCount));
+      }
+    });
+  }
+});
+
+module("SC.View/SC.Pane Design Mode Support", {
+  setup: function () {
+
+    view4 = DesignModeTestView.create({});
+
+    view3 = DesignModeTestView.create({
+      childViews: [view4],
+
+      // Override - no large design layout.
+      modeAdjust: {
+        s: { layout: { left: 10, right: 10 } },
+        m: { layout: "Medium".locLayout() }
+      }
+    });
+
+    view2 = DesignModeTestView.create({});
+
+    view1 = DesignModeTestView.create({
+      childViews: [view2, view3]
+    });
+
+    view5 = DesignModeTestView.create({});
+
+    pane = SC.Pane.extend({
+      childViews: [view1]
+    });
+  },
+
+  teardown: function () {
+    if (pane.remove) { pane.remove(); }
+
+    pane = view1 = view2 = view3 = view4 = view5 = null;
+
+    SC.RootResponder.responder.set('designModes', null);
+  }
+
+});
+
+
+test("When RootResponder has no designModes, it doesn't set designMode on its panes or their childViews", function () {
+  pane = pane.create();
+
+  // designMode should not be set
+  view1.set.expect(0);
+  view2.set.expect(0);
+  view3.set.expect(0);
+  view4.set.expect(0);
+
+  SC.run(function () {
+    pane.append();
+  });
+
+  // designMode should not be set
+  view1.set.expect(0);
+  view2.set.expect(0);
+  view3.set.expect(0);
+  view4.set.expect(0);
+
+  equal(view1.get('designMode'), undefined, "view1 designMode should be");
+  equal(view2.get('designMode'), undefined, "view2 designMode should be");
+  equal(view3.get('designMode'), undefined, "view3 designMode should be");
+  equal(view4.get('designMode'), undefined, "view4 designMode should be");
+
+  deepEqual(view1.get('layout'), normalLayout, "view1 layout should be");
+  deepEqual(view2.get('layout'), normalLayout, "view2 layout should be");
+  deepEqual(view3.get('layout'), normalLayout, "view3 layout should be");
+  deepEqual(view4.get('layout'), normalLayout, "view4 layout should be");
+
+  deepEqual(view1.get('classNames'), ['sc-view'], "view1 classNames should be");
+  deepEqual(view2.get('classNames'), ['sc-view'], "view2 classNames should be");
+  deepEqual(view3.get('classNames'), ['sc-view'], "view3 classNames should be");
+  deepEqual(view4.get('classNames'), ['sc-view'], "view4 classNames should be");
+});
+
+test("When RootResponder has no designModes, and you add a view to a pane, it doesn't set designMode on the new view.", function () {
+  pane = pane.create();
+
+  SC.run(function () {
+    pane.append();
+    pane.appendChild(view5);
+  });
+
+  // adjustDesign() shouldn't be called
+  view5.set.expect(0);
+
+  equal(view5.get('designMode'), undefined, "designMode should be");
+
+  deepEqual(view5.get('layout'), normalLayout, "layout should be");
+
+  deepEqual(view5.get('classNames'), ['sc-view'], "classNames should be");
+});
+
+test("When RootResponder has designModes, it sets designMode on its panes and their childViews", function () {
+  var windowSize,
+    responder = SC.RootResponder.responder,
+    orientation = SC.device.orientation;
+
+  windowSize = responder.get('currentWindowSize');
+  responder.set('designModes', { s: ((windowSize.width - 10) * (windowSize.height - 10)) / window.devicePixelRatio, l: Infinity });
+
+  pane = pane.create();
+
+  // designMode should not be set
+  view1.set.expect(0);
+  view2.set.expect(0);
+  view3.set.expect(0);
+  view4.set.expect(0);
+
+  SC.run(function () {
+    pane.append();
+  });
+
+  // designMode should be set (for initialization)
+  view1.set.expect(1);
+  view2.set.expect(1);
+  view3.set.expect(1);
+  view4.set.expect(1);
+
+  var modeName = orientation === SC.PORTRAIT_ORIENTATION ? 'l_p' : 'l_l';
+  equal(view1.get('designMode'), modeName, "view1 designMode should be");
+  equal(view2.get('designMode'), modeName, "view2 designMode should be");
+  equal(view3.get('designMode'), modeName, "view3 designMode should be");
+  equal(view4.get('designMode'), modeName, "view4 designMode should be");
+
+  deepEqual(view1.get('layout'), largeLayout, "view1 layout should be");
+  deepEqual(view2.get('layout'), largeLayout, "view2 layout should be");
+  deepEqual(view3.get('layout'), normalLayout, "view3 layout should be");
+  deepEqual(view4.get('layout'), largeLayout, "view4 layout should be");
+
+  deepEqual(view1.get('classNames'), ['sc-view', 'sc-large'], "view1 classNames should be");
+  deepEqual(view2.get('classNames'), ['sc-view', 'sc-large'], "view2 classNames should be");
+  deepEqual(view3.get('classNames'), ['sc-view', 'sc-large'], "view3 classNames should be");
+  deepEqual(view4.get('classNames'), ['sc-view', 'sc-large'], "view4 classNames should be");
+});
+
+test("When updateDesignMode() is called on a pane, it sets designMode properly on itself and its childViews.", function () {
+  var windowSize,
+    responder = SC.RootResponder.responder,
+    orientation = SC.device.orientation;
+
+  windowSize = responder.get('currentWindowSize');
+  responder.set('designModes', { s: ((windowSize.width - 10) * (windowSize.height - 10)) / window.devicePixelRatio, l: Infinity });
+
+  SC.run(function () {
+    pane = pane.create().append();
+  });
+
+  // designMode should be set (for initialization)
+  view1.set.expect(1);
+  view2.set.expect(1);
+  view3.set.expect(1);
+  view4.set.expect(1);
+
+  var modeName = orientation === SC.PORTRAIT_ORIENTATION ? 'l_p' : 'l_l';
+  equal(view1.get('designMode'), modeName, "view1 designMode should be");
+  equal(view2.get('designMode'), modeName, "view2 designMode should be");
+  equal(view3.get('designMode'), modeName, "view3 designMode should be");
+  equal(view4.get('designMode'), modeName, "view4 designMode should be");
+
+  deepEqual(view1.get('layout'), largeLayout,  "layout of view1 should be");
+  deepEqual(view2.get('layout'), largeLayout,  "layout of view2 should be");
+  deepEqual(view3.get('layout'), normalLayout, "layout of view3 should be");
+  deepEqual(view4.get('layout'), largeLayout,  "layout of view4 should be");
+
+  deepEqual(view1.get('classNames'), ['sc-view', 'sc-large'], "classNames of view1 should be");
+  deepEqual(view2.get('classNames'), ['sc-view', 'sc-large'], "classNames of view2 should be");
+  deepEqual(view3.get('classNames'), ['sc-view', 'sc-large'], "classNames of view3 should be");
+  deepEqual(view4.get('classNames'), ['sc-view', 'sc-large'], "classNames of view4 should be");
+
+  var newModeName = orientation === SC.PORTRAIT_ORIENTATION ? 's_p' : 's_l';
+
+  SC.run(function () {
+    pane.updateDesignMode(modeName, newModeName);
+  });
+
+  // designMode should be set (crossed threshold)
+  view1.set.expect(2);
+  view2.set.expect(2);
+  view3.set.expect(2);
+  view4.set.expect(2);
+
+  equal(view1.get('designMode'), newModeName, "view1 designMode should be");
+  equal(view2.get('designMode'), newModeName, "view2 designMode should be");
+  equal(view3.get('designMode'), newModeName, "view3 designMode should be");
+  equal(view4.get('designMode'), newModeName, "view4 designMode should be");
+
+  deepEqual(view1.get('layout'), smallLayout, "layout of view1 should be");
+  deepEqual(view2.get('layout'), smallLayout, "layout of view2 should be");
+  deepEqual(view3.get('layout'), smallLayout, "layout of view3 should be");
+  deepEqual(view4.get('layout'), smallLayout, "layout of view4 should be");
+
+  deepEqual(view1.get('classNames'), ['sc-view', 'sc-small'], "classNames of view1 should be");
+  deepEqual(view2.get('classNames'), ['sc-view', 'sc-small'], "classNames of view2 should be");
+  deepEqual(view3.get('classNames'), ['sc-view', 'sc-small'], "classNames of view3 should be");
+  deepEqual(view4.get('classNames'), ['sc-view', 'sc-small'], "classNames of view4 should be");
+});
+
+test("When RootResponder has designModes, and you add a view to a pane, it sets designMode on the new view.", function () {
+  var windowSize,
+    responder = SC.RootResponder.responder,
+    orientation = SC.device.orientation;
+
+  windowSize = responder.get('currentWindowSize');
+  responder.set('designModes', { s: ((windowSize.width - 10) * (windowSize.height - 10)) / window.devicePixelRatio, l: Infinity });
+
+  SC.run(function () {
+    pane = pane.create().append();
+    pane.appendChild(view5);
+  });
+
+  // designMode should be set
+  view5.set.expect(1);
+  var modeName = orientation === SC.PORTRAIT_ORIENTATION ? 'l_p' : 'l_l';
+  equal(view5.get('designMode'), modeName, "designMode of view5 should be");
+
+  deepEqual(view5.get('classNames'), ['sc-view', 'sc-large'], "classNames of view5 should be");
+});
+
+test("When you set designModes on RootResponder, it sets designMode on its panes and their childViews.", function () {
+  var windowSize,
+    responder = SC.RootResponder.responder,
+    orientation = SC.device.orientation;
+
+  SC.run(function () {
+    pane = pane.create().append();
+  });
+
+  // designMode should not be set
+  view1.set.expect(0);
+  view2.set.expect(0);
+  view3.set.expect(0);
+  view4.set.expect(0);
+
+  windowSize = responder.get('currentWindowSize');
+  responder.set('designModes', { s: ((windowSize.width - 10) * (windowSize.height - 10)) / window.devicePixelRatio, l: Infinity });
+
+  // designMode should be set (for initialization)
+  view1.set.expect(1);
+  view2.set.expect(1);
+  view3.set.expect(1);
+  view4.set.expect(1);
+
+  var modeName = orientation === SC.PORTRAIT_ORIENTATION ? 'l_p' : 'l_l';
+  equal(view1.get('designMode'), modeName, "view1 designMode should be");
+  equal(view2.get('designMode'), modeName, "view2 designMode should be");
+  equal(view3.get('designMode'), modeName, "view3 designMode should be");
+  equal(view4.get('designMode'), modeName, "view4 designMode should be");
+
+  deepEqual(view1.get('layout'), largeLayout, "layout of view1 should be");
+  deepEqual(view2.get('layout'), largeLayout, "layout of view2 should be");
+  deepEqual(view3.get('layout'), normalLayout, "layout of view3 should be");
+  deepEqual(view4.get('layout'), largeLayout, "layout of view4 should be");
+
+  deepEqual(view1.get('classNames'), ['sc-view', 'sc-large'], "classNames of view1 should be");
+  deepEqual(view2.get('classNames'), ['sc-view', 'sc-large'], "classNames of view2 should be");
+  deepEqual(view3.get('classNames'), ['sc-view', 'sc-large'], "classNames of view3 should be");
+  deepEqual(view4.get('classNames'), ['sc-view', 'sc-large'], "classNames of view4 should be");
+});
+
+test("When you change designModes on RootResponder, it sets designMode on the pane and its childViews if the design mode has changed.", function () {
+  var windowSize,
+    responder = SC.RootResponder.responder,
+    orientation = SC.device.orientation;
+
+  windowSize = responder.get('currentWindowSize');
+  responder.set('designModes', { s: ((windowSize.width - 10) * (windowSize.height - 10)) / window.devicePixelRatio, l: Infinity });
+
+  SC.run(function () {
+    pane = pane.create().append();
+  });
+
+  // designMode should be set (for initialization)
+  view1.set.expect(1);
+  view2.set.expect(1);
+  view3.set.expect(1);
+  view4.set.expect(1);
+
+  var modeName = orientation === SC.PORTRAIT_ORIENTATION ? 'l_p' : 'l_l';
+  equal(view1.get('designMode'), modeName, "view1 designMode should be");
+  equal(view2.get('designMode'), modeName, "view2 designMode should be");
+  equal(view3.get('designMode'), modeName, "view3 designMode should be");
+  equal(view4.get('designMode'), modeName, "view4 designMode should be");
+
+  deepEqual(view1.get('layout'), largeLayout, "layout for view1 should be");
+  deepEqual(view2.get('layout'), largeLayout, "layout for view2 should be");
+  deepEqual(view3.get('layout'), normalLayout, "layout for view3 should be");
+  deepEqual(view4.get('layout'), largeLayout, "layout for view4 should be");
+
+  deepEqual(view1.get('classNames'), ['sc-view', 'sc-large'], "classNames for view1 should be");
+  deepEqual(view2.get('classNames'), ['sc-view', 'sc-large'], "classNames for view2 should be");
+  deepEqual(view3.get('classNames'), ['sc-view', 'sc-large'], "classNames for view3 should be");
+  deepEqual(view4.get('classNames'), ['sc-view', 'sc-large'], "classNames for view4 should be");
+
+  // Change the small threshold
+  responder.set('designModes', { s: ((windowSize.width + 10) * (windowSize.height + 10)) / window.devicePixelRatio, l: Infinity });
+
+  // designMode should be set
+  view1.set.expect(2);
+  view2.set.expect(2);
+  view3.set.expect(2);
+  view4.set.expect(2);
+
+  var newModeName = orientation === SC.PORTRAIT_ORIENTATION ? 's_p' : 's_l';
+  equal(view1.get('designMode'), newModeName, "view1 designMode should be");
+  equal(view2.get('designMode'), newModeName, "view2 designMode should be");
+  equal(view3.get('designMode'), newModeName, "view3 designMode should be");
+  equal(view4.get('designMode'), newModeName, "view4 designMode should be");
+
+  deepEqual(view1.get('layout'), smallLayout, "layout for view1 should be");
+  deepEqual(view2.get('layout'), smallLayout, "layout for view2 should be");
+  deepEqual(view3.get('layout'), smallLayout, "layout for view3 should be");
+  deepEqual(view4.get('layout'), smallLayout, "layout for view4 should be");
+
+  deepEqual(view1.get('classNames'), ['sc-view', 'sc-small'], "classNames for view1 should be");
+  deepEqual(view2.get('classNames'), ['sc-view', 'sc-small'], "classNames for view2 should be");
+  deepEqual(view3.get('classNames'), ['sc-view', 'sc-small'], "classNames for view3 should be");
+  deepEqual(view4.get('classNames'), ['sc-view', 'sc-small'], "classNames for view4 should be");
+
+  // Add a medium threshold
+  responder.set('designModes', {
+    s: ((windowSize.width - 10) * (windowSize.height - 10)) / window.devicePixelRatio,
+    m: ((windowSize.width + 10) * (windowSize.height + 10)) / window.devicePixelRatio,
+    l: Infinity
+  });
+
+  // designMode should be set
+  view1.set.expect(3);
+  view2.set.expect(3);
+  view3.set.expect(3);
+  view4.set.expect(3);
+
+  modeName = orientation === SC.PORTRAIT_ORIENTATION ? 'm_p' : 'm_l';
+  equal(view1.get('designMode'), modeName, "view1 designMode should be");
+  equal(view2.get('designMode'), modeName, "view2 designMode should be");
+  equal(view3.get('designMode'), modeName, "view3 designMode should be");
+  equal(view4.get('designMode'), modeName, "view4 designMode should be");
+
+  deepEqual(view1.get('layout'), mediumLayout, "layout for view1 should be");
+  deepEqual(view2.get('layout'), mediumLayout, "layout for view2 should be");
+  deepEqual(view3.get('layout'), mediumLayout, "layout for view3 should be");
+  deepEqual(view4.get('layout'), mediumLayout, "layout for view4 should be");
+
+  deepEqual(view1.get('classNames'), ['sc-view', 'sc-medium'], "classNames for view1 should be");
+  deepEqual(view2.get('classNames'), ['sc-view', 'sc-medium'], "classNames for view2 should be");
+  deepEqual(view3.get('classNames'), ['sc-view', 'sc-medium'], "classNames for view3 should be");
+  deepEqual(view4.get('classNames'), ['sc-view', 'sc-medium'], "classNames for view4 should be");
+});
+
+test("When you unset designModes on RootResponder, it clears designMode on its panes and their childViews.", function () {
+  var windowSize,
+    responder = SC.RootResponder.responder,
+    orientation = SC.device.orientation;
+
+  windowSize = responder.get('currentWindowSize');
+  responder.set('designModes', { s: ((windowSize.width - 10) * (windowSize.height - 10)) / window.devicePixelRatio, l: Infinity });
+
+  SC.run(function () {
+    pane = pane.create().append();
+  });
+
+  // designMode should be set (for initialization)
+  view1.set.expect(1);
+  view2.set.expect(1);
+  view3.set.expect(1);
+  view4.set.expect(1);
+
+  var modeName = orientation === SC.PORTRAIT_ORIENTATION ? 'l_p' : 'l_l';
+  equal(view1.get('designMode'), modeName, "view1 designMode should be");
+  equal(view2.get('designMode'), modeName, "view2 designMode should be");
+  equal(view3.get('designMode'), modeName, "view3 designMode should be");
+  equal(view4.get('designMode'), modeName, "view4 designMode should be");
+
+  deepEqual(view1.get('layout'), largeLayout, "layout of view1 should be");
+  deepEqual(view2.get('layout'), largeLayout, "layout of view2 should be");
+  deepEqual(view3.get('layout'), normalLayout, "layout of view3 should be");
+  deepEqual(view4.get('layout'), largeLayout, "layout of view4 should be");
+
+  deepEqual(view1.get('classNames'), ['sc-view', 'sc-large'], "classNames of view1 should be");
+  deepEqual(view2.get('classNames'), ['sc-view', 'sc-large'], "classNames of view2 should be");
+  deepEqual(view3.get('classNames'), ['sc-view', 'sc-large'], "classNames of view3 should be");
+  deepEqual(view4.get('classNames'), ['sc-view', 'sc-large'], "classNames of view4 should be");
+
+  // Unset designModes
+  responder.set('designModes', null);
+
+  // designMode should be set
+  view1.set.expect(2);
+  view2.set.expect(2);
+  view3.set.expect(2);
+  view4.set.expect(2);
+
+  equal(view1.get('designMode'), null, "designMode of view1 should be");
+  equal(view2.get('designMode'), null, "designMode of view2 should be");
+  equal(view3.get('designMode'), null, "designMode of view3 should be");
+  equal(view4.get('designMode'), null, "designMode of view4 should be");
+
+  deepEqual(view1.get('layout'), normalLayout, "layout of view1 should be");
+  deepEqual(view2.get('layout'), normalLayout, "layout of view2 should be");
+  deepEqual(view3.get('layout'), normalLayout, "layout of view3 should be");
+  deepEqual(view4.get('layout'), normalLayout, "layout of view4 should be");
+
+  deepEqual(view1.get('classNames'), ['sc-view'], "classNames of view1 should be");
+  deepEqual(view2.get('classNames'), ['sc-view'], "classNames of view2 should be");
+  deepEqual(view3.get('classNames'), ['sc-view'], "classNames of view3 should be");
+  deepEqual(view4.get('classNames'), ['sc-view'], "classNames of view4 should be");
+});
+
+});minispade.register('sproutcore-views/~tests/pane/firstResponder', function() {// ==========================================================================
+// Project:   SproutCore - JavaScript Application Framework
+// Copyright: ©2006-2011 Apple Inc. and contributors.
+// License:   Licensed under MIT license (see license.js)
+// ==========================================================================
+
+/*global module test equals context ok same $ CommonSetup */
+
+var pane, r, view0, view1 ;
+CommonSetup = {
+  setup: function() {
+    pane = SC.Pane.create({
+      childViews: [SC.View, SC.View]
+    });
+    view0 = pane.childViews[0];
+    view1 = pane.childViews[1];
+
+    pane.append(); // make visible so it will have root responder
+    r = pane.get('rootResponder');
+    ok(r, 'has root responder');
+  },
+  teardown: function() {
+    pane.remove();
+    pane.destroy();
+    pane = r = view0 = view1 = null ;
+  }
+};
+
+// ..........................................................
+// makeFirstResponder()
+//
+module("SC.Pane#makeFirstResponder", CommonSetup);
+
+test("make firstResponder from null, not keyPane", function() {
+  var okCount = 0, badCount = 0;
+  view0.didBecomeFirstResponder = function() { okCount ++; };
+
+  view0.willBecomeKeyResponderFrom = view0.didBecomeKeyResponderFrom =
+    function() { badCount ++; };
+
+  pane.makeFirstResponder(view0);
+  equal(okCount, 1, 'should invoke didBecomeFirstResponder callbacks');
+  equal(badCount, 0, 'should not invoke ..BecomeKeyResponder callbacks');
+
+  equal(pane.get('firstResponder'), view0, 'should set firstResponder to view');
+
+  ok(view0.get('isFirstResponder'), 'should set view.isFirstResponder to YES');
+  ok(!view0.get('isKeyResponder'), 'should not set view.isKeyResponder');
+});
+
+
+test("make firstResponder from null, is keyPane", function() {
+  var okCount = 0 ;
+  view0.didBecomeFirstResponder =
+  view0.willBecomeKeyResponderFrom = view0.didBecomeKeyResponderFrom =
+    function() { okCount++; };
+
+  pane.becomeKeyPane();
+  pane.makeFirstResponder(view0);
+  equal(okCount, 3, 'should invoke didBecomeFirstResponder + KeyResponder callbacks');
+
+  equal(pane.get('firstResponder'), view0, 'should set firstResponder to view');
+
+  ok(view0.get('isFirstResponder'), 'should set view.isFirstResponder to YES');
+  ok(view0.get('isKeyResponder'), 'should set view.isKeyResponder');
+});
+
+
+test("make firstResponder from other view, not keyPane", function() {
+
+  // preliminary setup
+  pane.makeFirstResponder(view1);
+  equal(pane.get('firstResponder'), view1, 'precond - view1 is firstResponder');
+
+  var okCount = 0, badCount = 0;
+  view0.didBecomeFirstResponder = function() { okCount ++; };
+  view1.willLoseFirstResponder = function() { okCount ++; };
+
+  view0.willBecomeKeyResponderFrom = view0.didBecomeKeyResponderFrom =
+    function() { badCount ++; };
+  view1.willLoseKeyResponderTo = view0.didLoseKeyResponderTo =
+    function() { badCount ++; };
+
+  pane.makeFirstResponder(view0);
+  equal(okCount, 2, 'should invoke ..BecomeFirstResponder callbacks');
+  equal(badCount, 0, 'should not invoke ..BecomeKeyResponder callbacks');
+
+  equal(pane.get('firstResponder'), view0, 'should set firstResponder to view');
+
+  ok(view0.get('isFirstResponder'), 'should set view.isFirstResponder to YES');
+  ok(!view0.get('isKeyResponder'), 'should not set view.isKeyResponder');
+
+  ok(!view1.get('isFirstResponder'), 'view1.isFirstResponder should now be set to NO');
+
+});
+
+
+test("make firstResponder from other view, as keyPane", function() {
+
+  // preliminary setup
+  pane.becomeKeyPane();
+  pane.makeFirstResponder(view1);
+  equal(pane.get('firstResponder'), view1, 'precond - view1 is firstResponder');
+  ok(view1.get('isFirstResponder'), 'precond - view1.isFirstResponder should be YES');
+  ok(view1.get('isKeyResponder'), 'precond - view1.isFirstResponder should be YES');
+
+  var okCount = 0 ;
+  view0.didBecomeFirstResponder = view1.willLoseFirstResponder =
+  view0.willBecomeKeyResponderFrom = view0.didBecomeKeyResponderFrom =
+  view1.willLoseKeyResponderTo = view1.didLoseKeyResponderTo =
+    function() { okCount ++; };
+
+  pane.makeFirstResponder(view0);
+  equal(okCount, 6, 'should invoke FirstResponder + KeyResponder callbacks on both views');
+
+  equal(pane.get('firstResponder'), view0, 'should set firstResponder to view');
+
+  ok(view0.get('isFirstResponder'), 'should set view.isFirstResponder to YES');
+  ok(view0.get('isKeyResponder'), 'should set view.isKeyResponder');
+
+  ok(!view1.get('isFirstResponder'), 'view1.isFirstResponder should now be set to NO');
+  ok(!view1.get('isKeyResponder'), 'view1.isFirstResponder should now be set to NO');
+
+});
+
+
+test("makeFirstResponder(view) when view is already first responder", function() {
+
+  // preliminary setup
+  pane.becomeKeyPane();
+  pane.makeFirstResponder(view0);
+  equal(pane.get('firstResponder'), view0, 'precond - view0 is firstResponder');
+  ok(view0.get('isFirstResponder'), 'precond - view0.isFirstResponder should be YES');
+  ok(view0.get('isKeyResponder'), 'precond - view0.isFirstResponder should be YES');
+
+  var callCount = 0 ;
+  view0.didBecomeFirstResponder = view0.willLoseFirstResponder =
+  view0.willBecomeKeyResponderFrom = view0.didBecomeKeyResponderFrom =
+  view0.willLoseKeyResponderTo = view0.didLoseKeyResponderTo =
+    function() { callCount ++; };
+
+  pane.makeFirstResponder(view0);
+  equal(callCount, 0, 'should invoke no FirstResponder + KeyResponder callbacks on view');
+
+  equal(pane.get('firstResponder'), view0, 'should keep firstResponder to view');
+  ok(view0.get('isFirstResponder'), 'should keep view.isFirstResponder to YES');
+  ok(view0.get('isKeyResponder'), 'should keep view.isKeyResponder');
+
+});
+
+});minispade.register('sproutcore-views/~tests/pane/keyPane', function() {// ==========================================================================
+// Project:   SproutCore - JavaScript Application Framework
+// Copyright: ©2006-2011 Apple Inc. and contributors.
+// License:   Licensed under MIT license (see license.js)
+// ==========================================================================
+
+/*global module test equals context ok same $ CommonSetup */
+
+var pane, r, view ;
+CommonSetup = {
+  setup: function() {
+    pane = SC.Pane.create({
+      childViews: [SC.View]
+    });
+    view = pane.childViews[0];
+    pane.makeFirstResponder(view);
+
+    pane.append(); // make visible so it will have root responder
+    r = pane.get('rootResponder');
+    ok(r, 'has root responder');
+  },
+  teardown: function() {
+    pane.remove();
+    pane.destroy();
+    pane = r = view = null ;
+  }
+};
+
+// ..........................................................
+// becomeKeyPane()
+//
+module("SC.Pane#becomeKeyPane", CommonSetup);
+
+test("should become keyPane if not already keyPane", function() {
+  ok(r.get('keyPane') !== pane, 'precond - pane is not currently key');
+
+  pane.becomeKeyPane();
+  equal(r.get('keyPane'), pane, 'pane should be keyPane');
+  equal(pane.get('isKeyPane'), YES, 'isKeyPane should be set to YES');
+});
+
+test("should do nothing if acceptsKeyPane is NO", function() {
+  ok(r.get('keyPane') !== pane, 'precond - pane is not currently key');
+
+  pane.acceptsKeyPane = NO ;
+  pane.becomeKeyPane();
+  ok(r.get('keyPane') !== pane, 'pane should not be keyPane');
+  equal(pane.get('isKeyPane'), NO, 'isKeyPane should be NO');
+});
+
+test("should invoke willBecomeKeyPane & didBecomeKeyPane", function() {
+  var callCount = 0 ;
+  pane.willBecomeKeyPaneFrom = pane.didBecomeKeyPaneFrom = function() {
+    callCount++;
+  };
+
+  pane.becomeKeyPane();
+  equal(callCount, 2, 'should invoke both callbacks');
+
+  callCount = 0;
+  pane.becomeKeyPane();
+  equal(callCount, 0, 'should not invoke callbacks if already key pane');
+});
+
+test("should invoke callbacks and update isKeyResponder state on firstResponder", function() {
+  var callCount = 0;
+  view.willBecomeKeyResponderFrom = view.didBecomeKeyResponderFrom =
+    function() { callCount++; };
+
+  equal(view.get('isKeyResponder'), NO, 'precond - view is not keyResponder');
+  equal(view.get('isFirstResponder'), YES, 'precond - view is firstResponder');
+
+  pane.becomeKeyPane();
+  equal(callCount, 2, 'should invoke both callbacks');
+  equal(view.get('isKeyResponder'), YES, 'should be keyResponder');
+});
+
+// ..........................................................
+// resignKeyPane()
+//
+module("SC.Pane#resignKeyPane", CommonSetup);
+
+test("should resign keyPane if keyPane", function() {
+  pane.becomeKeyPane();
+  ok(r.get('keyPane') === pane, 'precond - pane is currently key');
+
+  pane.resignKeyPane();
+  ok(r.get('keyPane') !== pane, 'pane should NOT be keyPane');
+  equal(pane.get('isKeyPane'), NO, 'isKeyPane should be set to NO');
+});
+
+// technically this shouldn't happen, but someone could screw up and change
+// acceptsKeyPane to NO once the pane has already become key
+test("should still resign if acceptsKeyPane is NO", function() {
+  pane.becomeKeyPane();
+  ok(r.get('keyPane') === pane, 'precond - pane is currently key');
+
+  pane.acceptsKeyPane = NO ;
+  pane.resignKeyPane();
+  ok(r.get('keyPane') !== pane, 'pane should NOT be keyPane');
+  equal(pane.get('isKeyPane'), NO, 'isKeyPane should be set to NO');
+});
+
+test("should invoke willLoseKeyPaneTo & didLoseKeyPaneTo", function() {
+  pane.becomeKeyPane();
+  ok(r.get('keyPane') === pane, 'precond - pane is currently key');
+
+  var callCount = 0 ;
+  pane.willLoseKeyPaneTo = pane.didLoseKeyPaneTo = function() {
+    callCount++;
+  };
+
+  pane.resignKeyPane();
+  equal(callCount, 2, 'should invoke both callbacks');
+
+  callCount = 0;
+  pane.resignKeyPane();
+  equal(callCount, 0, 'should not invoke callbacks if already key pane');
+});
+
+test("should invoke callbacks and update isKeyResponder state on firstResponder", function() {
+  var callCount = 0;
+  view.willLoseKeyResponderTo = view.didLoseKeyResponderTo =
+    function() { callCount++; };
+
+  pane.becomeKeyPane();
+  equal(view.get('isKeyResponder'), YES, 'precond - view is keyResponder');
+  equal(view.get('isFirstResponder'), YES, 'precond - view is firstResponder');
+
+  pane.resignKeyPane();
+  equal(callCount, 2, 'should invoke both callbacks');
+  equal(view.get('isKeyResponder'), NO, 'should be keyResponder');
+});
+
+
+});minispade.register('sproutcore-views/~tests/pane/layout', function() {// ==========================================================================
+// Project:   SproutCore - JavaScript Application Framework
+// Copyright: ©2006-2011 Apple Inc. and contributors.
+// License:   Licensed under MIT license (see license.js)
+// ==========================================================================
+
+/*global module test equals context ok same $ htmlbody */
+
+var pane;
+
+module("SC.Pane#layout", {
+  setup: function() {
+    pane = SC.Pane.create({
+      layout: { top: 0, left: 0, width: 1, height: 1}
+    });
+    pane.append();
+  },
+
+  teardown: function() {
+    pane.remove();
+    pane.destroy();
+  }
+});
+
+test("make sure that a call to adjust actually adjusts the view's size", function() {
+  SC.RunLoop.begin();
+  pane.adjust({ width: 100, height: 50 });
+  SC.RunLoop.end();
+
+  equal(pane.$()[0].style.width, '100px', 'width should have been adjusted');
+  equal(pane.$()[0].style.height, '50px', 'height should have been adjusted');
+});
+
+});minispade.register('sproutcore-views/~tests/pane/sendEvent', function() {// ==========================================================================
+// Project:   SproutCore - JavaScript Application Framework
+// Copyright: ©2006-2011 Apple Inc. and contributors.
+// License:   Licensed under MIT license (see license.js)
+// ==========================================================================
+
+/*global module test equals context ok same $ htmlbody */
+var pane, fooView, barView, defaultResponder, evt, callCount ;
+module("SC.Pane#dispatchEvent", {
+  setup: function() {
+
+    callCount = 0;
+    var handler = function(theEvent) {
+      callCount++ ;
+      equal(theEvent, evt, 'should pass event');
+    };
+
+    defaultResponder = SC.Object.create({ defaultEvent: handler });
+    pane = SC.Pane.create({
+      defaultResponder: defaultResponder,
+      paneEvent: handler,
+      childViews: [SC.View.extend({
+        fooEvent: handler,
+        childViews: [SC.View.extend({
+          barEvent: handler
+        })]
+      })]
+    });
+    fooView = pane.childViews[0];
+    ok(fooView.fooEvent, 'has fooEvent handler');
+
+    barView = fooView.childViews[0];
+    ok(barView.barEvent, 'has barEvent handler');
+
+    evt = SC.Object.create(); // mock
+  },
+
+  teardown: function() {
+    pane.destroy();
+    pane = fooView = barView = defaultResponder = evt = null ;
+  }
+});
+
+test("when invoked with target = nested view", function() {
+  var handler ;
+
+  // test event handler on target
+  callCount = 0;
+  handler = pane.dispatchEvent('barEvent', evt, barView);
+  equal(callCount, 1, 'should invoke handler');
+  equal(handler, barView, 'should return view that handled event');
+
+  // test event handler on target parent
+  callCount = 0;
+  handler = pane.dispatchEvent('fooEvent', evt, barView);
+  equal(callCount, 1, 'should invoke handler');
+  equal(handler, fooView, 'should return responder that handled event');
+
+  // test event handler on default responder
+  callCount = 0;
+  handler = pane.dispatchEvent('defaultEvent', evt, barView);
+  equal(callCount, 1, 'should invoke handler');
+  equal(handler, defaultResponder, 'should return responder that handled event');
+
+  // test unhandled event handler
+  callCount = 0;
+  handler = pane.dispatchEvent('imaginary', evt, barView);
+  equal(callCount, 0, 'should not invoke handler');
+  equal(handler, null, 'should return no responder');
+
+});
+
+
+
+test("when invoked with target = middle view", function() {
+  var handler ;
+
+  // test event handler on child view of target
+  callCount = 0;
+  handler = pane.dispatchEvent('barEvent', evt, fooView);
+  equal(callCount, 0, 'should not invoke handler');
+  equal(handler, null, 'should return no responder');
+
+  // test event handler on target
+  callCount = 0;
+  handler = pane.dispatchEvent('fooEvent', evt, fooView);
+  equal(callCount, 1, 'should invoke handler');
+  equal(handler, fooView, 'should return responder that handled event');
+
+  // test event handler on default responder
+  callCount = 0;
+  handler = pane.dispatchEvent('defaultEvent', evt, fooView);
+  equal(callCount, 1, 'should invoke handler');
+  equal(handler, defaultResponder, 'should return responder that handled event');
+
+  // test unhandled event handler
+  callCount = 0;
+  handler = pane.dispatchEvent('imaginary', evt, fooView);
+  equal(callCount, 0, 'should not invoke handler');
+  equal(handler, null, 'should return no responder');
+
+});
+
+
+
+test("when invoked with target = pane", function() {
+  var handler ;
+
+  // test event handler on child view of target
+  callCount = 0;
+  handler = pane.dispatchEvent('barEvent', evt, pane);
+  equal(callCount, 0, 'should not invoke handler');
+  equal(handler, null, 'should return no responder');
+
+  // test event handler on target
+  callCount = 0;
+  handler = pane.dispatchEvent('fooEvent', evt, pane);
+  equal(callCount, 0, 'should not invoke handler');
+  equal(handler, null, 'should return no responder');
+
+  // test event handler on default responder
+  callCount = 0;
+  handler = pane.dispatchEvent('defaultEvent', evt, pane);
+  equal(callCount, 1, 'should invoke handler');
+  equal(handler, defaultResponder, 'should return responder that handled event');
+
+  // test unhandled event handler
+  callCount = 0;
+  handler = pane.dispatchEvent('imaginary', evt, pane);
+  equal(callCount, 0, 'should not invoke handler');
+  equal(handler, null, 'should return no responder');
+
+});
+
+
+
+test("when invoked with target = null", function() {
+  var handler ;
+
+  // should start @ first responder
+  pane.firstResponder = fooView;
+
+  // test event handler on child view of target
+  callCount = 0;
+  handler = pane.dispatchEvent('barEvent', evt);
+  equal(callCount, 0, 'should not invoke handler');
+  equal(handler, null, 'should return no responder');
+
+  // test event handler on target
+  callCount = 0;
+  handler = pane.dispatchEvent('fooEvent', evt);
+  equal(callCount, 1, 'should invoke handler');
+  equal(handler, fooView, 'should return responder that handled event');
+
+  // test event handler on default responder
+  callCount = 0;
+  handler = pane.dispatchEvent('defaultEvent', evt);
+  equal(callCount, 1, 'should invoke handler');
+  equal(handler, defaultResponder, 'should return responder that handled event');
+
+  // test unhandled event handler
+  callCount = 0;
+  handler = pane.dispatchEvent('imaginary', evt);
+  equal(callCount, 0, 'should not invoke handler');
+  equal(handler, null, 'should return no responder');
+
+  // test event handler on pane itself
+  callCount = 0;
+  handler = pane.dispatchEvent('paneEvent', evt);
+  equal(callCount, 1, 'should invoke handler on pane');
+  equal(handler, pane, 'should return pane as responder that handled event');
+
+});
+
+test("when invoked with target = null, no default or first responder", function() {
+  var handler ;
+
+  // no first or default responder
+  pane.set('firstResponder', null);
+  pane.set('defaultResponder', null);
+
+  // test event handler on child view of target
+  callCount = 0;
+  handler = pane.dispatchEvent('barEvent', evt);
+  equal(callCount, 0, 'should not invoke handler');
+  equal(handler, null, 'should return no responder');
+
+  // test event handler on target
+  callCount = 0;
+  handler = pane.dispatchEvent('fooEvent', evt);
+  equal(callCount, 0, 'should not invoke handler');
+  equal(handler, null, 'should return no responder');
+
+  // test unhandled event handler
+  callCount = 0;
+  handler = pane.dispatchEvent('imaginary', evt);
+  equal(callCount, 0, 'should not invoke handler');
+  equal(handler, null, 'should return no responder');
+
+  // test event handler on pane itself
+  callCount = 0;
+  handler = pane.dispatchEvent('paneEvent', evt);
+  equal(callCount, 1, 'should invoke handler on pane');
+  equal(handler, pane, 'should return pane as responder that handled event');
+
+});
+
+
+});minispade.register('sproutcore-views/~tests/system/root_responder/design_modes_test', function() {// // ==========================================================================
+// // Project:   SproutCore
+// // Copyright: @2012 7x7 Software, Inc.
+// // License:   Licensed under MIT license (see license.js)
+// // ==========================================================================
+// /*globals CoreTest, module, test, equals, same*/
+//
+//
+// var pane1, pane2;
+//
+//
+// module("SC.RootResponder Design Mode Support", {
+//   setup: function() {
+//     pane1 = SC.Pane.create({
+//       updateDesignMode: CoreTest.stub('updateDesignMode', SC.Pane.prototype.updateDesignMode)
+//     }).append();
+//
+//     pane2 = SC.Pane.create({
+//       updateDesignMode: CoreTest.stub('updateDesignMode', SC.Pane.prototype.updateDesignMode)
+//     }).append();
+//   },
+//
+//   teardown: function() {
+//     pane1.remove();
+//     pane2.remove();
+//     pane1 = pane2 = null;
+//   }
+//
+// });
+//
+// test("When you set designModes on the root responder, it preps internal arrays.", function () {
+//   var windowSize,
+//     designModes,
+//     responder = SC.RootResponder.responder;
+//
+//   windowSize = responder.get('currentWindowSize');
+//
+//   equal(responder._designModeNames, undefined, "If no designModes value is set, there should not be any _designModeNames internal array.");
+//   equal(responder._designModeThresholds, undefined, "If no designModes value is set, there should not be any _designModeNames internal array.");
+//
+//   designModes = { small: ((windowSize.width - 10) * (windowSize.height - 10)) / window.devicePixelRatio, large: Infinity };
+//
+//   responder.set('designModes', designModes);
+//   deepEqual(responder._designModeNames, ['small', 'large'], "If designModes value is set, there should be an ordered _designModeNames internal array.");
+//   deepEqual(responder._designModeThresholds, [((windowSize.width - 10) * (windowSize.height - 10)) / window.devicePixelRatio, Infinity], "If designModes value is set, there should be an ordered_designModeNames internal array.");
+//
+//   designModes = { small: ((windowSize.width - 10) * (windowSize.height - 10)) / window.devicePixelRatio, medium: ((windowSize.width + 10) * (windowSize.height + 10)) / window.devicePixelRatio, large: Infinity };
+//
+//   responder.set('designModes', designModes);
+//   deepEqual(responder._designModeNames, ['small', 'medium', 'large'], "If designModes value is set, there should be an ordered _designModeNames internal array.");
+//   deepEqual(responder._designModeThresholds, [((windowSize.width - 10) * (windowSize.height - 10)) / window.devicePixelRatio, ((windowSize.width + 10) * (windowSize.height + 10)) / window.devicePixelRatio, Infinity], "If designModes value is set, there should be an ordered_designModeNames internal array.");
+//
+//   responder.set('designModes', null);
+//   equal(responder._designModeNames, undefined, "If no designModes value is set, there should not be any _designModeNames internal array.");
+//   equal(responder._designModeThresholds, undefined, "If no designModes value is set, there should not be any _designModeNames internal array.");
+// });
+//
+// test("When you set designModes on the root responder, it calls updateDesignMode on all its panes.", function () {
+//   var windowSize,
+//     designModes,
+//     responder = SC.RootResponder.responder;
+//
+//   windowSize = responder.get('currentWindowSize');
+//
+//   pane1.updateDesignMode.expect(1);
+//   pane2.updateDesignMode.expect(1);
+//
+//   designModes = { small: ((windowSize.width - 10) * (windowSize.height - 10)) / window.devicePixelRatio, large: Infinity };
+//
+//   responder.set('designModes', designModes);
+//   pane1.updateDesignMode.expect(2);
+//   pane2.updateDesignMode.expect(2);
+//
+//   designModes = { small: ((windowSize.width - 10) * (windowSize.height - 10)) / window.devicePixelRatio, medium: ((windowSize.width + 10) * (windowSize.height + 10)) / window.devicePixelRatio, large: Infinity };
+//
+//   responder.set('designModes', designModes);
+//   pane1.updateDesignMode.expect(3);
+//   pane2.updateDesignMode.expect(3);
+//
+//   responder.set('designModes', null);
+//   pane1.updateDesignMode.expect(4);
+//   pane2.updateDesignMode.expect(4);
+// });
+
+});minispade.register('sproutcore-views/~tests/system/root_responder/make_key_pane', function() {// ==========================================================================
+// Project:   SproutCore - JavaScript Application Framework
+// Copyright: ©2006-2011 Apple Inc. and contributors.
+// License:   Licensed under MIT license (see license.js)
+// ==========================================================================
+
+/*global module test equals context ok same $ htmlbody */
+module("SC.RootResponder#makeKeyPane");
+
+test("returns receiver", function() {
+  var p1 = SC.Pane.create(), p2 = SC.Pane.create({ acceptsKeyPane: YES });
+  var r = SC.RootResponder.create();
+  
+  equal(r.makeKeyPane(p1), r, 'returns receiver even if pane does not accept key pane');
+  equal(r.makeKeyPane(p2), r, 'returns receiver');
+});
+
+test("changes keyPane to new pane if pane accepts key focus", function() {
+  var p1 = SC.Pane.create({ acceptsKeyPane: NO }) ;
+  var p2 = SC.Pane.create({ acceptsKeyPane: YES });
+  var r = SC.RootResponder.create();
+  
+  r.makeKeyPane(p1);
+  ok(r.get('keyPane') !== p1, 'keyPane should not change to view that does not accept key');
+
+  r.makeKeyPane(p2);
+  equal(r.get('keyPane'), p2, 'keyPane should change to view that does accept key');
+  
+});
+
+test("setting nil sets key pane to mainPane if mainPane accepts key focus", function() {
+  var main = SC.Pane.create({ acceptsKeyPane: YES });
+  var key = SC.Pane.create({ acceptsKeyPane: YES });
+  var r = SC.RootResponder.create({ mainPane: main, keyPane: key });
+  
+  // try to clear keyPane -- mainPane accepts key
+  r.makeKeyPane(null);
+  equal(r.get('keyPane'), main, 'keyPane should be main pane');
+  
+  r.makeKeyPane(key); // reset
+  main.acceptsKeyPane = NO ;
+  r.makeKeyPane(null); // try to clean - mainPane does not accept key
+  equal(r.get('keyPane'), null, 'keyPane should be null, not main');
+  
+  // try another variety.  if keyPane is currently null and we try to set to
+  // null do nothing, even if main DOES accept key.
+  r.keyPane = null ;
+  main.acceptsKeyPane = NO;
+  r.makeKeyPane(null);
+  equal(r.get('keyPane'), null, 'keyPane should remain null');
+});
+
+var p1, p2, r, callCount ;
+module("SC.RootResponder#makeKeyPane - testing notifications", {
+  setup: function() {
+    p1 = SC.Pane.create({ acceptsKeyPane: YES });    
+    p2 = SC.Pane.create({ acceptsKeyPane: YES });    
+    r = SC.RootResponder.create();
+    callCount = 0 ;
+  },
+  
+  teardown: function() { p1 = p2 = r ; }
+});
+
+test("should call willLoseKeyPaneTo on current keyPane", function() {
+  r.keyPane = p1; //setup test
+  p1.willLoseKeyPaneTo = function(pane) {
+    equal(pane, p2, 'should pass new pane');
+    callCount++;
+  };
+  
+  r.makeKeyPane(p2);
+  equal(callCount, 1, 'should invoke');
+});
+
+test("should call willBecomeKeyPaneFrom on new keyPane", function() {
+  r.keyPane = p1; //setup test
+  p2.willBecomeKeyPaneFrom = function(pane) {
+    equal(pane, p1, 'should pass old pane');
+    callCount++;
+  };
+  
+  r.makeKeyPane(p2);
+  equal(callCount, 1, 'should invoke');
+});
+
+
+test("should call didLoseKeyPaneTo on old keyPane", function() {
+  r.keyPane = p1; //setup test
+  p1.didLoseKeyPaneTo = function(pane) {
+    equal(pane, p2, 'should pass new pane');
+    callCount++;
+  };
+  
+  r.makeKeyPane(p2);
+  equal(callCount, 1, 'should invoke');
+});
+
+test("should call didBecomeKeyPaneFrom on new keyPane", function() {
+  r.keyPane = p1; //setup test
+  p2.didBecomeKeyPaneFrom = function(pane) {
+    equal(pane, p1, 'should pass old pane');
+    callCount++;
+  };
+  
+  r.makeKeyPane(p2);
+  equal(callCount, 1, 'should invoke');
+});
+
+test("should not invoke callbacks if setting keyPane to itself", function() {
+  r.keyPane = p1; //setup test
+  // instrument ...
+  p1.didLoseKeyPaneTo = p1.willLoseKeyPaneTo = p1.willBecomeKeyPaneFrom = p1.didBecomeKeyPaneFrom = function() { callCount++; };
+  
+  r.makeKeyPane(p1);
+  equal(callCount, 0, 'did not invoke any callbacks');
+});
+
+
+
+
+
+
+
+
+});minispade.register('sproutcore-views/~tests/system/root_responder/make_main_pane', function() {// ==========================================================================
+// Project:   SproutCore - JavaScript Application Framework
+// Copyright: ©2006-2011 Apple Inc. and contributors.
+// License:   Licensed under MIT license (see license.js)
+// ==========================================================================
+
+/*global module test equals context ok same $ htmlbody */
+module("SC.RootResponder#makeMainPane");
+
+test("returns receiver", function() {
+  var p1 = SC.Pane.create(), p2 = SC.Pane.create();
+  var r = SC.RootResponder.create();
+  equal(r.makeMainPane(p1), r, 'returns receiver');
+});
+
+test("changes mainPane to new pane", function() {
+  var p1 = SC.Pane.create(), p2 = SC.Pane.create();
+  var r = SC.RootResponder.create();
+  
+  r.makeMainPane(p1);
+  equal(r.get('mainPane'), p1, 'mainPane should be p1');
+
+  r.makeMainPane(p2);
+  equal(r.get('mainPane'), p2, 'mainPane should be p2');
+  
+});
+
+test("if current mainpane is also keypane, automatically make new main pane key also", function() {
+  // acceptsKeyPane is required to allow keyPane to change
+  var p1 = SC.Pane.create({ acceptsKeyPane: YES });
+  var p2 = SC.Pane.create({ acceptsKeyPane: YES });
+
+  var r= SC.RootResponder.create({ mainPane: p1, keyPane: p1 });
+  r.makeMainPane(p2);
+  ok(r.get('keyPane') === p2, 'should change keyPane(%@) p1 = %@ - p2 = %@'.fmt(r.get('keyPane'), p1, p2));
+});
+
+test("should call blurMainTo() on current pane, passing new pane", function() {
+  var callCount = 0;
+  var p2 = SC.Pane.create();
+  var p1 = SC.Pane.create({ 
+    blurMainTo: function(pane) { 
+      callCount++ ;
+      equal(pane, p2, 'should pass new pane');
+    }
+  });
+  
+  var r= SC.RootResponder.create({ mainPane: p1 });
+  r.makeMainPane(p2);
+  equal(callCount, 1, 'should invoke callback');
+});
+
+
+test("should call focusMainFrom() on new pane, passing old pane", function() {
+  var callCount = 0;
+  var p1 = SC.Pane.create();
+  var p2 = SC.Pane.create({ 
+    focusMainFrom: function(pane) { 
+      callCount++ ;
+      equal(pane, p1, 'should pass old pane');
+    }
+  });
+  
+  var r= SC.RootResponder.create({ mainPane: p1 });
+  r.makeMainPane(p2);
+  equal(callCount, 1, 'should invoke callback');
+});
+
+
+});minispade.register('sproutcore-views/~tests/system/root_responder/make_menu_pane', function() {// ==========================================================================
+// Project:   SproutCore - JavaScript Application Framework
+// Copyright: ©2006-2011 Apple Inc. and contributors.
+// License:   Licensed under MIT license (see license.js)
+// ==========================================================================
+
+/*global module test equals context ok same $ htmlbody */
+
+var responder, menu;
+
+module("SC.RootResponder#makeMenuPane", {
+  setup: function() {
+    responder = SC.RootResponder.create();
+    menu = SC.Pane.create({
+      acceptsMenuPane: YES
+    });
+  },
+  
+  teardown: function() {
+    menu.remove();
+    menu = responder = null;
+  }
+});
+
+test("Returns receiver", function() {
+  equal(responder.makeMenuPane(menu), responder, 'returns receiver');
+});
+
+test("Sets RootResponder's menuPane", function() {
+  equal(responder.get('menuPane'), null, 'precond - menuPane should be null by default');
+  responder.makeMenuPane(menu);
+  equal(responder.get('menuPane'), menu, 'menuPane should be passed menu');
+});
+
+test("menuPane does not affect keyPane", function() {
+  var p2 = SC.Pane.create();
+  responder.makeKeyPane(p2);
+  equal(responder.get('keyPane'), p2, 'precond - pane should be key pane');
+  responder.makeMenuPane(menu);
+  equal(responder.get('menuPane'), menu, 'menuPane should be set');
+  equal(responder.get('keyPane'), p2, 'key pane should not change');
+});
+
+test("Pane should not become menu pane if acceptsMenuPane is not YES", function() {
+  menu.set('acceptsMenuPane', NO);
+  responder.makeMenuPane(menu);
+  equal(responder.get('menuPane'), null, 'menuPane should remain null');
+});
+
+});minispade.register('sproutcore-views/~tests/system/root_responder/mouse_events', function() {// ==========================================================================
+// Project:   SproutCore - JavaScript Application Framework
+// Copyright: ©2006-2011 Apple Inc. and contributors.
+// License:   Licensed under MIT license (see license.js)
+// ==========================================================================
+
+/*global module test equals context ok same $ htmlbody */
+
+/*
+  We call RootResponder's browser event handlers directly with fake browser events. These
+  tests are to prove RootResponder's downstream behavior.
+  
+  Our test pane has a view tree like so:
+
+  pane
+   |--view1
+   |  |--view1a
+   |  |--view1b
+   |--view2
+
+  Simulating responder-chain events on view1a allows us to ensure that view1 also receives
+  the event, but that view1b and view2 do not.
+*/
+
+
+// If we don't factory it, all the views share the same stub functions ergo the same callCounts.
+function viewClassFactory() {
+  return SC.View.extend({
+    // Mouse
+    mouseEntered: CoreTest.stub(),
+    mouseMoved: CoreTest.stub(),
+    mouseExited: CoreTest.stub(),
+    // Click
+    mouseDown: CoreTest.stub(),
+    mouseUp: CoreTest.stub(),
+    click: CoreTest.stub(),
+    dblClick: CoreTest.stub(),
+    // Touch
+    touchDown: CoreTest.stub(),
+    touchesMoved: CoreTest.stub(),
+    touchUp: CoreTest.stub(),
+    // Data
+    dataDragEntered: CoreTest.stub(),
+    dataDragHovered: CoreTest.stub(),
+    dataDragExited: CoreTest.stub(),
+    dataDragDropped: CoreTest.stub()
+  });  
+}
+
+var Pane = SC.MainPane.extend({
+  childViews: ['view1', 'view2'],
+  view1: viewClassFactory().extend({
+    childViews: ['view1a', 'view1b'],
+    view1a: viewClassFactory(),
+    view1b: viewClassFactory()
+  }),
+  view2: viewClassFactory()
+});
+
+var pane, view1, view1a, view1b, view2, evt1a, evt2;
+
+module("Mouse event handling", {
+  setup: function() {
+    SC.run(function() {
+      pane = Pane.create().append();
+    });
+    // Populate the variables for easy access.
+    view1 = pane.get('view1');
+    view1a = view1.get('view1a');
+    view1b = view1.get('view1b');
+    view2 = pane.get('view2');
+    // Create the events.
+    evt1a = {
+      target: pane.get('view1.view1a.layer'),
+      dataTransfer: { types: [] },
+      preventDefault: CoreTest.stub(),
+      stopPropagation: CoreTest.stub()
+    };
+    evt2 = {
+      target: pane.get('view2.layer'),
+      dataTransfer: { types: [] },
+      preventDefault: CoreTest.stub(),
+      stopPropagation: CoreTest.stub()
+    };
+  },
+  teardown: function() {
+    pane.remove();
+    pane.destroy();
+    pane = null;
+    view1 = view1a = view1b = view2 = null;
+    evt1a = evt2 = null;
+  }
+});
+
+test('Mouse movement', function() {
+  // Make sure we're all at zero.
+  // mouseEntered
+  var isGood = YES &&
+    view1.mouseEntered.callCount === 0 &&
+    view1a.mouseEntered.callCount === 0 &&
+    view1b.mouseEntered.callCount === 0 &&
+    view2.mouseEntered.callCount === 0;
+  ok(isGood, 'PRELIM: mouseEntered has not been called.');
+  // mouseMoved
+  isGood = YES &&
+    view1.mouseMoved.callCount === 0 &&
+    view1a.mouseMoved.callCount === 0 &&
+    view1b.mouseMoved.callCount === 0 &&
+    view2.mouseMoved.callCount === 0;
+  ok(isGood, 'PRELIM: mouseMoved has not been called.');
+  // mouseExited
+  isGood = YES &&
+    view1.mouseExited.callCount === 0 &&
+    view1a.mouseExited.callCount === 0 &&
+    view1b.mouseExited.callCount === 0 &&
+    view2.mouseExited.callCount === 0;
+  ok(isGood, 'PRELIM: mouseExited has not been called.');
+
+
+  // Move the mouse over view1a to trigger mouseEntered.
+  SC.RootResponder.responder.mousemove(evt1a);
+
+  equal(view1a.mouseEntered.callCount, 1, "The targeted view has received mouseEntered");
+  equal(view1.mouseEntered.callCount, 1, "The targeted view's parent has received mouseEntered");
+  equal(view1b.mouseEntered.callCount, 0, "The targeted view's sibling has NOT received mouseEntered");
+  equal(view2.mouseEntered.callCount, 0, "The targeted view's parent's sibling has NOT received mouseEntered");
+
+  isGood = YES &&
+    view1.mouseMoved.callCount === 0 &&
+    view1a.mouseMoved.callCount === 0 &&
+    view1b.mouseMoved.callCount === 0 &&
+    view2.mouseMoved.callCount === 0 &&
+    view1.mouseExited.callCount === 0 &&
+    view1a.mouseExited.callCount === 0 &&
+    view1b.mouseExited.callCount === 0 &&
+    view2.mouseExited.callCount === 0;
+  ok(isGood, 'No views have received mouseMoved or mouseExited.');
+
+
+  // Move the mouse over view1a again to trigger mouseMoved.
+  SC.RootResponder.responder.mousemove(evt1a);
+
+  equal(view1a.mouseMoved.callCount, 1, "The targeted view has received mouseMoved");
+  equal(view1.mouseMoved.callCount, 1, "The targeted view's parent has received mouseMoved");
+  equal(view1b.mouseMoved.callCount, 0, "The targeted view's sibling has NOT received mouseMoved");
+  equal(view2.mouseMoved.callCount, 0, "The targeted view's parent's sibling has NOT received mouseMoved");
+
+  isGood = YES &&
+    view1.mouseEntered.callCount === 1 &&
+    view1a.mouseEntered.callCount === 1 &&
+    view1b.mouseEntered.callCount === 0 &&
+    view2.mouseEntered.callCount === 0;
+  ok(isGood, "No views have received duplicate or out-of-place mouseEntered.");
+  isGood = YES &&
+    view1.mouseExited.callCount === 0 &&
+    view1a.mouseExited.callCount === 0 &&
+    view1b.mouseExited.callCount === 0 &&
+    view2.mouseExited.callCount === 0;
+  ok(isGood, 'No views have received mouseExited.');
+
+  // Move the mouse over view2 to trigger mouseExited on the initial responder chain.
+  SC.RootResponder.responder.mousemove(evt2);
+  equal(view1a.mouseExited.callCount, 1, "The targeted view has received mouseExited");
+  equal(view1.mouseExited.callCount, 1, "The targeted view's parent has received mouseExited");
+  equal(view1b.mouseExited.callCount, 0, "The targeted view's sibling has NOT received mouseExited");
+  equal(view2.mouseExited.callCount, 0, "The targeted view's parent's sibling (the new target) has NOT received mouseExited");
+  equal(view2.mouseEntered.callCount, 1, "The new target has received mouseEntered; circle of life");
+});
+
+/*
+TODO: Mouse clicks.
+*/
+
+/*
+TODO: Touch.
+*/
+
+test('Data dragging', function() {
+  // For this test, we also want to test the default responder actions.
+  var previousDefaultResponder = SC.RootResponder.responder.defaultResponder;
+  var defaultResponder = SC.RootResponder.responder.defaultResponder = SC.Object.create({
+    dataDragDidEnter: CoreTest.stub(),
+    dataDragDidHover: CoreTest.stub(),
+    dataDragDidExit: CoreTest.stub(),
+    dataDragDidDrop: CoreTest.stub()
+  });
+
+  // Make sure we're all at zero.
+  // dataDragEntered
+  var isGood = YES &&
+    view1.dataDragEntered.callCount === 0 &&
+    view1a.dataDragEntered.callCount === 0 &&
+    view1b.dataDragEntered.callCount === 0 &&
+    view2.dataDragEntered.callCount === 0;
+  ok(isGood, 'PRELIM: dataDragEntered has not been called.');
+  // dataDragHovered
+  isGood = YES &&
+    view1.dataDragHovered.callCount === 0 &&
+    view1a.dataDragHovered.callCount === 0 &&
+    view1b.dataDragHovered.callCount === 0 &&
+    view2.dataDragHovered.callCount === 0;
+  ok(isGood, 'PRELIM: dataDragHovered has not been called.');
+  // dataDragExited
+  isGood = YES &&
+    view1.dataDragExited.callCount === 0 &&
+    view1a.dataDragExited.callCount === 0 &&
+    view1b.dataDragExited.callCount === 0 &&
+    view2.dataDragExited.callCount === 0;
+  ok(isGood, 'PRELIM: dataDragExited has not been called.');
+
+
+  // Drag the mouse over view1a to trigger mouseEntered.
+  evt1a.type = 'dragenter';
+  SC.RootResponder.responder.dragenter(evt1a);
+
+  // Test default responder.
+  equal(defaultResponder.dataDragDidEnter.callCount, 1, "The default responder was notified that a drag began over the app");
+  equal(defaultResponder.dataDragDidHover.callCount, 1, "The default responder received dataDragDidHover immediately after dataDragDidEnter");
+  equal(defaultResponder.dataDragDidExit.callCount, 0, "The default responder has NOT received dataDragDidExit");
+
+  // Test the views.
+  equal(view1a.dataDragEntered.callCount, 1, "The targeted view has received dataDragEntered");
+  equal(view1a.dataDragHovered.callCount, 1, "The targeted view has received initial dataDragHovered");
+  equal(view1.dataDragEntered.callCount, 1, "The targeted view's parent has received dataDragEntered");
+  equal(view1.dataDragHovered.callCount, 1, "The targeted view's parent has received initial dataDragHovered");
+  equal(view1b.dataDragEntered.callCount + view1b.dataDragHovered.callCount, 0, "The targeted view's sibling has NOT received dataDragEntered or dataDragHovered");
+  equal(view2.dataDragEntered.callCount + view2.dataDragHovered.callCount, 0, "The targeted view's parent's sibling has NOT received dataDragEntered or dataDragHovered");
+
+  isGood = YES &&
+    view1.dataDragExited.callCount === 0 &&
+    view1a.dataDragExited.callCount === 0 &&
+    view1b.dataDragExited.callCount === 0 &&
+    view2.dataDragExited.callCount === 0;
+  ok(isGood, 'No views have received dataDragExited.');
+
+
+  // Hover the drag and make sure only dataDragHovered is called.
+  evt1a.type = 'dragover';
+  SC.RootResponder.responder.dragover(evt1a);
+
+  // Test the default responder.
+  equal(defaultResponder.dataDragDidEnter.callCount, 1, "The default responder did NOT receive additional dataDragDidEnter on hover");
+  equal(defaultResponder.dataDragDidHover.callCount, 2, "The default responder received additional dataDragDidHover on hover");
+  equal(defaultResponder.dataDragDidExit.callCount, 0, "The default responder has NOT received dataDragDidExit on hover");
+
+  // Test the views.
+  equal(view1a.dataDragHovered.callCount, 2, "The targeted view has received another dataDragHovered");
+  equal(view1.dataDragHovered.callCount, 2, "The targeted view's parent has received another dataDragHovered");
+  equal(view1b.dataDragHovered.callCount, 0, "The targeted view's sibling has NOT received dataDragHovered");
+  equal(view2.dataDragHovered.callCount, 0, "The targeted view's parent's sibling has NOT received dataDragHovered");
+  equal(view1b.dataDragEntered.callCount + view1b.dataDragHovered.callCount, 0, "The targeted view's sibling has NOT received dataDragEntered or dataDragHovered");
+  equal(view2.dataDragEntered.callCount + view2.dataDragHovered.callCount, 0, "The targeted view's parent's sibling has NOT received dataDragEntered or dataDragHovered");
+
+  isGood = YES &&
+    view1.dataDragEntered.callCount === 1 &&
+    view1a.dataDragEntered.callCount === 1 &&
+    view1b.dataDragEntered.callCount === 0 &&
+    view2.dataDragEntered.callCount === 0;
+  ok(isGood, "No views have received duplicate or out-of-place dataDragEntered.");
+  isGood = YES &&
+    view1.dataDragExited.callCount === 0 &&
+    view1a.dataDragExited.callCount === 0 &&
+    view1b.dataDragExited.callCount === 0 &&
+    view2.dataDragExited.callCount === 0;
+  ok(isGood, 'No views have received dataDragExited.');
+
+
+  // Leave view1a and enter view2 to trigger dataDragExited on the initial responder chain.
+  // Note that browsers call the new dragenter prior to the old dragleave.
+  evt2.type = 'dragenter';
+  evt1a.type = 'dragleave';
+  SC.RootResponder.responder.dragenter(evt2);
+  SC.RootResponder.responder.dragleave(evt1a);
+
+  // Check the default responder.
+  equal(defaultResponder.dataDragDidEnter.callCount, 1, "The default responder did NOT receive additional dataDragDidEnter on internal events");
+  equal(defaultResponder.dataDragDidHover.callCount, 4, "The default responder has received dataDragDidHover for each subsequent drag event");
+  equal(defaultResponder.dataDragDidExit.callCount, 0, "The default responder has NOT received dataDragDidExit on internal events");
+
+  // Check the views.
+  equal(view1a.dataDragExited.callCount, 1, "The targeted view has received dataDragExited");
+  equal(view1.dataDragExited.callCount, 1, "The targeted view's parent has received dataDragExited");
+  equal(view1b.dataDragExited.callCount, 0, "The targeted view's sibling has NOT received dataDragExited");
+  equal(view2.dataDragExited.callCount, 0, "The targeted view's parent's sibling (the new target) has NOT received dataDragExited");
+  equal(view2.dataDragEntered.callCount, 1, "The new target has received dataDragEntered; circle of life");
+
+
+  // Leave view2 to test document leaving.
+  evt2.type = 'dragleave';
+  SC.RootResponder.responder.dragleave(evt2);
+
+  // Check the default responder.
+  equal(defaultResponder.dataDragDidEnter.callCount, 1, "The default responder did NOT receive additional dataDragDidEnter on document exit");
+  equal(defaultResponder.dataDragDidHover.callCount, 5, "The default responder received an additional dataDragDidHover event on document exit");
+  equal(defaultResponder.dataDragDidExit.callCount, 1, "The default responder received dataDragDidExit on document exit");
+
+  // Check the views.
+  equal(view1a.dataDragExited.callCount, 1, "The previously-targeted view has NOT received additional dataDragExited on document exit");
+  equal(view1.dataDragExited.callCount, 1, "The previously-targeted view's parent has received dataDragExited");
+  equal(view1b.dataDragExited.callCount, 0, "The previously-targeted view's sibling has NOT received dataDragExited ever basically");
+  equal(view2.dataDragEntered.callCount, 1, "The new target has NOT received additional dataDragEntered on document exit");
+  equal(view2.dataDragExited.callCount, 1, "The new target has received dataDragExited on document exit");
+
+
+  // TODO: Test the 300ms timer to make sure the force-drag-leave works for Firefox (et al. probably).
+
+
+  // Test drop.
+  evt1a.type = 'dragenter';
+  SC.RootResponder.responder.dragenter(evt1a);
+  evt1a.type = 'dragdrop';
+  SC.RootResponder.responder.drop(evt1a);
+
+  // Check the default responder.
+  equal(defaultResponder.dataDragDidDrop.callCount, 1, "The default responder received a dataDragDidDrop event on drop");
+
+  // Check the views.
+  equal(view1a.dataDragDropped.callCount, 1, "The targeted view received a dataDragDropped event");
+  equal(view1.dataDragDropped.callCount, 0, "The targeted view's parent did not receive a dataDragDropped event");
+
+
+  // Clean up our default responder sitch.
+  SC.RootResponder.responder.defaultResponder.destroy();
+  SC.RootResponder.responder.defaultResponder = previousDefaultResponder;
+});
+
+test('Data dragging content types', function() {
+  // Drag the event over view 1a with type 'Files' (should cancel).
+  evt1a.dataTransfer.types = ['Files'];
+  evt1a.dataTransfer.dropEffect = 'copy';
+  SC.RootResponder.responder.dragover(evt1a);
+
+  equal(evt1a.preventDefault.callCount, 1, "The default behavior was prevented for a 'Files' drag");
+  equal(evt1a.dataTransfer.dropEffect, 'none', "The drop effect was set to 'none' for a 'Files' drag");
+
+  // Drag the event over view 1a with type 'text/uri-list' (should cancel).
+  evt1a.dataTransfer.types = ['text/uri-list'];
+  evt1a.dataTransfer.dropEffect = 'copy';
+  SC.RootResponder.responder.dragover(evt1a);
+
+  equal(evt1a.preventDefault.callCount, 2, "The default behavior was prevented for a 'text/uri-list' drag");
+  equal(evt1a.dataTransfer.dropEffect, 'none', "The drop effect was set to 'none' for a 'text/uri-list' drag");
+
+  // Drag the event over view 1a with type 'text/plain' (should not cancel).
+  evt1a.dataTransfer.types = ['text/plain'];
+  evt1a.dataTransfer.dropEffect = 'copy';
+  SC.RootResponder.responder.dragover(evt1a);
+
+  equal(evt1a.preventDefault.callCount, 2, "The default behavior was NOT prevented for a 'text/plain' drag");
+  equal(evt1a.dataTransfer.dropEffect, 'copy', "The drop effect was NOT changed for a 'text/plain' drag");
+
+});
+
+});minispade.register('sproutcore-views/~tests/system/root_responder/root_responder', function() {// ==========================================================================
+// Project:   SproutCore - JavaScript Application Framework
+// Copyright: ©2006-2011 Strobe Inc. and contributors.
+//            ©2008-2011 Apple Inc. All rights reserved.
+// License:   Licensed under MIT license (see license.js)
+// ==========================================================================
+
+// ========================================================================
+// RootResponder Tests
+// ========================================================================
+/*globals module test ok isObj equals expect */
+
+var sub, newPane, oldPane, lightPane, darkPane, myPane, responder;
+
+
+module("SC.RootResponder", {
+	setup: function() {		
+		sub = SC.Object.create({
+			action: function() { var objectA = "hello"; }
+		});
+		
+		newPane = SC.Pane.create({ owner: this});
+		oldPane = SC.Pane.create({ owner: this});
+		lightPane = SC.Pane.create({ owner: this});
+		darkPane = SC.Pane.create({ owner: this});
+		myPane = SC.Pane.create();
+		responder = SC.RootResponder.create({});
+	},
+	
+	teardown: function() {
+		delete sub;
+	}
+	
+	// var objectA, submit = document.createElement('pane');
+	// 
+	//   triggerMe: function() {
+	//     SC.Event.trigger(submit, 'click');
+	//   }
+	//   
+});
+
+test("Basic requirements", function() {
+  expect(2);
+  ok(SC.RootResponder, "SC.RootResponder");
+  ok(SC.RootResponder.responder, "SC.RootResponder.responder");
+});
+
+test("root_responder.makeMainPane() : Should change the new Pane to key view", function() {
+	responder.makeMainPane(newPane);
+	//Checking the mainPane property
+	equal(responder.get('mainPane'),newPane);
+	equal(responder.get('keyPane'), newPane);
+});
+
+test("root_responder.makeMainPane() : Should notify other panes about the changes", function() {
+	responder.makeMainPane(newPane);
+		
+	//Notify other panes about the changes
+	equal(newPane.get('isMainPane'),YES);
+	equal(oldPane.get('isMainPane'),NO);
+	
+});
+
+test("root_responder.makeKeyPane() : Should make the passed pane as the key pane", function() {
+ responder.makeMainPane(oldPane);
+ equal(responder.get('keyPane'), oldPane);
+ 
+ responder.makeKeyPane(lightPane);
+ equal(responder.get('keyPane'),lightPane);
+}); 
+
+test("root_responder.makeKeyPane() : Should make the main pane as the key pane if null is passed", function() {
+ responder.makeMainPane(lightPane);
+ responder.makeKeyPane(oldPane);
+ // newPane is set as the Main pane
+ equal(responder.get('mainPane'),lightPane);
+ // KeyPane is null as it is not set yet 
+ equal(responder.get('keyPane'), oldPane);
+ 
+ responder.makeKeyPane();
+ // KeyPane is set as the mainPane as null is passed 
+ equal(responder.get('keyPane'),lightPane);
+});
+
+test("root_responder.ignoreTouchHandle() : Should ignore TEXTAREA, INPUT, A, and SELECT elements", function () {
+ var wasMobileSafari = SC.browser.isMobileSafari;
+ SC.browser.isMobileSafari = YES;
+
+ ["A", "INPUT", "TEXTAREA", "SELECT"].forEach(function (tag) {
+   ok(responder.ignoreTouchHandle({
+     target: { tagName: tag },
+     allowDefault: SC.K
+   }), "should pass touch events through to &lt;" + tag + "&gt;s");
+ });
+
+ ["AUDIO", "B", "Q", "BR", "BODY", "BUTTON", "CANVAS", "FORM",
+  "IFRAME", "IMG", "OPTION", "P", "PROGRESS", "STRONG",
+  "TABLE", "TBODY", "TR", "TH", "TD", "VIDEO"].forEach(function (tag) {
+   ok(!responder.ignoreTouchHandle({
+     target: { tagName: tag },
+     allowDefault: SC.K
+   }), "should NOT pass touch events through to &lt;" + tag + "&gt;s");
+ });
+
+ SC.browser.isMobileSafari = wasMobileSafari;
+});
+
+//// CLEANUP
+/// Commenting out this two functions as the methods don't exist
+//// confirm with Charles 
+
+
+
+
+/*
+test("root_responder.removePane() : Should be able to remove panes to set", function() {
+	responder.removePane(darkPane);
+		
+	//Notify other panes about the changes
+	equal(responder.get('mainPane'),null);
+});
+
+test("root_responder.addPane() : Should be able to add panes to set", function() {
+	responder.addPane(darkPane);
+		
+	//Notify other panes about the changes
+	equal(responder.get('mainPane'),lightPane);
+});
+
+*/
+
+
+});minispade.register('sproutcore-views/~tests/system/root_responder/target_for_action', function() {// ==========================================================================
+// Project:   SproutCore - JavaScript Application Framework
+// Copyright: ©2006-2011 Apple Inc. and contributors.
+// License:   Licensed under MIT license (see license.js)
+// ==========================================================================
+
+/*global module test equals context ok same $ htmlbody Dummy */
+
+var r, r2, sender, pane, pane2, barView, fooView, defaultResponder;
+var keyPane, mainPane, globalResponder, globalResponderContext, actionSender ;
+
+var CommonSetup = {
+  setup: function() {
+
+    actionSender = null ; // use for sendAction tests
+    var action = function(sender) { actionSender = sender; } ;
+
+    sender = SC.Object.create();
+
+    // default responder for each pane
+    defaultResponder = SC.Object.create({
+      defaultAction: action
+    });
+
+    // global default responder set on RootResponder
+    globalResponder = SC.Object.create({
+      globalAction: action
+    });
+
+    // global default responder as a responder context
+    // set on RootResponder
+    globalResponderContext = SC.Object.createWithMixins(SC.ResponderContext, {
+      globalAction: action
+    });
+
+    // explicit pane
+    pane = SC.Pane.create({
+      acceptsKeyPane: YES,
+      defaultResponder: defaultResponder,
+      childViews: [SC.View.extend({
+        bar: action,  // implement bar action
+        childViews: [SC.View.extend({
+          foo: action // implement foo action
+        })]
+      })],
+
+      paneAction: action
+
+    });
+
+    pane2 = SC.Pane.create({
+      acceptsKeyPane: YES,
+      defaultResponder: defaultResponder,
+      childViews: [SC.View.extend({
+        bar: action,  // implement bar action
+        childViews: [SC.View.extend({
+          foo: action // implement foo action
+        })]
+      })],
+
+      paneAction: action,
+
+      keyAction: action,
+      mainAction: action,
+      globalAction: action
+    });
+
+    keyPane = SC.Pane.create({
+      acceptsKeyPane: YES,
+      keyAction: action
+    });
+    keyPane.firstResponder = keyPane ;
+
+    mainPane = SC.Pane.create({
+      acceptsKeyPane: YES,
+      mainAction: action
+    });
+    mainPane.firstResponder = mainPane ;
+
+    r = SC.RootResponder.create({
+      mainPane: mainPane,
+      keyPane:  keyPane,
+      defaultResponder: globalResponder
+    });
+
+    r2 = SC.RootResponder.create({
+      mainPane: mainPane,
+      keyPane: keyPane,
+      defaultResponder: globalResponderContext
+    });
+
+    barView = pane.childViews[0];
+    ok(barView.bar, 'barView should implement bar');
+
+    fooView = barView.childViews[0];
+    ok(fooView.foo, 'fooView should implement foo');
+
+    // setup dummy namespace
+    window.Dummy = {
+      object: SC.Object.create({ foo: action }),
+      hash: { foo: action }
+    };
+
+  },
+
+  teardown: function() {
+    r = r2 = sender = pane = window.Dummy = barView = fooView = null;
+    defaultResponder = keyPane = mainPane = globalResponder = null;
+    globalResponderContext = null;
+  }
+};
+
+// ..........................................................
+// targetForAction()
+//
+module("SC.RootResponder#targetForAction", CommonSetup);
+
+
+test("pass property path string as target", function() {
+  var result = r.targetForAction('foo', 'Dummy.object');
+
+  equal(result, Dummy.object, 'should find DummyNamespace.object if it implements the action');
+
+  equal(r.targetForAction("foo", "Dummy.hash"), Dummy.hash, 'should return if object found at path and it has function, even if it does not use respondsTo');
+
+  equal(r.targetForAction('bar', 'Dummy.object'), null, 'should return null if found DummyNamepace.object but does not implement action');
+
+  equal(r.targetForAction('foo', 'Dummy.imaginary.item'), null, 'should return null if property path could not resolve');
+});
+
+test("pass real object as target", function() {
+  equal(r.targetForAction('foo', Dummy.object), Dummy.object, 'returns target if respondsTo() action');
+  equal(r.targetForAction('foo', Dummy.hash), Dummy.hash, 'returns target if targets does not implement respondsTo() but does have action');
+  equal(r.targetForAction('bar', Dummy.object), null, 'returns null of target does not implement action name');
+});
+
+test("no target, explicit pane, nested firstResponder", function() {
+
+  pane.set('firstResponder', fooView) ;
+  equal(r.targetForAction('foo', null, null, pane), fooView,
+    'should return firstResponder if implementation action');
+
+  equal(r.targetForAction('bar', null, null, pane), barView,
+    'should return parent of firstResponder');
+
+  equal(r.targetForAction('paneAction', null, null, pane), pane,
+    'should return pane action');
+
+  equal(r.targetForAction('defaultAction', null, null, pane),
+    defaultResponder, 'should return defaultResponder');
+
+  equal(r.targetForAction('imaginaryAction', null, null, pane), null,
+    'should return null for not-found action');
+});
+
+
+test("no target, explicit pane, top-level firstResponder", function() {
+
+  pane.set('firstResponder', barView) ; // fooView is child...
+
+  equal(r.targetForAction('foo', null, null, pane), null,
+    'should NOT return child of firstResponder');
+
+  equal(r.targetForAction('bar', null, null, pane), barView,
+    'should return firstResponder');
+
+  equal(r.targetForAction('paneAction', null, null, pane), pane,
+    'should return pane action');
+
+  equal(r.targetForAction('defaultAction', null, null, pane),
+    defaultResponder, 'should return defaultResponder');
+
+  equal(r.targetForAction('imaginaryAction', null, null, pane), null,
+    'should return null for not-found action');
+});
+
+test("no target, explicit pane, pane is first responder", function() {
+
+  pane.set('firstResponder', pane) ;
+
+  equal(r.targetForAction('foo', null, null, pane), null,
+    'should NOT return child view');
+
+  equal(r.targetForAction('bar', null, null, pane), null,
+    'should NOT return child view');
+
+  equal(r.targetForAction('paneAction', null, null, pane), pane,
+    'should return pane action');
+
+  equal(r.targetForAction('defaultAction', null, null, pane),
+    defaultResponder, 'should return defaultResponder');
+
+  equal(r.targetForAction('imaginaryAction', null, null, pane), null,
+    'should return null for not-found action');
+});
+
+test("no target, explicit pane, no first responder", function() {
+
+  pane.set('firstResponder', null) ;
+
+  equal(r.targetForAction('foo', null, null, pane), null,
+    'should NOT return child view');
+
+  equal(r.targetForAction('bar', null, null, pane), null,
+    'should NOT return child view');
+
+  equal(r.targetForAction('paneAction', null, null, pane), pane,
+    'should return pane');
+
+  equal(r.targetForAction('defaultAction', null, null, pane),
+    defaultResponder, 'should return defaultResponder');
+
+  equal(r.targetForAction('imaginaryAction', null, null, pane), null,
+    'should return null for not-found action');
+
+});
+
+test("no target, explicit pane, does not implement action", function() {
+  equal(r.targetForAction('keyAction', null, null, pane), keyPane,
+    'should return keyPane');
+
+  equal(r.targetForAction('mainAction', null, null, pane), mainPane,
+    'should return mainPane');
+
+  equal(r.targetForAction('globalAction', null, null, pane), globalResponder,
+    'should return global defaultResponder');
+
+  equal(r2.targetForAction('globalAction', null, null, pane), globalResponderContext,
+    'should return global defaultResponder');
+});
+
+test("no target, explicit pane, does implement action", function() {
+  equal(r.targetForAction('keyAction', null, null, pane2), pane2,
+    'should return pane');
+
+  equal(r.targetForAction('mainAction', null, null, pane2), pane2,
+    'should return pane');
+
+  equal(r.targetForAction('globalAction', null, null, pane2), pane2,
+    'should return pane');
+
+  equal(r2.targetForAction('globalAction', null, null, pane2), pane2,
+    'should return pane');
+});
+
+test("no target, no explicit pane", function() {
+  equal(r.targetForAction('keyAction'), keyPane, 'should find keyPane');
+  equal(r.targetForAction('mainAction'), mainPane, 'should find mainPane');
+  equal(r.targetForAction('globalAction'), globalResponder,
+    'should find global defaultResponder');
+  equal(r.targetForAction('imaginaryAction'), null, 'should return null for not-found action');
+  equal(r2.targetForAction('globalAction'), globalResponderContext,
+    'should find global defaultResponder');
+});
+
+// ..........................................................
+// sendAction()
+//
+module("SC.RootResponder#sendAction", CommonSetup) ;
+
+test("if pane passed, invokes action on pane if found", function() {
+  pane.firstResponder = pane;
+  r.sendAction('paneAction', null, sender, pane);
+  equal(actionSender, sender, 'action did invoke');
+
+  actionSender = null;
+  r.sendAction('imaginaryAction', null, sender, pane);
+  equal(actionSender, null, 'action did not invoke');
+});
+
+test("searches panes if none passed, invokes action if found", function() {
+  r.sendAction('keyAction', null, sender);
+  equal(actionSender, sender, 'action did invoke');
+
+  actionSender = null;
+  r.sendAction('imaginaryAction', null, sender);
+  equal(actionSender, null, 'action did not invoke');
+});
+
+test("searches target if passed, invokes action if found", function() {
+  r.sendAction('foo', fooView, sender);
+  equal(actionSender, sender, 'action did invoke');
+
+  actionSender = null;
+  r.sendAction('imaginaryAction', fooView, sender);
+  equal(actionSender, null, 'action did not invoke');
+});
+
+
+});minispade.register('sproutcore-views/~tests/system/utils/offset', function() {// ==========================================================================
+// Project:   SproutCore - JavaScript Application Framework
+// Copyright: ©2006-2011 Strobe Inc. and contributors.
+//            ©2008-2011 Apple Inc. All rights reserved.
+// License:   Licensed under MIT license (see license.js)
+// ==========================================================================
+// ========================================================================
+// SC Miscellaneous Utils Tests - documentOffset
+// ========================================================================
+
+/*global module test htmlbody clearHtmlbody ok equals same */
+
+var pane, view1, view2, view3, view4;
+
+
+
+module("SC.offset", {
+
+  setup: function() {
+
+    htmlbody('<style> .sc-main { height: 2500px; width: 2500px; } </style>');
+
+    SC.RunLoop.begin();
+
+    // Even though a full SC app doesn't really allow the viewport to be scaled or scrolled by default (thus
+    // the offset by viewport will always equal offset by document), we simulate an app that uses a
+    // scrollable viewport to test the validity of the functions.
+    var viewportEl;
+    if (SC.browser.isMobileSafari) {
+      viewportEl = $("[name='viewport']")[0];
+
+      viewportEl.setAttribute('content','initial-scale=0.8, minimum-scale=0.5, maximum-scale=1.2, user-scalable=yes, width=device-height');
+    }
+
+    pane = SC.MainPane.create({
+      childViews: [
+        SC.View.extend({
+          classNames: 'upper'.w(),
+          layout: { top: 20, left: 20, width: 100, height: 100 },
+          childViews: [
+            SC.View.extend({
+              classNames: 'upper-inner'.w(),
+              layout: { top: 10, left: 10, width: 20, height: 20 }
+            })]
+        }),
+        SC.View.extend({
+          classNames: 'lower'.w(),
+          layout: { top: 1200, left: 20, width: 100, height: 100 },
+          childViews: [
+            SC.View.extend({
+              classNames: 'lower-inner'.w(),
+              layout: { top: 10, left: 10, width: 20, height: 20 }
+            })]
+        })]
+
+      // Useful for debugging in iOS
+      // /** Allow default touch events */
+      //  touchStart: function(touch) {
+      //    if (SC.browser.isMobileSafari) touch.allowDefault();
+      //  },
+      //
+      //  touchesDragged: function(evt, touches) {
+      //    if (SC.browser.isMobileSafari) evt.allowDefault();
+      //  },
+      //
+      //  touchEnd: function(touch) {
+      //    if (SC.browser.isMobileSafari) touch.allowDefault();
+      //  }
+    });
+    pane.append();
+    SC.RunLoop.end();
+
+    view1 = pane.childViews[0];
+    view2 = pane.childViews[1];
+    view3 = view1.childViews[0];
+    view4 = view2.childViews[0];
+  },
+
+  teardown: function() {
+    // Useful for debugging in iOS
+    // if (!SC.browser.isMobileSafari) {
+      pane.remove();
+      pane = view1 = view2 = view3 = view4 = null;
+    // }
+
+    clearHtmlbody();
+  }
+});
+
+
+function checkDocumentOffset(element, top, left) {
+  var docOffset = SC.offset(element, 'document');
+
+  equal(docOffset.y, top, '%@ document offset top'.fmt(element[0].className));
+  equal(docOffset.x, left, '%@ document offset left'.fmt(element[0].className));
+}
+
+function checkViewportOffset(element, top, left) {
+  var viewOffset = SC.offset(element, 'viewport');
+
+  equal(viewOffset.y, top, '%@ viewport offset top'.fmt(element[0].className));
+  equal(viewOffset.x, left, '%@ viewport offset left'.fmt(element[0].className));
+}
+
+function checkParentOffset(element, top, left) {
+  var parentOffset = SC.offset(element, 'parent');
+
+  equal(parentOffset.y, top, '%@ parent offset top'.fmt(element[0].className));
+  equal(parentOffset.x, left, '%@ parent offset left'.fmt(element[0].className));
+}
+
+test("Regular views", function() {
+  var element;
+
+  element = view1.$();
+  checkDocumentOffset(element, 20, 20);
+  checkViewportOffset(element, 20, 20);
+  checkParentOffset(element, 20, 20);
+
+  element = view3.$();
+  checkDocumentOffset(element, 30, 30);
+  checkViewportOffset(element, 30, 30);
+  checkParentOffset(element, 10, 10);
+});
+
+test("A regular view not visible within the visual viewport", function() {
+  var element;
+
+  element = view2.$();
+  checkDocumentOffset(element, 1200, 20);
+  checkViewportOffset(element, 1200, 20);
+  checkParentOffset(element, 1200, 20);
+
+  element = view4.$();
+  checkDocumentOffset(element, 1210, 30);
+  checkViewportOffset(element, 1210, 30);
+  checkParentOffset(element, 10, 10);
+});
+
+function testPosition4(element1, element2, element3, element4) {
+  window.scrollTo(100, 100);
+
+  checkDocumentOffset(element1, 20, 20);
+  checkViewportOffset(element1, -80, -80);
+  checkParentOffset(element1, 20, 20);
+
+  checkDocumentOffset(element3, 30, 30);
+  checkViewportOffset(element3, -70, -70);
+  checkParentOffset(element3, 10, 10);
+
+  checkDocumentOffset(element2, 1200, 20);
+  checkViewportOffset(element2, 1100, -80);
+  checkParentOffset(element2, 1200, 20);
+
+  checkDocumentOffset(element4, 1210, 30);
+  checkViewportOffset(element4, 1110, -70);
+  checkParentOffset(element4, 10, 10);
+
+  window.start(); // continue the tests
+}
+
+function testPosition3(element1, element2, element3, element4) {
+  window.scrollTo(10, 100);
+
+  checkDocumentOffset(element1, 20, 20);
+  checkViewportOffset(element1, -80, 10);
+  checkParentOffset(element1, 20, 20);
+
+  checkDocumentOffset(element3, 30, 30);
+  checkViewportOffset(element3, -70, 20);
+  checkParentOffset(element3, 10, 10);
+
+  checkDocumentOffset(element2, 1200, 20);
+  checkViewportOffset(element2, 1100, 10);
+  checkParentOffset(element2, 1200, 20);
+
+  checkDocumentOffset(element4, 1210, 30);
+  checkViewportOffset(element4, 1110, 20);
+  checkParentOffset(element4, 10, 10);
+
+  window.start();
+}
+
+function testPosition2(element1, element2, element3, element4) {
+
+  window.scrollTo(10, 10);
+
+  checkDocumentOffset(element1, 20, 20);
+  checkViewportOffset(element1, 10, 10);
+  checkParentOffset(element1, 20, 20);
+
+  checkDocumentOffset(element3, 30, 30);
+  checkViewportOffset(element3, 20, 20);
+  checkParentOffset(element3, 10, 10);
+
+  checkDocumentOffset(element2, 1200, 20);
+  checkViewportOffset(element2, 1190, 10);
+  checkParentOffset(element2, 1200, 20);
+
+  checkDocumentOffset(element4, 1210, 30);
+  checkViewportOffset(element4, 1200, 20);
+  checkParentOffset(element4, 10, 10);
+
+  window.start();
+}
+
+function testPosition1(element1, element2, element3, element4) {
+  // For some reason, the scroll jumps back to 0,0 if we don't set it here
+  window.scrollTo(0, 10);
+
+  checkDocumentOffset(element1, 20, 20);
+  checkViewportOffset(element1, 10, 20);
+  checkParentOffset(element1, 20, 20);
+
+  checkDocumentOffset(element3, 30, 30);
+  checkViewportOffset(element3, 20, 30);
+  checkParentOffset(element3, 10, 10);
+
+  checkDocumentOffset(element2, 1200, 20);
+  checkViewportOffset(element2, 1190, 20);
+  checkParentOffset(element2, 1200, 20);
+
+  checkDocumentOffset(element4, 1210, 30);
+  checkViewportOffset(element4, 1200, 30);
+  checkParentOffset(element4, 10, 10);
+
+  window.start();
+}
+
+test("A regular view with window scroll offset top:10", function() {
+  var element1 = view1.$(),
+      element2 = view2.$(),
+      element3 = view3.$(),
+      element4 = view4.$();
+
+  window.stop();
+
+  window.scrollTo(0, 10);
+  SC.RunLoop.begin();
+  SC.Timer.schedule({ target: this, action: function() { return testPosition1(element1, element2, element3, element4); }, interval: 200 });
+  SC.RunLoop.end();
+});
+
+test("A regular view with window scroll offset top:10, left: 10", function() {
+  var element1 = view1.$(),
+      element2 = view2.$(),
+      element3 = view3.$(),
+      element4 = view4.$();
+
+  window.stop();
+
+  window.scrollTo(10, 10);
+  SC.RunLoop.begin();
+  SC.Timer.schedule({ target: this, action: function() { return testPosition2(element1, element2, element3, element4); }, interval: 200 });
+  SC.RunLoop.end();
+});
+
+test("A regular view with window scroll offset top:100, left: 10", function() {
+  var element1 = view1.$(),
+      element2 = view2.$(),
+      element3 = view3.$(),
+      element4 = view4.$();
+
+  window.stop();
+
+  window.scrollTo(10, 100);
+  SC.RunLoop.begin();
+  SC.Timer.schedule({ target: this, action: function() { return testPosition3(element1, element2, element3, element4); }, interval: 200 });
+  SC.RunLoop.end();
+});
+
+test("A regular view with window scroll offset top:100, left: 100", function() {
+  var element1 = view1.$(),
+      element2 = view2.$(),
+      element3 = view3.$(),
+      element4 = view4.$();
+
+  window.stop();
+
+  window.scrollTo(100, 100);
+  SC.RunLoop.begin();
+  SC.Timer.schedule({ target: this, action: function() { return testPosition4(element1, element2, element3, element4); }, interval: 200 });
+  SC.RunLoop.end();
+});
+
+});minispade.register('sproutcore-views/~tests/view/animation', function() {// ==========================================================================
+// Project:   SproutCore - JavaScript Application Framework
+// Copyright: ©2006-2011 Strobe Inc. and contributors.
+//            ©2008-2011 Apple Inc. All rights reserved.
+// License:   Licensed under MIT license (see license.js)
+// ==========================================================================
+// ========================================================================
+// View Animation Unit Tests
+// ========================================================================
+/*global module, test, ok, equals, stop, start, expect*/
+
+
+/* These unit tests verify:  animate(). */
+var view, pane, originalSupportsTransitions = SC.platform.supportsCSSTransitions;
+
+function styleFor(view) {
+  if (!view.get('layer')) debugger;
+  return view.get('layer').style;
+}
+
+function transitionFor(view) {
+  return styleFor(view)[SC.browser.experimentalStyleNameFor('transition')];
+}
+
+var commonSetup = {
+  setup: function (wantsAcceleratedLayer) {
+    SC.run(function () {
+      pane = SC.Pane.create({
+        backgroundColor: '#ccc',
+        layout: { top: 0, right: 0, width: 200, height: 200, zIndex: 100 }
+      });
+      pane.append();
+
+      view = SC.View.create({
+        backgroundColor: '#888',
+        layout: { left: 0, top: 0, height: 100, width: 100 },
+        wantsAcceleratedLayer: wantsAcceleratedLayer || NO
+      });
+      pane.appendChild(view);
+    });
+  },
+
+  teardown: function () {
+    pane.remove();
+    pane.destroy();
+  }
+};
+
+if (SC.platform.supportsCSSTransitions) {
+
+  module("ANIMATION", commonSetup);
+
+  asyncTest("should work", function () {
+    expect(2);
+
+    SC.run(function () {
+      view.animate('left', 100, { duration: 1 });
+    });
+
+    setTimeout(function () {
+      equal(transitionFor(view), 'left 1s ease 0s', 'add transition');
+      equal(100, view.get('layout').left, 'left is 100');
+
+      start();
+    }, 5);
+  });
+
+  asyncTest("animate + adjust: no conflict", function () {
+    expect(8);
+
+    SC.run(function () {
+      view.animate('left', 100, { duration: 0.1 });
+      view.adjust('top', 100);
+      view.adjust({ 'width': null, 'right': 100 });
+    });
+
+    setTimeout(function () {
+      equal(view.get('layout').left, 100, 'left is');
+      equal(view.get('layout').top, 100, 'top is');
+      equal(view.get('layout').right, 100, 'right is');
+      equal(view.get('layout').width, undefined, 'width is');
+
+      SC.run(function () {
+        view.animate('top', 200, { duration: 0.1 });
+        view.adjust('left', 0);
+        view.adjust({ 'width': 100, 'right': null });
+      });
+
+      setTimeout(function () {
+        equal(view.get('layout').left, 0, 'left is');
+        equal(view.get('layout').top, 200, 'top is');
+        equal(view.get('layout').right, undefined, 'right is');
+        equal(view.get('layout').width, 100, 'width is');
+
+        start();
+      }, 200);
+    }, 200);
+  });
+
+  asyncTest("animate + adjust: conflict", function () {
+    expect(2);
+
+    SC.run(function () {
+      view.animate('left', 100, { duration: 0.1 });
+      view.adjust('left', 200);
+    });
+
+    setTimeout(function () {
+      equal(view.get('layout').left, 200, 'left is');
+
+      SC.run(function () {
+        view.animate('top', 200, { duration: 0.1 });
+        // Adjust back to current value should still cancel the animation.
+        view.adjust('top', 0);
+      });
+
+      setTimeout(function () {
+        equal(view.get('layout').top, 0, 'top is');
+
+        start();
+      }, 200);
+    }, 200);
+  });
+
+  asyncTest("callbacks work in general", function () {
+    expect(2);
+
+    SC.run(function () {
+      view.animate('left', 100, { duration: 0.5 }, function testCallback () {
+        ok(true, "Callback was called.");
+        equal(view, this, "`this` should be the view");
+        start();
+      });
+    });
+  });
+
+  // asyncTest("callbacks work in general with target method", function () {
+  //   expect(2);
+  //
+  //   var ob = SC.Object.createWithMixins({
+  //     callback: function () {
+  //       ok(true, "Callback was called.");
+  //       equal(ob, this, "`this` should be the target object");
+  //
+  //       start();
+  //     }
+  //   });
+  //
+  //   SC.run(function () {
+  //     view.animate('left', 100, { duration: 0.5 }, ob, 'callback');
+  //   });
+  // });
+  //
+  // asyncTest("callbacks should have appropriate data", function () {
+  //   // stop(2000);
+  //   expect(3)
+  //
+  //   SC.run(function () {
+  //     view.animate('left', 100, { duration: 0.5 }, function (data) {
+  //       // TODO: Test this better
+  //       ok(data.event, "has event");
+  //       equal(data.view, view, "view is correct");
+  //       equal(data.isCancelled, false, "animation is not cancelled");
+  //
+  //       start();
+  //     });
+  //   });
+  // });
+
+  asyncTest("handles delay function string", function () {
+    // stop(2000);
+
+    SC.run(function () {
+      view.animate('left', 100, { duration: 1, delay: 1 });
+    });
+
+    setTimeout(function () {
+      equal(transitionFor(view), 'left 1s ease 1s', 'uses delay');
+
+      start();
+    }, 5);
+  });
+
+  asyncTest("handles timing function string", function () {
+    // stop(2000);
+
+    SC.run(function () {
+      view.animate('left', 100, { duration: 1, timing: 'ease-in' });
+    });
+
+    setTimeout(function () {
+      equal(transitionFor(view), 'left 1s ease-in 0s', 'uses ease-in timing');
+
+      start();
+    }, 5);
+  });
+
+  asyncTest("handles timing function array", function () {
+    // stop(2000);
+
+    SC.run(function () {
+      view.animate('left', 100, { duration: 1, timing: [0.1, 0.2, 0.3, 0.4] });
+    });
+
+    setTimeout(function () {
+      equal(transitionFor(view), 'left 1s cubic-bezier(0.1, 0.2, 0.3, 0.4) 0s', 'uses cubic-bezier timing');
+
+      start();
+    }, 5);
+  });
+
+  asyncTest("should allow multiple keys to be set at once", function () {
+    // stop(2000);
+
+    SC.run(function () {
+      view.animate({ top: 100, left: 100 }, { duration: 1 });
+    });
+
+    setTimeout(function () {
+      equal(transitionFor(view), 'top 1s ease 0s, left 1s ease 0s', 'should add transition');
+      equal(100, view.get('layout').top, 'top is 100');
+      equal(100, view.get('layout').left, 'left is 100');
+
+      start();
+    }, 5);
+  });
+
+  asyncTest("should not animate any keys that don't change", function () {
+    // stop(2000);
+
+    SC.run(function () {
+      view.animate({ top: 0, left: 100 }, { duration: 1 });
+    });
+
+    setTimeout(function () {
+      equal(transitionFor(view), 'left 1s ease 0s', 'should only add left transition');
+      equal(0, view.get('layout').top, 'top is 0');
+      equal(100, view.get('layout').left, 'left is 100');
+
+      start();
+    }, 5);
+  });
+
+  asyncTest("animating height with a centerY layout should also animate margin-top", function () {
+    // stop(2000);
+
+    SC.run(function () {
+      view.adjust({ top: null, centerY: 0 });
+      view.animate({ height: 10 }, { duration: 1 });
+    });
+
+    setTimeout(function () {
+      equal(transitionFor(view), 'height 1s ease 0s, margin-top 1s ease 0s', 'should add height and margin-top transitions');
+      equal(view.get('layout').height, 10, 'height');
+      equal(view.get('layout').centerY, 0, 'centerY');
+
+      start();
+    }, 5);
+  });
+
+  asyncTest("animating width with a centerX layout should also animate margin-left", function () {
+    // stop(2000);
+
+    SC.run(function () {
+      view.adjust({ left: null, centerX: 0 });
+      view.animate({ width: 10 }, { duration: 1 });
+    });
+
+    setTimeout(function () {
+      equal(transitionFor(view), 'width 1s ease 0s, margin-left 1s ease 0s', 'should add width and margin-left transitions');
+      equal(view.get('layout').width, 10, 'width');
+      equal(view.get('layout').centerX, 0, 'centerX');
+
+      start();
+    }, 5);
+  });
+
+  // Pretty sure this does the job
+  // asyncTest("callbacks should be called only once for a grouped animation", function () {
+  //   // stop(2000);
+  //   var stopped = true;
+  //
+  //   expect(1);
+  //
+  //   SC.run(function () {
+  //     view.animate({ top: 100, left: 100, width: 400 }, { duration: 0.5 }, function () {
+  //       ok(stopped, 'callback called back');
+  //       if (stopped) {
+  //         stopped = false;
+  //         // Continue on in a short moment.  Before the test times out, but after
+  //         // enough time for a second callback to possibly come in.
+  //         setTimeout(function () {
+  //           start();
+  //         }, 200);
+  //       }
+  //     });
+  //   });
+  // });
+
+  // This behavior should be up for debate.  Does the callback call immediately, or does it wait until the end of
+  // the specified animation period?  Currently we're calling it immediately.
+  asyncTest("callback should be called immediately when a property is animated to its current value.", function () {
+    // stop(2000);
+
+    expect(1);
+
+    SC.run(function () {
+      view.animate('top', view.get('layout.top'), { duration: 0.5 }, function () {
+        ok(true, 'callback called back');
+
+        start();
+      });
+    });
+  });
+
+  asyncTest("callback should be called when a property is animated with a duration of zero.", function () {
+    // stop(2000);
+
+    expect(1);
+
+    SC.run(function () {
+      view.animate('top', 20, { duration: 0 }, function () {
+        ok(true, 'callback called back');
+        start();
+      });
+    });
+  });
+
+  // asyncTest("multiple animations should be able to run simultaneously", function () {
+  //   // stop(2000);
+  //
+  //   expect(2);
+  //
+  //   SC.run(function () {
+  //     view.animate('top', 100, { duration: 0.25 }, function () {
+  //       console.log('NUMERO UNO')
+  //       ok(true, 'top finished');
+  //     });
+  //
+  //     view.animate('left', 100, { duration: 0.5 }, function () {
+  //       ok(true, 'left finished');
+  //       start();
+  //     });
+  //   });
+  // });
+
+  // asyncTest("altering existing animation should call callback as cancelled", function () {
+  //   // stop(2000);
+  //
+  //   var order = 0;
+  //   expect(6);
+  //
+  //   SC.run(function () {
+  //     view.animate('top', 100, { duration: 0.5 }, function (data) {
+  //       // Test the order to ensure that this is the proper callback that is used.
+  //       equal(order, 0, 'should be called first');
+  //       order = 1;
+  //       equal(data.isCancelled, true, 'first cancelled');
+  //     });
+  //
+  //     // Test calling animate twice in the same run loop.
+  //     view.animate('top', 100, { duration: 0.75 }, function (data) {
+  //       // Test the order to ensure that this is the proper callback that is used.
+  //       equal(order, 1, 'should be called second');
+  //       order = 2;
+  //       equal(data.isCancelled, true, 'second cancelled');
+  //     });
+  //   });
+  //
+  //   setTimeout(function () {
+  //     SC.run(function () {
+  //       view.animate('top', 0, { duration: 0.75 }, function (data) {
+  //         // Test the order to ensure that this is the proper callback that is used.
+  //         equal(order, 2, 'should be called third');
+  //         equal(data.isCancelled, false, 'third not cancelled');
+  //         start();
+  //       });
+  //     });
+  //   }, 100);
+  // });
+
+  asyncTest("should not cancel callback when value hasn't changed", function () {
+    var callbacks = 0, wasCancelled = NO, check = 0;
+    // stop(2000);
+
+    SC.run(function () {
+      // this triggers the initial layoutStyle code
+      view.animate('left', 79, { duration: 0.5 }, function (data) {
+        callbacks++;
+        wasCancelled = data.isCancelled;
+      });
+
+      // this triggers a re-render, re-running the layoutStyle code
+      view.displayDidChange();
+    });
+
+    setTimeout(function () {
+      // capture the callbacks value
+      check = callbacks;
+    }, 250);
+
+    setTimeout(function () {
+      equal(check, 0, "the callback should not have been cancelled initially");
+      equal(callbacks, 1, "the callback should have been fired");
+      equal(wasCancelled, NO, "the callback should not have been cancelled");
+
+      start();
+    }, 1000);
+  });
+
+  // There was a bug in animation that once one property was animated, a null
+  // version of it existed in _activeAnimations, such that when another property
+  // was animated it would throw an exception iterating through _activeAnimations
+  // and not expecting a null value.
+  asyncTest("animating different attributes at different times should not throw an error", function () {
+    // Run test.
+    // stop(2000);
+
+    expect(0);
+
+    // Override and wrap the problematic method to capture the error.
+    view.transitionDidEnd = function () {
+      try {
+        SC.View.prototype.transitionDidEnd.apply(this, arguments);
+        ok(true);
+      } catch (ex) {
+        ok(false);
+      }
+    };
+
+    SC.run(function () {
+      view.animate('left', 75, { duration: 0.2 });
+    });
+
+    setTimeout(function () {
+      SC.run(function () {
+        view.animate('top', 50, { duration: 0.2 });
+      });
+    }, 400);
+
+    setTimeout(function () {
+      start();
+    }, 1000);
+  });
+
+  asyncTest("should handle transform attributes", function () {
+    // stop(2000);
+
+    SC.run(function () {
+      view.animate('rotateX', 45, { duration: 1 });
+    });
+
+    setTimeout(function () {
+      equal(transitionFor(view), SC.browser.experimentalCSSNameFor('transform') + ' 1s ease 0s', 'add transition');
+      equal(styleFor(view)[SC.browser.experimentalStyleNameFor('transform')], 'rotateX(45deg)', 'has both transforms');
+      equal(45, view.get('layout').rotateX, 'rotateX is 45deg');
+
+      start();
+    }, 50);
+  });
+
+  asyncTest("should handle conflicting transform animations", function () {
+    /*global console*/
+    // stop(2000);
+
+    var originalConsoleWarn = console.warn;
+    console.warn = function (warning) {
+      equal(warning, "Developer Warning: Can't animate transforms with different durations, timings or delays! Using the first options specified.", "proper warning");
+    };
+
+    SC.run(function () {
+      view.animate('rotateX', 45, { duration: 1 }).animate('scale', 2, { duration: 2 });
+    });
+
+    setTimeout(function () {
+      expect(5);
+
+      equal(transitionFor(view), SC.browser.experimentalCSSNameFor('transform') + ' 1s ease 0s', 'use duration of first');
+      equal(styleFor(view)[SC.browser.experimentalStyleNameFor('transform')], 'rotateX(45deg) scale(2)');
+      equal(45, view.get('layout').rotateX, 'rotateX is 45deg');
+      equal(2, view.get('layout').scale, 'scale is 2');
+
+      console.warn = originalConsoleWarn;
+
+      start();
+    }, 25);
+  });
+
+  asyncTest("removes animation property when done", function () {
+    // stop(2000);
+
+    SC.run(function () {
+      view.animate({ top: 100, scale: 2 }, { duration: 0.5 });
+    });
+
+    setTimeout(function () {
+      equal(view.get('layout').animateTop, undefined, "animateTop is undefined");
+      equal(view.get('layout').animateScale, undefined, "animateScale is undefined");
+
+      start();
+    }, 1000);
+  });
+
+  asyncTest("Test that cancelAnimation() removes the animation style and fires the callback with isCancelled set.", function () {
+    // stop(2000);
+
+    expect(7);
+
+    SC.run(function () {
+      view.animate({ left: 100 }, { duration: 0.5 }, function (data) {
+        ok(data.isCancelled, "The isCancelled property of the data should be true.");
+      });
+    });
+
+    setTimeout(function () {
+      SC.run(function () {
+        var style = styleFor(view);
+
+        equal(style.left, '100px', 'Tests the left style after animate');
+        equal(style.top, '0px', 'Tests the top style after animate');
+        equal(transitionFor(view), 'left 0.5s ease 0s', 'Tests the CSS transition property');
+        view.cancelAnimation();
+      });
+    }, 5);
+
+    setTimeout(function () {
+      var style = styleFor(view);
+
+      equal(style.left, '100px', 'Tests the left style after cancel');
+      equal(style.top, '0px', 'Tests the top style after cancel');
+      equal(transitionFor(view), '', 'Tests the CSS transition property');
+      start();
+    }, 50);
+  });
+
+  asyncTest("Test that cancelAnimation(SC.LayoutState.CURRENT) removes the animation style, stops at the current position and fires the callback with isCancelled set.", function () {
+    // stop(2000);
+
+    expect(9);
+
+    SC.run(function () {
+      view.animate({ left: 100, top: 100, width: 400 }, { duration: 0.5 }, function (data) {
+        ok(data.isCancelled, "The isCancelled property of the data should be true.");
+      });
+    });
+
+    setTimeout(function () {
+      SC.run(function () {
+        var style = styleFor(view);
+
+        equal(style.left, '100px', 'Tests the left style after animate');
+        equal(style.top, '100px', 'Tests the top style after animate');
+        equal(style.width, '400px', 'Tests the width style after animate');
+        equal(transitionFor(view), 'left 0.5s ease 0s, top 0.5s ease 0s, width 0.5s ease 0s', 'Tests the CSS transition property');
+        view.cancelAnimation(SC.LayoutState.CURRENT);
+      });
+    }, 100);
+
+    setTimeout(function () {
+      var style = styleFor(view);
+
+      ok((parseInt(style.left, 10) > 0) && (parseInt(style.left, 10) < 100), 'Tests the left style after cancel');
+      ok((parseInt(style.top, 10) > 0) && (parseInt(style.top, 10) < 100), 'Tests the top style after cancel');
+      ok((parseInt(style.width, 10) > 100) && (parseInt(style.width, 10) < 400), 'Tests the width style after cancel');
+      equal(transitionFor(view), '', 'Tests the CSS transition property');
+      start();
+    }, 200);
+  });
+
+  asyncTest("Test that cancelAnimation(SC.LayoutState.START) removes the animation style, returns to the start position and fires the callback with isCancelled set.", function () {
+    // stop(2000);
+
+    expect(9);
+
+    SC.run(function () {
+      view.animate({ left: 100, top: 100, width: 400 }, { duration: 0.5 }, function (data) {
+        ok(data.isCancelled, "The isCancelled property of the data should be true.");
+      });
+    });
+
+    setTimeout(function () {
+      SC.run(function () {
+        var style = styleFor(view);
+
+        equal(style.left, '100px', 'Tests the left style after animate');
+        equal(style.top, '100px', 'Tests the top style after animate');
+        equal(style.width, '400px', 'Tests the width style after animate');
+        equal(transitionFor(view), 'left 0.5s ease 0s, top 0.5s ease 0s, width 0.5s ease 0s', 'Tests the CSS transition property');
+        view.cancelAnimation(SC.LayoutState.START);
+      });
+    }, 100);
+
+    setTimeout(function () {
+      var style = styleFor(view);
+
+      equal(style.left, '0px', 'Tests the left style after cancel');
+      equal(style.top, '0px', 'Tests the top style after cancel');
+      equal(style.width, '100px', 'Tests the width style after animate');
+      equal(transitionFor(view), '', 'Tests the CSS transition property');
+      start();
+    }, 200);
+  });
+
+//   if (SC.platform.supportsCSS3DTransforms) {
+//     module("ANIMATION WITH ACCELERATED LAYER", {
+//       setup: function () {
+//         commonSetup.setup(YES);
+//       },
+//
+//       teardown: commonSetup.teardown
+//     });
+//
+//     asyncTest("handles acceleration when appropriate", function () {
+//       // stop(2000);
+//
+//       debugger;
+//
+//       SC.run(function () {
+//         view.animate('top', 100, { duration: 1 });
+//       });
+//
+//       setTimeout(function () {
+//         equal(transitionFor(view), SC.browser.experimentalCSSNameFor('transform') + ' 1s ease 0s', 'transition is on transform');
+//
+//         start();
+//       }, 5);
+//     });
+//
+//     asyncTest("doesn't use acceleration when not appropriate", function () {
+//       // stop(1000);
+//
+//       SC.run(function () {
+//         view.adjust({ height: null, bottom: 0 });
+//         view.animate('top', 100, { duration: 1 });
+//       });
+//
+//       setTimeout(function () {
+//         equal(transitionFor(view), 'top 1s ease 0s', 'transition is not on transform');
+//
+//         start();
+//       }, 5);
+//     });
+//
+//     asyncTest("combines accelerated layer animation with compatible transform animations", function () {
+//       // stop(1000);
+//
+//       SC.run(function () {
+//         view.animate('top', 100, { duration: 1 }).animate('rotateX', 45, { duration: 1 });
+//       });
+//
+//       setTimeout(function () {
+//         var transform = styleFor(view)[SC.browser.experimentalStyleNameFor('transform')];
+//
+//         // We need to check these separately because in some cases we'll also have translateZ, this way we don't have to worry about it
+//         ok(transform.match(/translateX\(0px\) translateY\(100px\)/), 'has translate');
+//         ok(transform.match(/rotateX\(45deg\)/), 'has rotateX');
+//
+//         start();
+//       }, 5);
+//     });
+//
+//     asyncTest("should not use accelerated layer if other transforms are being animated at different speeds", function () {
+//       // stop(1000);
+//       SC.run(function () {
+//         view.animate('rotateX', 45, { duration: 2 }).animate('top', 100, { duration: 1 });
+//       });
+//
+//       setTimeout(function () {
+//         var style = styleFor(view);
+//
+//         equal(style[SC.browser.experimentalStyleNameFor('transform')], 'rotateX(45deg)', 'transform should only have rotateX');
+//         equal(style.top, '100px', 'should not accelerate top');
+//
+//         start();
+//       }, 5);
+//     });
+//
+//     // asyncTest("callbacks should work properly with acceleration", function () {
+//     //   // stop(1000);
+//     //   expect(1);
+//     //
+//     //   SC.run(function () {
+//     //     view.animate({ top: 100, left: 100, scale: 2 }, { duration: 0.25 }, function () {
+//     //       ok(true);
+//     //
+//     //       start();
+//     //     });
+//     //   });
+//     // });
+//
+//     asyncTest("should not add animation for properties that have the same value as existing layout", function () {
+//       var callbacks = 0;
+//
+//       SC.run(function () {
+//         // we set width to the same value, but we change height
+//         view.animate({width: 100, height: 50}, { duration: 0.5 }, function () { callbacks++; });
+//       });
+//
+//       ok(callbacks === 0, "precond - callback should not have been run yet");
+//
+//       // stop(2000);
+//
+//       // we need to test changing the width at a later time
+//       setTimeout(function () {
+//         start();
+//
+//         equal(callbacks, 1, "callback should have been run once, for height change");
+//
+//         SC.run(function () {
+//           view.animate('width', 50, { duration: 0.5 });
+//         });
+//
+//         equal(callbacks, 1, "callback should still have only been called once, even though width has now been animated");
+//       }, 1000);
+//     });
+//
+//     asyncTest("Test that cancelAnimation() removes the animation style and fires the callback with isCancelled set.", function () {
+//       // stop(2000);
+//
+//       SC.run(function () {
+//         view.animate({ left: 100, top: 100, width: 400 }, { duration: 0.5 }, function (data) {
+//           ok(data.isCancelled, "The isCancelled property of the data should be true.");
+//         });
+//       });
+//
+//       setTimeout(function () {
+//         SC.run(function () {
+//           var style = styleFor(view),
+//           transform = style[SC.browser.experimentalStyleNameFor('transform')];
+//           transform = transform.match(/\d+/g);
+//
+//           // We need to check these separately because in some cases we'll also have translateZ, this way we don't have to worry about it
+//           equal(transform[0], '100',  "Test translateX after animate.");
+//           equal(transform[1], '100',  "Test translateY after animate.");
+//
+//           equal(transitionFor(view), SC.browser.experimentalCSSNameFor('transform') + ' 0.5s ease 0s, width 0.5s ease 0s', 'Tests the CSS transition property');
+//
+//           equal(style.left, '0px', 'Tests the left style after animate');
+//           equal(style.top, '0px', 'Tests the top style after animate');
+//           equal(style.width, '400px', 'Tests the width style after animate');
+//
+//           view.cancelAnimation();
+//         });
+//       }, 250);
+//
+//       setTimeout(function () {
+//         var style = styleFor(view);
+//         equal(style.width, '400px', 'Tests the width style after cancel');
+//
+//         var transform = style[SC.browser.experimentalStyleNameFor('transform')];
+//         transform = transform.match(/\d+/g);
+//
+//         equal(transform[0], '100',  "Test translateX after cancel.");
+//         equal(transform[1], '100',  "Test translateY after cancel.");
+//
+//         equal(transitionFor(view), '', 'Tests that there is no CSS transition property after cancel');
+//
+//         start();
+//       }, 350);
+//     });
+//
+//     asyncTest("Test that cancelAnimation(SC.LayoutState.CURRENT) removes the animation style, stops at the current position and fires the callback with isCancelled set.", function () {
+//       // stop(2000);
+//
+//
+//       SC.run(function () {
+//         view.animate({ left: 200, top: 200, width: 400 }, { duration: 1 }, function (data) {
+//           ok(data.isCancelled, "The isCancelled property of the data should be true.");
+//         });
+//       });
+//
+//       setTimeout(function () {
+//         SC.run(function () {
+//           var style = styleFor(view),
+//           transform = style[SC.browser.experimentalStyleNameFor('transform')];
+//           transform = transform.match(/\d+/g);
+//
+//           // We need to check these separately because in some cases we'll also have translateZ, this way we don't have to worry about it
+//           equal(transform[0], '200',  "Test translateX after animate.");
+//           equal(transform[1], '200',  "Test translateY after animate.");
+//           equal(transitionFor(view), SC.browser.experimentalCSSNameFor('transform') + ' 1s ease 0s, width 1s ease 0s', 'Tests the CSS transition property');
+//
+//           equal(style.left, '0px', 'Tests the left style after animate');
+//           equal(style.top, '0px', 'Tests the top style after animate');
+//           equal(style.width, '400px', 'Tests the width style after animate');
+//
+//           view.cancelAnimation(SC.LayoutState.CURRENT);
+//         });
+//       }, 250);
+//
+//       setTimeout(function () {
+//         var style = styleFor(view),
+//           layout = view.get('layout');
+//
+//         equal(transitionFor(view), '', 'Tests that there is no CSS transition property after cancel');
+//
+//         // We need to check these separately because in some cases we'll also have translateZ, this way we don't have to worry about it
+//         ok((layout.left > 0) && (layout.left < 200), 'Tests the left style, %@, after cancel is greater than 0 and less than 200'.fmt(style.left));
+//         ok((layout.top > 0) && (layout.top < 200), 'Tests the top style, %@, after cancel is greater than 0 and less than 200'.fmt(style.top));
+//         ok((parseInt(style.width, 10) > 100) && (parseInt(style.width, 10) < 400), 'Tests the width style, %@, after cancel is greater than 100 and less than 400'.fmt(style.width));
+//         start();
+//       }, 750);
+//     });
+//
+//     asyncTest("Test that cancelAnimation(SC.LayoutState.START) removes the animation style, goes back to the start position and fires the callback with isCancelled set.", function () {
+//       // stop(2000);
+//
+//       // expect(12);
+//
+//       SC.run(function () {
+//         view.animate({ left: 100, top: 100, width: 400 }, { duration: 0.5 }, function (data) {
+//           ok(data.isCancelled, "The isCancelled property of the data should be true.");
+//         });
+//       });
+//
+//       setTimeout(function () {
+//         SC.run(function () {
+//           var style = styleFor(view),
+//           transform = style[SC.browser.experimentalStyleNameFor('transform')];
+//           equal(style.left, '0px', 'Tests the left style after animate');
+//           equal(style.top, '0px', 'Tests the top style after animate');
+//           equal(style.width, '400px', 'Tests the width style after animate');
+//
+//           transform = transform.match(/\d+/g);
+//
+//           // We need to check these separately because in some cases we'll also have translateZ, this way we don't have to worry about it
+//           equal(transform[0], '100',  "Test translateX after animate.");
+//           equal(transform[1], '100',  "Test translateY after animate.");
+//
+//           equal(transitionFor(view), SC.browser.experimentalCSSNameFor('transform') + ' 0.5s ease 0s, width 0.5s ease 0s', 'Tests the CSS transition property');
+//           view.cancelAnimation(SC.LayoutState.START);
+//         });
+//       }, 250);
+//
+//       setTimeout(function () {
+//         var style = styleFor(view);
+//
+//         var transform = style[SC.browser.experimentalStyleNameFor('transform')];
+//         transform = transform.match(/\d+/g);
+//
+//         equal(transitionFor(view), '', 'Tests that there is no CSS transition property after cancel');
+//
+//         // We need to check these separately because in some cases we'll also have translateZ, this way we don't have to worry about it
+//         equal(transform[0], '0',  "Test translateX after cancel.");
+//         equal(transform[1], '0',  "Test translateY after cancel.");
+//         equal(style.width, '100px', 'Tests the width style after cancel');
+//         start();
+//       }, 350);
+//     });
+//   } else {
+//     test("This platform appears to not support CSS 3D transforms.");
+//   }
+} else {
+  test("This platform appears to not support CSS transitions.");
+}
+//
+// module("ANIMATION WITHOUT TRANSITIONS", {
+//   setup: function () {
+//     commonSetup.setup();
+//     SC.platform.supportsCSSTransitions = NO;
+//   },
+//
+//   teardown: function () {
+//     commonSetup.teardown();
+//     SC.platform.supportsCSSTransitions = originalSupportsTransitions;
+//   }
+// });
+//
+// asyncTest("should update layout", function () {
+//   // stop(2000);
+//   SC.run(function () {
+//     view.animate('left', 100, { duration: 1 });
+//   });
+//
+//   setTimeout(function () {
+//     equal(view.get('layout').left, 100, 'left is 100');
+//     start();
+//   }, 5);
+// });
+//
+// // asyncTest("should still run callback", function () {
+// //   // stop(2000);
+// //
+// //   expect(1);
+// //
+// //   SC.run(function () {
+// //     view.animate({ top: 200, left: 100 }, { duration: 1 }, function () {
+// //       ok(true, "callback called");
+// //       start();
+// //     });
+// //   });
+// // });
+//
+// module("Animating in the next run loop", commonSetup);
+//
+// asyncTest("Calling animate while flusing the invokeNext queue should not throw an exception", function () {
+//   try {
+//     SC.run(function () {
+//       SC.run.scheduleOnce('afterRender', view, function () {
+//         this.animate({ top: 250 }, { duration: 1 });
+//       });
+//
+//       view.animate({ top: 200 }, { duration: 1 });
+//     });
+//
+//     SC.run(function () {
+//       // The first call to _animate and the function with animate in it run.
+//     });
+//
+//     SC.run(function () {
+//       // The second call to _animate from the function with animate in it.
+//     });
+//   } catch (ex) {
+//     ok(false, "failure");
+//   }
+//
+//   ok(true, "success");
+// });
+
+});minispade.register('sproutcore-views/~tests/view/attribute_bindings_test', function() {// ==========================================================================
+// Project:   SproutCore - JavaScript Application Framework
+// Copyright: ©2006-2011 Apple Inc. and contributors.
+// License:   Licensed under MIT license (see license.js)
+// ==========================================================================
+/*global module test equals context ok same */
+
+module("SC.CoreView - Attribute Bindings");
+
+test("should render and update attribute bindings", function() {
+  var view = SC.View.create({
+    classNameBindings: ['priority', 'isUrgent', 'isClassified:classified', 'canIgnore'],
+    attributeBindings: ['type', 'exploded', 'destroyed', 'exists', 'explosions'],
+
+    type: 'reset',
+    exploded: true,
+    destroyed: true,
+    exists: false,
+    explosions: 15
+  });
+
+  view.createLayer();
+  equal(view.$().attr('type'), 'reset', "adds type attribute");
+  ok(view.$().attr('exploded'), "adds exploded attribute when true");
+  ok(view.$().attr('destroyed'), "adds destroyed attribute when true");
+  ok(!view.$().attr('exists'), "does not add exists attribute when false");
+  equal(view.$().attr('explosions'), "15", "adds integer attributes");
+
+  view.set('type', 'submit');
+  view.set('exploded', false);
+  view.set('destroyed', false);
+  view.set('exists', true);
+
+  equal(view.$().attr('type'), 'submit', "updates type attribute");
+  ok(!view.$().attr('exploded'), "removes exploded attribute when false");
+  ok(!view.$().attr('destroyed'), "removes destroyed attribute when false");
+  ok(view.$().attr('exists'), "adds exists attribute when true");
+});
+
+});minispade.register('sproutcore-views/~tests/view/background_color', function() {// ==========================================================================
+// Project:   SproutCore - JavaScript Application Framework
+// Copyright: ©2006-2011 Strobe Inc. and contributors.
+//            ©2008-2011 Apple Inc. All rights reserved.
+// License:   Licensed under MIT license (see license.js)
+// ==========================================================================
+
+module("SC.View - backgroundColor");
+
+test("Basic use", function() {
+  var view = SC.View.create({
+    backgroundColor: "red"
+  });
+
+  view.createLayer();
+
+  equal(view.get('layer').style.backgroundColor, "red", "backgroundColor sets the CSS background-color value");
+
+});
+
+test("Dynamic use", function() {
+  var view = SC.View.create({
+    backgroundColor: 'red',
+    displayProperties: ['backgroundColor']
+  });
+  
+  view.createLayer();
+  view.viewState = SC.View.ATTACHED_SHOWN; // hack to get view properties to update.
+
+  equal(view.get('layer').style.backgroundColor, 'red', "PRELIM: backgroundColor sets the CSS background-color value");
+
+  SC.run(function() {
+    view.set('backgroundColor', 'blue');
+  });
+
+  equal(view.get('layer').style.backgroundColor, 'blue', "Changing backgroundColor when it is a display property updates the CSS background-color value");
+
+  SC.run(function() {
+    view.set('backgroundColor', null);
+  });
+
+  ok(!view.get('layer').style.backgroundColor, "Setting backgroundColor to null clears the CSS background-color value");
+
+});
+
+});minispade.register('sproutcore-views/~tests/view/border_frame_test', function() {// ==========================================================================
+// Project:   Showcase
+// Copyright: ©2012 7x7 Software, Inc.
+// License:   Licensed under MIT license
+// ==========================================================================
+/*global module, test, same*/
+
+var view;
+module("SC.View#borderFrame", {
+  setup: function () {
+    SC.run(function () {
+      view = SC.View.create({
+        layout: { width: 100, height: 100 }
+      });
+    });
+  },
+
+  teardown: function () {
+    view.destroy();
+    view = null;
+  }
+});
+
+test("The borderFrame property of the view should include the borders from the layout.", function () {
+  var borderFrame,
+    frame;
+
+  // No borders.
+  frame = view.get('frame');
+  borderFrame = view.get('borderFrame');
+
+  deepEqual(frame, { x: 0, y: 0, width: 100, height: 100 }, "The frame without borders is");
+  deepEqual(borderFrame, { x: 0, y: 0, width: 100, height: 100 }, "The borderFrame without borders is");
+
+  // Right 5px border.
+  SC.run(function () {
+    view.adjust('borderRight', 5);
+  });
+
+  frame = view.get('frame');
+  borderFrame = view.get('borderFrame');
+
+  deepEqual(frame, { x: 0, y: 0, width: 95, height: 100 }, "The frame with 5px right border is");
+  deepEqual(borderFrame, { x: 0, y: 0, width: 100, height: 100 }, "The borderFrame with 5px right border is");
+
+  // Top 10px border.
+  SC.run(function () {
+    view.adjust('borderTop', 10);
+  });
+
+  frame = view.get('frame');
+  borderFrame = view.get('borderFrame');
+
+  deepEqual(frame, { x: 0, y: 10, width: 95, height: 90 }, "The frame with 5px right border & 10px top border is");
+  deepEqual(borderFrame, { x: 0, y: 0, width: 100, height: 100 }, "The borderFrame with 5px right border & 10px top border is");
+
+  // Left 15px border.
+  SC.run(function () {
+    view.adjust('borderLeft', 15);
+  });
+
+  frame = view.get('frame');
+  borderFrame = view.get('borderFrame');
+
+  deepEqual(frame, { x: 15, y: 10, width: 80, height: 90 }, "The frame with 5px right border & 10px top border & 15px left border is");
+  deepEqual(borderFrame, { x: 0, y: 0, width: 100, height: 100 }, "The borderFrame with 5px right border & 10px top border & 15px left border is");
+
+  // Bottom 20px border.
+  SC.run(function () {
+    view.adjust('borderBottom', 20);
+  });
+
+  frame = view.get('frame');
+  borderFrame = view.get('borderFrame');
+
+  deepEqual(frame, { x: 15, y: 10, width: 80, height: 70 }, "The frame with 5px right border & 10px top border & 15px left border & 20px bottom border is");
+  deepEqual(borderFrame, { x: 0, y: 0, width: 100, height: 100 }, "The borderFrame with 5px right border & 10px top border & 15px left border & 20px bottom border is");
+
+  // 25px border.
+  SC.run(function () {
+    view.set('layout', { width: 100, height: 100, border: 25 });
+  });
+
+  frame = view.get('frame');
+  borderFrame = view.get('borderFrame');
+
+  deepEqual(frame, { x: 25, y: 25, width: 50, height: 50 }, "The frame with 25px border is");
+  deepEqual(borderFrame, { x: 0, y: 0, width: 100, height: 100 }, "The borderFrame with 25px border is");
+
+});
+
+
+test("The borderFrame property of the view should be correct for view with useStaticLayout.", function () {
+  var borderFrame,
+    frame,
+    pane;
+
+  view.set('useStaticLayout', true);
+
+  frame = view.get('frame');
+  borderFrame = view.get('borderFrame');
+
+  deepEqual(frame, null, "The frame with useStaticLayout true is");
+  deepEqual(borderFrame, null, "The borderFrame with useStaticLayout true is");
+
+  SC.run(function () {
+    pane = SC.Pane.create({
+      childViews: [view]
+    }).append();
+  });
+
+  frame = view.get('frame');
+  borderFrame = view.get('borderFrame');
+
+  deepEqual(frame, { x: 0, y: 0, width: 100, height: 100 }, "The frame with useStaticLayout true after rendering is");
+  deepEqual(borderFrame, { x: 0, y: 0, width: 100, height: 100 }, "The borderFrame with useStaticLayout true after rendering is");
+
+  // Right 5px border.
+  SC.run(function () {
+    view.adjust('borderRight', 5);
+  });
+
+  frame = view.get('frame');
+  borderFrame = view.get('borderFrame');
+
+  deepEqual(frame, { x: 0, y: 0, width: 95, height: 100 }, "The frame with 5px right border is");
+  deepEqual(borderFrame, { x: 0, y: 0, width: 100, height: 100 }, "The borderFrame with 5px right border is");
+
+  // Top 10px border.
+  SC.run(function () {
+    view.adjust('borderTop', 10);
+  });
+
+  frame = view.get('frame');
+  borderFrame = view.get('borderFrame');
+
+  deepEqual(frame, { x: 0, y: 10, width: 95, height: 90 }, "The frame with 5px right border & 10px top border is");
+  deepEqual(borderFrame, { x: 0, y: 0, width: 100, height: 100 }, "The borderFrame with 5px right border & 10px top border is");
+
+  // Left 15px border.
+  SC.run(function () {
+    view.adjust('borderLeft', 15);
+  });
+
+  frame = view.get('frame');
+  borderFrame = view.get('borderFrame');
+
+  deepEqual(frame, { x: 15, y: 10, width: 80, height: 90 }, "The frame with 5px right border & 10px top border & 15px left border is");
+  deepEqual(borderFrame, { x: 0, y: 0, width: 100, height: 100 }, "The borderFrame with 5px right border & 10px top border & 15px left border is");
+
+  // Bottom 20px border.
+  SC.run(function () {
+    view.adjust('borderBottom', 20);
+  });
+
+  frame = view.get('frame');
+  borderFrame = view.get('borderFrame');
+
+  deepEqual(frame, { x: 15, y: 10, width: 80, height: 70 }, "The frame with 5px right border & 10px top border & 15px left border & 20px bottom border is");
+  deepEqual(borderFrame, { x: 0, y: 0, width: 100, height: 100 }, "The borderFrame with 5px right border & 10px top border & 15px left border & 20px bottom border is");
+
+  // 25px border.
+  SC.run(function () {
+    view.set('layout', { width: 100, height: 100, border: 25 });
+  });
+
+  frame = view.get('frame');
+  borderFrame = view.get('borderFrame');
+
+  deepEqual(frame, { x: 25, y: 25, width: 50, height: 50 }, "The frame with 25px border is");
+  deepEqual(borderFrame, { x: 0, y: 0, width: 100, height: 100 }, "The borderFrame with 25px border is");
+
+  pane.destroy();
+});
+
+});minispade.register('sproutcore-views/~tests/view/build', function() {// ==========================================================================
+// Project:   SproutCore - JavaScript Application Framework
+// Copyright: ©2006-2011 Apple Inc. and contributors.
+// License:   Licensed under MIT license (see license.js)
+// ==========================================================================
+/*global module test ok */
+
+var buildableView, parent;
+module('SC.Buildable', {
+  setup: function () {
+    parent = SC.View.create();
+    buildableView = SC.View.create({
+      buildIn: function () {
+        this.called_any = YES;
+        this.called_buildIn = YES;
+      },
+
+      resetBuild: function () {
+        this.called_any = YES;
+        this.called_resetBuild = YES;
+      },
+
+      buildOut: function () {
+        this.called_any = YES;
+        this.called_buildOut = YES;
+      },
+
+      buildOutDidCancel: function () {
+        this.called_any = YES;
+        this.called_buildOutDidCancel = YES;
+      },
+
+      buildInDidCancel: function () {
+        this.called_any = YES;
+        this.called_buildInDidCancel = YES;
+      }
+    });
+  },
+
+  teardown: function () {
+    parent.destroy();
+    buildableView.destroy();
+  }
+});
+
+test("resetBuildState calls resetBuild", function (){
+  ok(!buildableView.called_any, "Nothing should have happened yet.");
+  buildableView.resetBuildState();
+  ok(buildableView.called_resetBuild, "reset should have been called");
+});
+
+test("changing parent view calls resetBuild", function () {
+  ok(!buildableView.called_any, "Nothing should have happened yet.");
+  parent.appendChild(buildableView);
+  ok(buildableView.called_resetBuild, "reset should have been called");
+});
+
+test("buildInToView starts build in", function () {
+  buildableView.willBuildInToView(parent);
+  ok(!buildableView.isBuildingIn, "Should not be building in yet.");
+  buildableView.buildInToView(parent);
+  ok(buildableView.isBuildingIn, "Should now be building in.");
+  ok(buildableView.called_buildIn, "Build in should have been called.");
+});
+
+test("buildOutFromView starts build out", function () {
+  buildableView.willBuildInToView(parent);
+  buildableView.buildInToView(parent);
+  buildableView.buildInDidFinish(); // hack this in here, because our implementations above purposefully don't.
+
+  ok(!buildableView.isBuildingOut, "Should not yet be building out.");
+  buildableView.buildOutFromView(parent);
+  ok(buildableView.isBuildingOut, "View should now be building out.");
+});
+
+test("resetBuildState cancels buildOut", function () {
+  buildableView.willBuildInToView(parent);
+  buildableView.buildInToView(parent);
+  buildableView.buildInDidFinish(); // hack this in here, because our implementations above purposefully don't.
+
+  buildableView.buildOutFromView(parent);
+  ok(buildableView.isBuildingOut, "View should now be building out.");
+
+  buildableView.resetBuildState(parent);
+  ok(!buildableView.isBuildingOut, "View should no longer be building out.");
+  ok(buildableView.called_buildOutDidCancel, "Cancel ought to have been called.");
+});
+
+});minispade.register('sproutcore-views/~tests/view/build_children', function() {// ==========================================================================
+// Project:   SproutCore - JavaScript Application Framework
+// Copyright: ©2006-2011 Apple Inc. and contributors.
+// License:   Licensed under MIT license (see license.js)
+// ==========================================================================
+/*global module test equals context ok same */
+
+var buildableView, parent;
+module('SC.Buildable', {
+  setup: function() {
+    parent = SC.View.create({
+      buildInDidFinishFor: function() {
+        this._super();
+        this.called_buildInDidFinishFor = YES;
+      },
+      buildOutDidFinishFor: function() {
+        this._super();
+        this.called_buildOutDidFinishFor = YES;
+      }
+    });
+    buildableView = SC.View.create({
+      buildIn: function() {
+        this.called_any = YES;
+        this.called_buildIn = YES;
+      },
+      
+      resetBuild: function() {
+        this.called_any = YES;
+        this.called_resetBuild = YES;
+      },
+      
+      buildOut: function() {
+        this.called_any = YES;
+        this.called_buildOut = YES;
+      },
+      
+      buildOutDidCancel: function() {
+        this.called_any = YES;
+        this.called_buildOutDidCancel = YES;
+      },
+      
+      buildInDidCancel: function() {
+        this.called_any = YES;
+        this.called_buildInDidCancel = YES;
+      }
+    });
+  },
+  
+  teardown: function() {
+  }
+});
+
+test("Calling buildInChild adds child and builds it in.", function(){
+  var v = buildableView, p = parent;
+  p.buildInChild(v);
+  
+  // check right after build in is called
+  ok(v.called_buildIn, "child started build in.");
+  ok(v.isBuildingIn, "child is building in.");
+  ok(!p.called_buildInDidFinishFor, "child has not finished building in, according to parent.");
+  
+  // the parent view should be set already
+  equal(v.get("parentView"), p, "Parent view should be the parent");
+  
+  // finish build in
+  v.buildInDidFinish();
+  
+  // now check that the view registered that finish
+  ok(p.called_buildInDidFinishFor, "child has finished building in, according to parent.");
+});
+
+
+test("Calling buildOutChild builds out the child, and only removes it when done.", function() {
+  var v = buildableView, p = parent;
+  p.buildInChild(v);
+  v.buildInDidFinish();
+  
+  p.buildOutChild(v);
+  ok(v.called_buildOut, "child started build out.");
+  ok(v.isBuildingOut, "child is building out.");
+  ok(!p.called_buildOutDidFinishFor, "child has not finished building out, according to parent.");
+  equal(v.get("parentView"), p, "Parent view should still be the former parent");
+  
+  // finish build out
+  v.buildOutDidFinish();
+  
+  ok(p.called_buildOutDidFinishFor, "child has finished building out, according to parent.");
+  equal(v.get("parentView"), null, "Parent view is now null");
+});
+
+});minispade.register('sproutcore-views/~tests/view/childViewLayout_test', function() {// ==========================================================================
+// Project:   SproutCore - JavaScript Application Framework
+// Copyright: ©2013 7x7 Software, Inc.
+// License:   Licensed under MIT license (see license.js)
+// ==========================================================================
+
+/*global module, test, equals, ok */
+
+var view;
+
+/** Test the SC.View states. */
+module("SC.View:childViewLayout", {
+
+  setup: function () {
+    view = SC.View.create();
+  },
+
+  teardown: function () {
+    view.destroy();
+    view = null;
+  }
+
+});
+
+test("basic VERTICAL_STACK", function () {
+  SC.run(function() {
+    view = SC.View.create({
+
+      childViewLayout: SC.View.VERTICAL_STACK,
+
+      childViewLayoutOptions: {
+        paddingBefore: 10,
+        paddingAfter: 20,
+        spacing: 5
+      },
+      childViews: ['sectionA', 'sectionB', 'sectionC'],
+      layout: { left: 10, right: 10, top: 20 },
+      sectionA: SC.View.design({
+        layout: { height: 100 }
+      }),
+
+      sectionB: SC.View.design({
+        layout: { border: 1, height: 50 }
+      }),
+
+      sectionC: SC.View.design({
+        layout: { left: 10, right: 10, height: 120 }
+      })
+
+    });
+  });
+
+  equal(view.sectionA.layout.top, 10, "sectionA top should be 10");
+  equal(view.sectionB.layout.top, 115, "sectionB top should be 115");
+  equal(view.sectionC.layout.top, 170, "sectionC top should be 170");
+  equal(view.layout.height, 310, "view height should be 310");
+
+});
+
+test("basic HORIZONTAL_STACK", function () {
+  SC.run(function() {
+    view = SC.View.create({
+      childViewLayout: SC.View.HORIZONTAL_STACK,
+      childViewLayoutOptions: {
+        paddingBefore: 10,
+        paddingAfter: 20,
+        spacing: 5
+      },
+      childViews: ['sectionA', 'sectionB', 'sectionC'],
+      layout: { left: 10, bottom: 20, top: 20 },
+
+      sectionA: SC.View.design({
+        layout: { width: 100 }
+      }),
+
+      sectionB: SC.View.design({
+        layout: { border: 1, width: 50 }
+      }),
+
+      sectionC: SC.View.design({
+        layout: { top: 10, bottom: 10, width: 120 }
+      })
+    });
+  });
+
+  equal(view.sectionA.layout.left, 10, "sectionA left should be 10");
+  equal(view.sectionB.layout.left, 115, "sectionB left should be 115");
+  equal(view.sectionC.layout.left, 170, "sectionC left should be 170");
+  equal(view.layout.width, 310, "view width should be 310");
+
+});
+
+});minispade.register('sproutcore-views/~tests/view/class_name_bindings_test', function() {// ==========================================================================
+// Project:   SproutCore - JavaScript Application Framework
+// Copyright: ©2006-2011 Apple Inc. and contributors.
+// License:   Licensed under MIT license (see license.js)
+// ==========================================================================
+/*global module test equals context ok same */
+
+module("SC.CoreView - Class Name Bindings");
+
+test("should apply bound class names to the element", function() {
+  var view = SC.View.create({
+    classNameBindings: ['priority', 'isUrgent', 'isClassified:classified', 'canIgnore'],
+
+    priority: 'high',
+    isUrgent: true,
+    isClassified: true,
+    canIgnore: false
+  });
+
+  view.createLayer();
+  ok(view.$().hasClass('high'), "adds string values as class name");
+  ok(view.$().hasClass('is-urgent'), "adds true Boolean values by dasherizing");
+  ok(view.$().hasClass('classified'), "supports customizing class name for Boolean values");
+  ok(!view.$().hasClass('can-ignore'), "does not add false Boolean values as class");
+});
+
+test("should add, remove, or change class names if changed after element is created", function() {
+  var view = SC.View.create({
+    classNameBindings: ['priority', 'isUrgent', 'isClassified:classified', 'canIgnore'],
+
+    priority: 'high',
+    isUrgent: true,
+    isClassified: true,
+    canIgnore: false
+  });
+
+  view.createLayer();
+
+  view.set('priority', 'orange');
+  view.set('isUrgent', false);
+  view.set('isClassified', false);
+  view.set('canIgnore', true);
+
+  ok(view.$().hasClass('orange'), "updates string values");
+  ok(!view.$().hasClass('high'), "removes old string value");
+
+  ok(!view.$().hasClass('is-urgent'), "removes dasherized class when changed from true to false");
+  ok(!view.$().hasClass('classified'), "removes customized class name when changed from true to false");
+  ok(view.$().hasClass('can-ignore'), "adds dasherized class when changed from false to true");
+});
+
+test("should preserve class names applied via classNameBindings when view layer is updated",
+function(){
+  var view = SC.View.create({
+    classNameBindings: ['isUrgent', 'isClassified:classified'],
+    isClassified: true,
+    isUrgent: false
+  });
+  view.createLayer();
+  ok(!view.$().hasClass('can-ignore'), "does not add false Boolean values as class");
+  ok(view.$().hasClass('classified'), "supports customizing class name for Boolean values");
+  view.set('isClassified', false);
+  view.set('isUrgent', true);
+  ok(view.$().hasClass('is-urgent'), "adds dasherized class when changed from false to true");
+  ok(!view.$().hasClass('classified'), "removes customized class name when changed from true to false");
+  view.set('layerNeedsUpdate', YES);
+  view.updateLayer();
+  ok(view.$().hasClass('is-urgent'), "still has class when view display property is updated");
+  ok(!view.$().hasClass('classified'), "still does not have customized class when view display property is updated");
+});
+
+});minispade.register('sproutcore-views/~tests/view/clippingFrame', function() {// ==========================================================================
+// Project:   SproutCore - JavaScript Application Framework
+// Copyright: ©2006-2011 Apple Inc. and contributors.
+// License:   Licensed under MIT license (see license.js)
+// ==========================================================================
+
+/*global module test equals context ok same $ htmlbody */
+
+var pane, a, aa ;
+module("SC.View#clippingFrame", {
+  setup: function() {
+    htmlbody('<style> .sc-view { border: 1px blue solid; position: absolute;  overflow: hidden; }</style>');
+    SC.RunLoop.begin();
+    pane = SC.Pane.design()
+      .layout({ top: 0, left: 0, width: 200, height: 200 })
+      .childView(SC.View.design()
+        .layout({ top: 50, left: 50, width: 100, height: 100 })
+        .childView(SC.View.design()
+          .layout({ top: 20, left: 20, width: 40, height: 40 })))
+      .create();
+    pane.append();
+    a = pane.childViews[0];
+    aa = a.childViews[0];
+  },
+
+  teardown: function() {
+    pane.remove();
+    pane.destroy();
+    pane = a = aa = null ;
+    SC.RunLoop.end();
+    clearHtmlbody();
+  }
+});
+
+test("clippingFrame === frame w/ 0 offset if not partially hidden", function() {
+  var result = pane.get('clippingFrame'), expected = pane.get('frame');
+  expected.x = expected.y = 0 ;
+  deepEqual(result, expected, 'pane');
+
+  result = a.get('clippingFrame'); expected = a.get('frame');
+  expected.x = expected.y = 0 ;
+  deepEqual(result, expected, 'child');
+
+  result = aa.get('clippingFrame'); expected = aa.get('frame');
+  expected.x = expected.y = 0 ;
+  deepEqual(result, expected, 'nested child');
+});
+
+test("cuts off top of frame", function() {
+  var result, expected;
+
+  a.adjust('top', -50);
+  result = a.get('clippingFrame'); expected = a.get('frame');
+  expected.x = 0 ; expected.y = 50 ; expected.height = 50 ;
+  deepEqual(result, expected, 'child');
+
+  result = aa.get('clippingFrame'); expected = aa.get('frame');
+  expected.x = 0 ; expected.y = 30 ; expected.height = 10 ;
+  deepEqual(result, expected, 'nested child');
+});
+
+test("cuts off bottom of frame", function() {
+  var result, expected;
+
+  a.adjust('top', 150);
+  result = a.get('clippingFrame'); expected = a.get('frame');
+  expected.x = 0 ; expected.y = 0 ; expected.height = 50 ;
+  deepEqual(result, expected, 'child');
+
+  result = aa.get('clippingFrame'); expected = aa.get('frame');
+  expected.x = 0 ; expected.y = 0 ; expected.height = 30 ;
+  deepEqual(result, expected, 'nested child');
+});
+
+test("cuts off left of frame", function() {
+  var result, expected;
+
+  a.adjust('left', -50);
+  result = a.get('clippingFrame'); expected = a.get('frame');
+  expected.y = 0 ; expected.x = 50 ; expected.width = 50 ;
+  deepEqual(result, expected, 'child');
+
+  result = aa.get('clippingFrame'); expected = aa.get('frame');
+  expected.y = 0 ; expected.x = 30 ; expected.width = 10 ;
+  deepEqual(result, expected, 'nested child');
+});
+
+test("cuts off right of frame", function() {
+  var result, expected;
+
+  a.adjust('left', 150);
+  result = a.get('clippingFrame'); expected = a.get('frame');
+  expected.y = 0 ; expected.x = 0 ; expected.width = 50 ;
+  deepEqual(result, expected, 'child');
+
+  result = aa.get('clippingFrame'); expected = aa.get('frame');
+  expected.y = 0 ; expected.x = 0 ; expected.width = 30 ;
+  deepEqual(result, expected, 'nested child');
+});
+
+test("notifies receiver and each child if parent clipping frame changes", function() {
+  var callCount = 0;
+
+  // setup observers
+  function observer() { callCount++; }
+  a.addObserver('clippingFrame', observer);
+  aa.addObserver('clippingFrame', observer);
+
+  // now, adjust layout of child so that clipping frame will change...
+  a.adjust('top', -50);
+
+  // IMPORTANT:  If this test fails because the callCount is > 2 it means that
+  // when you set the layout, the frame is getting invalidated more than once.
+  // This should not happen.  If this is the case, fix the view code so that
+  // it does not invalidate frame more than once before you change this
+  // number.
+  equal(callCount, 2, 'should invoke observer on child and nested child');
+});
+
+test("returns 0, 0, W, H if parentView has no clippingFrame", function(){
+  a.clippingFrame = null;
+
+  var targetFrame = aa.get('clippingFrame');
+
+  equal(targetFrame.x, 0, "x should be 0");
+  equal(targetFrame.y, 0, "y should be 0");
+  equal(targetFrame.width, 40, "width should be 40");
+  equal(targetFrame.height, 40, "height should be 40");
+});
+
+});minispade.register('sproutcore-views/~tests/view/convertFrames', function() {// ==========================================================================
+// Project:   SproutCore - JavaScript Application Framework
+// Copyright: ©2006-2011 Apple Inc. and contributors.
+// License:   Licensed under MIT license (see license.js)
+// ==========================================================================
+
+/*global module test equals context ok same $ htmlbody */
+
+
+// ..........................................................
+// COMMON SETUP CODE
+//
+var pane, a, b, aa, aaa, bb, f ;
+var A_LEFT = 10, A_TOP = 10, B_LEFT = 100, B_TOP = 100;
+
+function setupFrameViews() {
+  htmlbody('<style> .sc-view { border: 1px blue solid; position: absolute; }</style>');
+
+  pane = SC.Pane.design()
+    .layout({ top: 0, left: 0, width: 400, height: 300 })
+    .childView(SC.View.design()
+      .layout({ top: A_TOP, left: A_LEFT, width: 150, height: 150 })
+      .childView(SC.View.design()
+        .layout({ top: A_TOP, left: A_LEFT, width: 50, height: 50 })
+        .childView(SC.View.design()
+          .layout({ top: A_TOP, left: A_LEFT, width: 10, height: 10 }))))
+
+    .childView(SC.View.design()
+      .layout({ top: B_TOP, left: B_LEFT, width: 150, height: 150 })
+      .childView(SC.View.design()
+        .layout({ top: B_TOP, left: B_LEFT, width: 10, height: 10 })))
+    .create();
+
+  a = pane.childViews[0];
+  b = pane.childViews[1];
+  aa = a.childViews[0];
+  aaa = aa.childViews[0];
+  bb = b.childViews[0];
+
+  f = { x: 10, y: 10, width: 10, height: 10 };
+  pane.append();
+}
+
+function teardownFrameViews() {
+  pane.remove() ;
+  pane.destroy();
+  pane = a = aa = aaa = b = bb = null ;
+  clearHtmlbody();
+}
+
+// ..........................................................
+// convertFrameToView()
+//
+module('SC.View#convertFrameToView', {
+  setup: setupFrameViews, teardown: teardownFrameViews
+});
+
+test("convert a -> top level", function() {
+  var result = a.convertFrameToView(f, null);
+  f.x += A_LEFT; f.y += A_TOP ;
+  deepEqual(result, f, 'should convert frame');
+});
+
+test("convert child -> top level", function() {
+  var result = aa.convertFrameToView(f, null);
+  f.x += A_LEFT*2; f.y += A_TOP*2 ;
+  deepEqual(result, f, 'should convert frame');
+});
+
+test("convert nested child -> top level", function() {
+  var result = aaa.convertFrameToView(f, null);
+  f.x += A_LEFT*3; f.y += A_TOP*3 ;
+  deepEqual(result, f, 'should convert frame');
+});
+
+
+test("convert a -> sibling", function() {
+  var result = a.convertFrameToView(f, b);
+  f.x += A_LEFT - B_LEFT; f.y += A_TOP - B_TOP ;
+  deepEqual(result, f, 'should convert frame');
+});
+
+test("convert child -> parent sibling", function() {
+  var result = aa.convertFrameToView(f, b);
+  f.x += A_LEFT*2 - B_LEFT; f.y += A_TOP*2 - B_TOP ;
+  deepEqual(result, f, 'should convert frame');
+});
+
+test("convert nested child -> parent sibling", function() {
+  var result = aaa.convertFrameToView(f, b);
+  f.x += A_LEFT*3 - B_LEFT; f.y += A_TOP*3 - B_TOP ;
+  deepEqual(result, f, 'should convert frame');
+});
+
+
+
+test("convert a -> child", function() {
+  var result = a.convertFrameToView(f, aa);
+  f.x -= A_LEFT; f.y -= A_TOP ;
+  deepEqual(result, f, 'should convert frame');
+});
+
+test("convert child -> parent", function() {
+  var result = aa.convertFrameToView(f, a);
+  f.x += A_LEFT; f.y += A_TOP ;
+  deepEqual(result, f, 'should convert frame');
+});
+
+test("convert nested child -> parent", function() {
+  var result = aaa.convertFrameToView(f, a);
+  f.x += A_LEFT*2; f.y += A_TOP*2 ;
+  deepEqual(result, f, 'should convert frame');
+});
+
+
+
+test("convert a -> nested child", function() {
+  var result = a.convertFrameToView(f, aaa);
+  f.x -= (A_LEFT+A_LEFT); f.y -= (A_TOP+A_TOP) ;
+  deepEqual(result, f, 'should convert frame');
+});
+
+test("convert nested child -> direct parent (child)", function() {
+  var result = aaa.convertFrameToView(f, aa);
+  f.x += A_LEFT; f.y += (A_TOP) ;
+  deepEqual(result, f, 'should convert frame');
+});
+
+
+
+test("convert a -> child of sibling", function() {
+  var result = a.convertFrameToView(f, bb);
+  f.x += A_LEFT - (B_LEFT+B_LEFT); f.y += A_TOP - (B_TOP+B_TOP) ;
+  deepEqual(result, f, 'should convert frame');
+});
+
+
+test("convert child -> child of sibling", function() {
+  var result = aa.convertFrameToView(f, bb);
+  f.x += A_LEFT*2 - (B_LEFT+B_LEFT); f.y += A_TOP*2 - (B_TOP+B_TOP) ;
+  deepEqual(result, f, 'should convert frame');
+});
+
+test("convert nested child -> child of sibling", function() {
+  var result = aaa.convertFrameToView(f, bb);
+  f.x += A_LEFT*3 - (B_LEFT+B_LEFT); f.y += A_TOP*3 - (B_TOP+B_TOP) ;
+  deepEqual(result, f, 'should convert frame');
+});
+
+
+// ..........................................................
+// convertFrameFromView()
+//
+module('SC.View#convertFrameFromView', {
+  setup: setupFrameViews, teardown: teardownFrameViews
+});
+
+test("convert a <- top level", function() {
+  var result = a.convertFrameFromView(f, null);
+  f.x -= A_LEFT; f.y -= A_TOP ;
+  deepEqual(result, f, 'should convert frame');
+});
+
+test("convert child <- top level", function() {
+  var result = aa.convertFrameFromView(f, null);
+  f.x -= A_LEFT*2; f.y -= A_TOP*2 ;
+  deepEqual(result, f, 'should convert frame');
+});
+
+test("convert nested child <- top level", function() {
+  var result = aaa.convertFrameFromView(f, null);
+  f.x -= A_LEFT*3; f.y -= A_TOP*3 ;
+  deepEqual(result, f, 'should convert frame');
+});
+
+
+test("convert a <- sibling", function() {
+  var result = a.convertFrameFromView(f, b);
+  f.x += B_LEFT - A_LEFT; f.y += B_TOP - A_TOP ;
+  deepEqual(result, f, 'should convert frame');
+});
+
+test("convert child <- parent sibling", function() {
+  var result = aa.convertFrameFromView(f, b);
+  f.x += B_LEFT - A_LEFT*2; f.y += B_TOP - A_TOP*2;
+  deepEqual(result, f, 'should convert frame');
+});
+
+test("convert nested child <- parent sibling", function() {
+  var result = aaa.convertFrameFromView(f, b);
+  f.x += B_LEFT - A_LEFT*3; f.y += B_TOP - A_TOP*3;
+  deepEqual(result, f, 'should convert frame');
+});
+
+
+
+test("convert a <- child", function() {
+  var result = a.convertFrameFromView(f, aa);
+  f.x += A_LEFT; f.y += A_TOP ;
+  deepEqual(result, f, 'should convert frame');
+});
+
+test("convert child <- parent", function() {
+  var result = aa.convertFrameFromView(f, a);
+  f.x -= A_LEFT; f.y -= A_TOP ;
+  deepEqual(result, f, 'should convert frame');
+});
+
+test("convert nested child <- parent", function() {
+  var result = aaa.convertFrameFromView(f, a);
+  f.x -= A_LEFT*2; f.y -= A_TOP*2 ;
+  deepEqual(result, f, 'should convert frame');
+});
+
+
+
+test("convert a <- nested child", function() {
+  var result = a.convertFrameFromView(f, aaa);
+  f.x += (A_LEFT+A_LEFT); f.y += (A_TOP+A_TOP) ;
+  deepEqual(result, f, 'should convert frame');
+});
+
+test("convert nested child <- direct parent (child)", function() {
+  var result = aaa.convertFrameFromView(f, aa);
+  f.x -= A_LEFT; f.y -= (A_TOP) ;
+  deepEqual(result, f, 'should convert frame');
+});
+
+
+
+test("convert a <- child of sibling", function() {
+  var result = a.convertFrameFromView(f, bb);
+  f.x += (B_LEFT+B_LEFT) - A_LEFT ; f.y += (B_TOP+B_TOP) - A_TOP ;
+  deepEqual(result, f, 'should convert frame');
+});
+
+
+test("convert child <- child of sibling", function() {
+  var result = aa.convertFrameFromView(f, bb);
+  f.x += (B_LEFT+B_LEFT) - A_LEFT*2; f.y += (B_TOP+B_TOP) - A_TOP*2;
+  deepEqual(result, f, 'should convert frame');
+});
+
+test("convert nested child <- child of sibling", function() {
+  var result = aaa.convertFrameFromView(f, bb);
+  f.x += (B_LEFT+B_LEFT) - A_LEFT*3; f.y += (B_TOP+B_TOP) - A_TOP*3 ;
+  deepEqual(result, f, 'should convert frame');
+});
+
+
+});minispade.register('sproutcore-views/~tests/view/convertLayouts', function() {// ==========================================================================
+// Project:   SproutCore - JavaScript Application Framework
+// Copyright: ©2006-2011 Strobe Inc. and contributors.
+//            ©2008-2011 Apple Inc. All rights reserved.
+// License:   Licensed under MIT license (see license.js)
+// ==========================================================================
+// ========================================================================
+// View Convertion Layout Unit Tests
+// ========================================================================
+
+/*globals module test ok same equals */
+
+/* These unit tests verify:  convertLayoutToAnchoredLayout(), convertLayoutToCustomLayout() */
+
+var parent, child;
+
+/**
+  Helper setup that creates a parent and child view so that you can do basic
+  tests.
+*/
+var commonSetup = {
+  setup: function() {
+    
+    // create basic parent view
+    parent = SC.View.create({
+      layout: { top: 0, left: 0, width: 500, height: 500 }
+    });
+    
+    // create child view to test against.
+    child = SC.View.create();
+  },
+  
+  teardown: function() {
+    parent = child = null ;
+  }
+};
+
+// ..........................................................
+// TEST LAYOUT WITH BASIC LAYOUT CONVERSION
+// 
+
+module('BASIC LAYOUT CONVERSION', commonSetup);
+
+test("layout {top, left, width, height}", function() {
+  var layout = { top: 10, left: 10, width: 50, height: 50 };
+  var cl = SC.View.convertLayoutToAnchoredLayout(layout, parent.get('frame'));
+  deepEqual(cl, layout, 'conversion is equal');
+}) ;
+
+test("layout {top, left, bottom, right}", function() {
+  var layout = { top: 10, left: 10, bottom: 10, right: 10 };
+  var cl = SC.View.convertLayoutToAnchoredLayout(layout, parent.get('frame'));
+  
+  var testLayout = { top: 10, left: 10, width: 480, height: 480 };
+  deepEqual(cl, testLayout, 'conversion is equal');
+}) ;
+
+test("layout {bottom, right, width, height}", function() {
+  var layout = { bottom: 10, right: 10, width: 50, height: 50 };
+  var cl = SC.View.convertLayoutToAnchoredLayout(layout, parent.get('frame'));
+  
+  var testLayout = { top: 440, left: 440, width: 50, height: 50 };
+  deepEqual(cl, testLayout, 'conversion is equal');
+}) ;
+
+test("layout {centerX, centerY, width, height}", function() {
+  var layout = { centerX: 10, centerY: 10, width: 50, height: 50 };
+  var cl = SC.View.convertLayoutToAnchoredLayout(layout, parent.get('frame'));
+  
+  var testLayout = { top: 235, left: 235, width: 50, height: 50 };
+  deepEqual(cl, testLayout, 'conversion is equal');
+}) ;
+
+
+// ..........................................................
+// TEST LAYOUT WITH INVALID LAYOUT VARIATIONS
+// 
+
+module('INVALID LAYOUT VARIATIONS', commonSetup);
+
+test("layout {top, left} - assume right/bottom=0", function() {
+  var layout = { top: 10, left: 10 };
+  var cl = SC.View.convertLayoutToAnchoredLayout(layout, parent.get('frame'));
+  
+  var testLayout = { top: 10, left: 10, width: 490, height: 490 };
+  deepEqual(cl, testLayout, 'conversion is equal');
+}) ;
+
+test("layout {height, width} - assume top/left=0", function() {
+  var layout = { height: 60, width: 60 };
+  var cl = SC.View.convertLayoutToAnchoredLayout(layout, parent.get('frame'));
+  
+  var testLayout = { top: 0, left: 0, width: 60, height: 60 };
+  deepEqual(cl, testLayout, 'conversion is equal');
+}) ;
+
+test("layout {right, bottom} - assume top/left=0", function() {
+  var layout = { right: 10, bottom: 10 };
+  var cl = SC.View.convertLayoutToAnchoredLayout(layout, parent.get('frame'));
+  
+  var testLayout = { top: 0, left: 0, width: 490, height: 490 };
+  deepEqual(cl, testLayout, 'conversion is equal');
+}) ;
+
+test("layout {centerX, centerY} - assume width/height=0", function() {
+  var layout = { centerX: 10, centerY: 10 };
+  var cl = SC.View.convertLayoutToAnchoredLayout(layout, parent.get('frame'));
+  
+  var testLayout = { top: 260, left: 260, width: 0, height: 0 };
+  deepEqual(cl, testLayout, 'conversion is equal');
+}) ;
+
+test("layout {top, left, centerX, centerY, height, width} - top/left take presidence", function() {
+  var layout = { top: 10, left: 10, centerX: 10, centerY: 10, height: 60, width: 60 };
+  var cl = SC.View.convertLayoutToAnchoredLayout(layout, parent.get('frame'));
+  
+  var testLayout = { top: 10, left: 10, width: 60, height: 60 };
+  deepEqual(cl, testLayout, 'conversion is equal');
+}) ;
+
+test("layout {bottom, right, centerX, centerY, height, width} - bottom/right take presidence", function() {
+  var layout = { bottom: 10, right: 10, centerX: 10, centerY: 10, height: 60, width: 60 };
+  var cl = SC.View.convertLayoutToAnchoredLayout(layout, parent.get('frame'));
+  
+  var testLayout = { top: 430, left: 430, width: 60, height: 60 };
+  deepEqual(cl, testLayout, 'conversion is equal');
+  
+}) ;
+
+test("layout {top, left, bottom, right, centerX, centerY, height, width} - top/left take presidence", function() {
+  var layout = { top: 10, left: 10, bottom: 10, right: 10, centerX: 10, centerY: 10, height: 60, width: 60 };
+  var cl = SC.View.convertLayoutToAnchoredLayout(layout, parent.get('frame'));
+  
+  var testLayout = { top: 10, left: 10, width: 60, height: 60 };
+  deepEqual(cl, testLayout, 'conversion is equal');
+}) ;
+
+
+test("layout {centerX, centerY, width:auto, height:auto}");
+/*
+test("layout {centerX, centerY, width:auto, height:auto}", function() {
+  var error=null;
+  var layout = { centerX: 10, centerY: 10, width: 'auto', height: 'auto' };
+  child.set('layout', layout) ;
+  try{
+    child.layoutStyle();
+  }catch(e){
+    error=e;
+  }
+  equal(SC.T_ERROR,SC.typeOf(error),'Layout style functions should throw and '+
+    'error if centerx/y and width/height are set at the same time ' + error );
+}) ;
+*/
+
+});minispade.register('sproutcore-views/~tests/view/createChildViews', function() {// ==========================================================================
+// Project:   SproutCore - JavaScript Application Framework
+// Copyright: ©2006-2011 Apple Inc. and contributors.
+// License:   Licensed under MIT license (see license.js)
+// ==========================================================================
+
+/*global module test equals context ok same */
+
+// ..........................................................
+// createChildViews()
+//
+module("SC.View#createChildViews");
+
+test("calls createChildView() for each class or string in childViews array", function() {
+  var called = [];
+  var v = SC.View.create({
+    childViews: [
+      SC.View.extend({ key: 0 }), // class - should be called
+      SC.View.create({ key: 1 }), // instance - will be called
+      'customClassName'           // string - should be called
+    ],
+
+    // this should be used for the 'customClassName' item above
+    customClassName: SC.View.extend({ key: 2 }),
+
+    // patch to record results...
+    createChildView: function(childView) {
+      if(childView.isClass) {
+        called.push(childView.prototype.key);
+      } else {
+        called.push(childView.key);
+      }
+      return this._super();
+    }
+  });
+
+  // createChildViews() is called automatically during create.
+  deepEqual(called, [0,1,2], 'called createChildView for correct children');
+
+  // make sure childViews array is correct now.
+  var cv = v.childViews, len = cv.length, idx;
+  for(idx=0;idx<len;idx++) {
+    equal(cv[idx].key, idx, 'has correct index key');
+    ok(cv[idx].isObject, 'isObject - %@'.fmt(cv[idx]));
+  }
+});
+
+test("should not error when there is a dud view name in childViews list.", function() {
+  var called = [];
+  var v = SC.View.create({
+    childViews: [
+      'nonExistantClassName',       // string - should NOT be called
+      null,                       // null - should NOT be called
+      '',                         // empty string - should NOT be called
+      'customClassName'          // string - should be called
+    ],
+    // this should be used for the 'customClassName' item above
+    customClassName: SC.View.extend({ key: 2 }),
+
+    // patch to record results...
+    createChildView: function(childView) {
+      called.push(childView.prototype.key);
+      ok(childView.isClass, "childView: %@ isClass".fmt(childView));
+      return this._super();
+    }
+  });
+
+  // createChildViews() is called automatically during create.
+  deepEqual(called, [2], 'called createChildView for correct children');
+  equal(v.get('childViews.length'), 1, "The childViews array should not contain any invalid childViews after creation.");
+});
+
+test("should not throw error when there is an extra space in the childViews list", function() {
+  var called = [];
+  var v = SC.View.create({
+    childViews: "customClassName  customKlassName".w(),
+    // this should be used for the 'customClassName' item above
+    customClassName: SC.View.extend({ key: 2 }),
+    customKlassName: SC.View.extend({ key: 3 })
+  });
+
+  ok(true, "called awake without issue.");
+
+});
+
+test("should not create layer for created child views", function() {
+  var v = SC.View.create({
+    childViews: [SC.View]
+  });
+  ok(v.childViews[0].isObject, 'precondition - did create child view');
+  equal(v.childViews[0].get('layer'), null, 'childView does not have layer');
+});
+
+// ..........................................................
+// createChildView()
+//
+
+var view, myViewClass ;
+module("SC.View#createChildView", {
+  setup: function() {
+    view = SC.View.create({ page: SC.Object.create() });
+    myViewClass = SC.View.extend({ isMyView: YES, foo: 'bar' });
+  }
+});
+
+test("should create view from class with any passed attributes", function() {
+  var v = view.createChildView(myViewClass, { foo: "baz" });
+  ok(v.isMyView, 'v is instance of myView');
+  equal(v.foo, 'baz', 'view did get custom attributes');
+});
+
+test("should set newView.owner & parentView to receiver", function() {
+  var v = view.createChildView(myViewClass) ;
+  equal(v.get('owner'), view, 'v.owner == view');
+  equal(v.get('parentView'), view, 'v.parentView == view');
+});
+
+test("should set newView.page to receiver.page unless custom attr is passed", function() {
+  var v = view.createChildView(myViewClass) ;
+  equal(v.get('page'), view.get('page'), 'v.page == view.page');
+
+  var myPage = SC.Object.create();
+  v = view.createChildView(myViewClass, { page: myPage }) ;
+  equal(v.get('page'), myPage, 'v.page == custom page');
+});
+
+// CoreView has basic visibility support based on state now.
+// test("should not change isVisibleInWindow property on views that do not have visibility support", function() {
+//   var coreView = SC.CoreView.extend({});
+
+//   SC.run(function() { view.set('isVisible', NO); });
+//   var v = view.createChildView(coreView);
+
+//   ok(v.get('isVisibleInWindow'), "SC.CoreView instance always has isVisibleInWindow set to NO");
+// });
+
+
+});minispade.register('sproutcore-views/~tests/view/createLayer', function() {// ==========================================================================
+// Project:   SproutCore - JavaScript Application Framework
+// Copyright: ©2006-2011 Apple Inc. and contributors.
+// License:   Licensed under MIT license (see license.js)
+// ==========================================================================
+
+/*global module test equals context ok same $ */
+
+// ..........................................................
+// createLayer()
+//
+module("SC.View#createLayer");
+
+test("returns the receiver", function() {
+  var v = SC.View.create();
+  equal(v.createLayer(), v, 'returns receiver');
+  v.destroy();
+});
+
+test("calls renderToContext() and sets layer to resulting element", function() {
+  var v = SC.View.create({
+    tagName: 'span',
+
+    renderToContext: function(context, firstTime) {
+      context.push("foo");
+    }
+  });
+
+  equal(v.get('layer'), null, 'precondition - has no layer');
+  v.createLayer();
+
+  var elem = v.get('layer');
+  ok(!!elem, 'has element now');
+  equal(elem.innerHTML, 'foo', 'has innerHTML from context');
+  equal(elem.tagName.toString().toLowerCase(), 'span', 'has tagName from view');
+  elem = null ;
+  v.destroy();
+});
+
+test("invokes didCreateLayer() on receiver and all child views", function() {
+  var callCount = 0, mixinCount = 0;
+  var v = SC.View.create({
+
+    didCreateLayer: function() { callCount++; },
+    didCreateLayerMixin: function() { mixinCount++; },
+
+    childViews: [SC.View.extend({
+      didCreateLayer: function() { callCount++; },
+      childViews: [SC.View.extend({
+        didCreateLayer: function() { callCount++; },
+        didCreateLayerMixin: function() { mixinCount++; }
+      }), SC.View.extend({ /* no didCreateLayer */ })]
+    })]
+  });
+
+  // verify setup...
+  ok(v.didCreateLayer, 'precondition - has root');
+  ok(v.childViews[0].didCreateLayer, 'precondition - has firstChild');
+  ok(v.childViews[0].childViews[0].didCreateLayer, 'precondition - has nested child');
+  ok(!v.get('layer'), 'has no layer');
+
+  v.createLayer();
+  equal(callCount, 3, 'did invoke all methods');
+  equal(mixinCount, 2, 'did invoke all mixin methods');
+  v.destroy();
+});
+
+test("generated layer include HTML from child views as well", function() {
+  var v = SC.View.create({
+    childViews: [ SC.View.extend({ layerId: "foo" })]
+  });
+
+  v.createLayer();
+  ok($('#foo', v.get('layer')).get(0), 'has element with child layerId');
+  v.destroy();
+});
+
+test("does NOT assign layer to child views immediately", function() {
+  var v = SC.View.create({
+    childViews: [ SC.View.extend({ layerId: "foo" })]
+  });
+  v.createLayer();
+  ok(!v.childViews[0]._view_layer, 'has no layer yet');
+  v.destroy();
+});
+
+// ..........................................................
+// USE CASES
+//
+
+// when view is first created, createLayer is NOT called
+
+// when view is added to parent view, and parent view is already visible in
+// window, layer is created just before adding it to the DOM
+
+// when a pane is added to the window, the pane layer is created.
+
+// when a pane with an exiting layer is removed from the DOM, the layer is removed from the DOM, but it is not destroyed.
+
+// what if we move a view from a parentView that has a layer to a parentView that does NOT have a layer.   Delete layer.
+
+// what if a move a view from a parentView that does NOT have a layer to a parentView that DOES have a layer.
+
+});minispade.register('sproutcore-views/~tests/view/destroy', function() {// ==========================================================================
+// Project:   SproutCore - JavaScript Application Framework
+// Copyright: ©2006-2011 Apple Inc. and contributors.
+// License:   Licensed under MIT license (see license.js)
+// ==========================================================================
+
+/* global module test equals context ok same */
+
+module("SC.View#destroy");
+
+test('isDestroyed works.', function() {
+  var v = SC.View.create();
+  ok(!v.get('isDestroyed'), 'undestroyed view\'s isDestroyed property is false.');
+  v.destroy();
+  ok(v.get('isDestroyed'), 'destroyed view\'s isDestroyed property is true.');
+});
+
+test('childViews specified as classes are also destroyed.', function() {
+  var v = SC.View.create({ childViews: [ SC.View.extend({ childViews: [ SC.View ] }) ] }),
+      v2 = v.childViews[0],
+      v3 = v2.childViews[0];
+
+  v.destroy();
+  ok(v2.get('isDestroyed'), 'destroying a parent also destroys a child, mwaha.');
+  ok(v3.get('isDestroyed'), 'destroying a parent also destroys a grandchild, mwaha.');
+
+  SC.run(function() {
+    ok(!v2.get('parentView'), 'destroying a parent removes the parentView reference from the child.');
+    ok(v2.get('owner') === null, 'destroying a parent removes the owner reference from the child.');
+    ok(!v3.get('parentView'), 'destroying a parent removes the parentView reference from the grandchild.');
+    ok(v3.get('owner') === null, 'destroying a parent removes the owner reference from the grandchild.');
+  });
+});
+
+test('childViews specified as instances are also destroyed.', function() {
+  var v2 = SC.View.create(),
+      v = SC.View.create({ childViews: [v2] });
+  v.destroy();
+  ok(v2.get('isDestroyed'), 'destroying a parent also destroys a child, mwaha.');
+
+  SC.run(function() {
+    ok(!v2.get('parentView'), 'destroying a parent removes the parentView reference from the child.');
+    ok(v2.get('owner') === null, 'destroying a parent removes the owner reference from the child.');
+  });
+});
+
+/**
+  There was a bug introduced when we started destroying SC.Binding objects when
+  destroying SC.Objects.
+
+  Because the view was overriding destroy to destroy itself first (clearing out
+  parentViews), later when we try to clean up bindings, any bindings to the
+  parentView property of a view would not be able to remove observers from the
+  parent view instance.
+*/
+test("Destroying a view, should also destroy its binding objects", function () {
+  var v, v2;
+
+  SC.run(function() {
+    v = SC.View.create({
+      childViews: ['v2'],
+      foo: 'baz',
+      v2: SC.View.extend({
+        barBinding: '.parentView.foo'
+      })
+    });
+  });
+
+  v2 = v.get('v2');
+
+  ok(v.hasObserverFor('foo'), "The view should have an observer on 'foo'");
+  ok(v2.hasObserverFor('bar'), "The child view should have an observer on 'bar'");
+
+  v.destroy();
+
+  ok(!v.hasObserverFor('foo'), "The view should no longer have an observer on 'foo'");
+  ok(!v2.hasObserverFor('bar'), "The child view should no longer have an observer on 'bar'");
+});
+
+test('Resigns firstResponder when destroyed.', function() {
+  var pane = SC.Pane.create();
+  var v = SC.View.create({ parentView: pane, acceptsFirstResponder: YES });
+  v.becomeFirstResponder();
+  ok(v.get('isFirstResponder'), 'view starts as firstResponder.');
+  v.destroy();
+  ok(!v.get('isFirstResponder'), 'destroying view resigns firstResponder.');
+});
+
+});minispade.register('sproutcore-views/~tests/view/destroyLayer', function() {// ==========================================================================
+// Project:   SproutCore - JavaScript Application Framework
+// Copyright: ©2006-2011 Apple Inc. and contributors.
+// License:   Licensed under MIT license (see license.js)
+// ==========================================================================
+/*global module, test, equals, ok */
+
+
+module("SC.View#destroyLayer");
+
+test("it if has no layer, does nothing", function () {
+  var callCount = 0;
+  var view = SC.View.create({
+    willDestroyLayer: function () { callCount++; }
+  });
+  ok(!view.get('layer'), 'precond - does NOT have layer');
+
+  view.destroyLayer();
+  equal(callCount, 0, 'did not invoke callback');
+});
+
+test("if it has a layer, calls willDestroyLayer on receiver and child views then deletes the layer", function () {
+  var callCount = 0;
+
+  var view = SC.View.create({
+    willDestroyLayer: function () { callCount++; },
+    childViews: [SC.View.extend({
+      // no willDestroyLayer here... make sure no errors are thrown
+      childViews: [SC.View.extend({
+        willDestroyLayer: function () { callCount++; }
+      })]
+    })]
+  });
+  view.createLayer();
+  ok(view.get('layer'), 'precond - view has layer');
+
+  view.destroyLayer();
+  equal(callCount, 2, 'invoked destroy layer');
+  ok(!view.get('layer'), 'view no longer has layer');
+});
+
+test("if it has a layer, calls willDestroyLayerMixin on receiver and child views if defined (comes from mixins)", function () {
+  var callCount = 0;
+
+  // make sure this will call both mixins...
+  var mixinA = {
+    willDestroyLayerMixin: function () { callCount++; }
+  };
+
+  var mixinB = {
+    willDestroyLayerMixin: function () { callCount++; }
+  };
+
+  var view = SC.View.create(mixinA, mixinB, {
+    childViews: [SC.View.extend(mixinA, mixinB, {
+      childViews: [SC.View.extend(mixinA)]
+    })]
+  });
+  view.createLayer();
+  view.destroyLayer();
+  equal(callCount, 5, 'invoked willDestroyLayerMixin on all mixins');
+});
+
+test("returns receiver", function () {
+  var view = SC.View.create().createLayer();
+  equal(view.destroyLayer(), view, 'returns receiver');
+});
+
+/**
+  There is a bug that if childView layers are rendered when the parentView's
+  layer is created, the `layer` property on the childView will not be
+  cached.  What occurs is that if the childView is removed from the parent
+  view without ever having its `layer` requested, then when it comes time
+  to destroy the layer of the childView, it will get('layer'), which had a
+  bug that only returned a layer if the view has a parent view.  However,
+  since the child was removed from the parent first and then destroyed, it
+  no longer has a parent view and would return undefined for its `layer`.
+
+  This left elements in the DOM.
+
+  UPDATE:  The addition of the SC.View statechart prevents this from happening.
+*/
+test("Tests that if the childView's layer was never cached and the childView is removed, it should still destroy the childView's layer", function () {
+  var childView,
+    layerId,
+    pane,
+    view;
+
+  childView = SC.View.create({});
+
+  layerId = childView.get('layerId');
+
+  view = SC.View.create({
+    childViews: [childView]
+  });
+
+  pane = SC.Pane.create({
+    childViews: [view]
+  }).append();
+
+  ok(document.getElementById(layerId), 'child layer should be in the DOM');
+  ok(!childView._view_layer, 'child view should not have cached its layer');
+  view.removeChild(childView);
+  // Before SC.View states, this would be the case
+  // ok(document.getElementById(layerId), 'child layer should be in the DOM');
+  ok(!document.getElementById(layerId), 'child layer should not be in the DOM');
+  childView.destroy();
+  ok(!document.getElementById(layerId), 'child layer should not be in the DOM');
+
+  pane.remove();
+  pane.destroy();
+});
+
+});minispade.register('sproutcore-views/~tests/view/didAppendToDocument', function() {// ==========================================================================
+// Project:   SproutCore - JavaScript Application Framework
+// Copyright: ©2006-2011 Strobe Inc. and contributors.
+//            portions copyright @2011 Apple Inc.
+// License:   Licensed under MIT license (see license.js)
+// ==========================================================================
+
+/*global module test ok equals same */
+
+
+var counter, pane, view, additionalView;
+
+module("SC.View#didAppendToDocument", {
+  setup: function () {
+    counter = 0;
+
+    pane = SC.MainPane.create({
+      childViews: [
+        SC.View.extend({
+          render: function (context, firstTime) {
+            context.push('new string');
+          },
+          didAppendToDocument: function (){
+            ok(document.getElementById(this.get('layerId')), "view layer should exist");
+            counter++;
+          }
+        })
+      ]
+    });
+    view = pane.childViews[0];
+
+    additionalView = SC.View.create({
+      didAppendToDocument: function (){
+        ok(document.getElementById(this.get('layerId')), "additionalView layer should exist");
+        counter++;
+      }
+    });
+  },
+
+  teardown: function () {
+    pane.remove().destroy();
+    pane = null;
+  }
+});
+
+test("Check that didAppendToDocument gets called at the right moment", function () {
+
+  equal(counter, 0, "precond - has not been called yet");
+  pane.append(); // make sure there is a layer...
+  equal(counter, 1, "didAppendToDocument was called once");
+
+  SC.run(function () {
+    view.updateLayer();
+  });
+
+  // This seems incorrect.  It's not appending the view layer again it's just updating it.
+  // equal(counter, 1, "didAppendToDocument is called every time a new DOM element is created");
+
+  pane.appendChild(additionalView);
+
+  SC.RunLoop.begin().end();
+  equal(counter, 2, "");
+});
+
+
+// Test for bug: when a childView has a non-fixed layout and we request its frame before the parentView has
+// a layer and the parentView uses static layout, then the frame returned will be {x: 0, y:0, width: 0, height: 0}
+// and any further requests for the childView's frame will not return a new value unless the parentViewDidChange
+// or parentViewDidResize.  A weird case, but we prevent it from failing anyhow.
+test("Check that childView is updated if the pane has a static layout and view doesn't have a fixed layout", function () {
+  var childFrame,
+      wrongFrame = { x:0, y:0, width: 0, height: 0 },
+      correctFrame;
+
+  pane.set('useStaticLayout', YES);
+
+  childFrame = view.get('frame');
+  deepEqual(childFrame, wrongFrame, 'getting frame before layer exists on non-fixed layout childView should return an empty frame');
+
+  SC.run(function () {
+    pane.append(); // make sure there is a layer...
+  });
+  childFrame = view.get('frame');
+  correctFrame = pane.get('frame');
+
+  deepEqual(childFrame, correctFrame, 'getting frame after layer exists on non-fixed layout childView should return actual frame');
+});
+
+
+test("Check that childView is updated if it has a static layout", function () {
+  var childFrame,
+      wrongFrame = {x:0, y:0, width: 0, height: 0},
+      correctFrame;
+
+  view.set('useStaticLayout', YES);
+
+  equal(counter, 0, "precond - has not been called yet");
+  pane.append(); // make sure there is a layer...
+  equal(counter, 1, "didAppendToDocument was called once");
+});
+
+});minispade.register('sproutcore-views/~tests/view/enabled_states_test', function() {// ==========================================================================
+// Project:   SproutCore - JavaScript Application Framework
+// Copyright: ©2006-2011 Strobe Inc. and contributors.
+//            ©2008-2011 Apple Inc. All rights reserved.
+// License:   Licensed under MIT license (see license.js)
+// ==========================================================================
+/*global module, test,  equals,  ok */
+
+var parent, view, child;
+
+/** Test the SC.View states. */
+module("SC.View#enabledState", {
+
+  setup: function () {
+    child = SC.View.create();
+    view = SC.View.create({ childViews: [child] });
+    parent = SC.View.create({ childViews: [view] });
+  },
+
+  teardown: function () {
+    parent.destroy();
+    parent = view = child = null;
+  }
+
+});
+
+/**
+  Test the initial state.
+  */
+test("Test initial states.", function () {
+  // Test expected state of the views.
+  equal(parent.enabledState, SC.CoreView.ENABLED, "A regular parent view should be in the state");
+  equal(view.enabledState, SC.CoreView.ENABLED, "A regular view should be in the state");
+  equal(child.enabledState, SC.CoreView.ENABLED, "A regular child view should be in the state");
+  ok(parent.get('isEnabled'), "isEnabled should be true");
+  ok(parent.get('isEnabledInPane'), "isEnabledInPane should be true");
+  ok(view.get('isEnabled'), "isEnabled should be true");
+  ok(view.get('isEnabledInPane'), "isEnabledInPane should be true");
+  ok(child.get('isEnabled'), "isEnabled should be true");
+  ok(child.get('isEnabledInPane'), "isEnabledInPane should be true");
+});
+
+test("Test initial disabled states.", function () {
+  var newChild = SC.View.create({}),
+    newView = SC.View.create({ isEnabled: false, childViews: [newChild] }),
+    newParent;
+
+  equal(newView.enabledState, SC.CoreView.DISABLED, "A disabled on creation view should be in the state");
+  equal(newChild.enabledState, SC.CoreView.DISABLED_BY_PARENT, "A regular child view of disabled on creation parent should be in the state");
+
+  newParent = SC.View.create({ isEnabled: false, childViews: [newView] });
+
+  equal(newParent.enabledState, SC.CoreView.DISABLED, "A disabled on creation parent view should be in the state");
+  equal(newView.enabledState, SC.CoreView.DISABLED_AND_BY_PARENT, "A disabled on creation view of disabled on creation parent should be in the state");
+  equal(newChild.enabledState, SC.CoreView.DISABLED_BY_PARENT, "A regular child view of disabled on creation parent should be in the state");
+
+  newParent.destroy();
+  newView.destroy();
+  newChild.destroy();
+});
+
+/**
+  Test changing isEnabled to false on the child.
+  */
+test("Test toggling isEnabled on child.", function () {
+  SC.run(function () {
+    child.set('isEnabled', false);
+  });
+
+  // Test expected state of the views.
+  SC.run(function () {
+    equal(parent.enabledState, SC.CoreView.ENABLED, "A regular parent view should be in the state");
+    equal(view.enabledState, SC.CoreView.ENABLED, "A regular view should be in the state");
+    equal(child.enabledState, SC.CoreView.DISABLED, "A disabled child view should be in the state");
+    ok(parent.get('isEnabled'), "isEnabled should be true");
+    ok(parent.get('isEnabledInPane'), "isEnabledInPane should be true");
+    ok(view.get('isEnabled'), "isEnabled should be true");
+    ok(view.get('isEnabledInPane'), "isEnabledInPane should be true");
+    ok(!child.get('isEnabled'), "isEnabled should be false");
+    ok(!child.get('isEnabledInPane'), "isEnabledInPane should be false");
+  });
+});
+
+/**
+  Test changing isEnabled to false on the view.
+  */
+test("Test toggling isEnabled on view.", function () {
+  SC.run(function () {
+    view.set('isEnabled', false);
+  });
+
+  // Test expected state of the views.
+  SC.run(function () {
+    equal(parent.enabledState, SC.CoreView.ENABLED, "A regular parent view should be in the state");
+    equal(view.enabledState, SC.CoreView.DISABLED, "A disabled view should be in the state");
+    equal(child.enabledState, SC.CoreView.DISABLED_BY_PARENT, "A regular child view with disabled ancestor should be in the state");
+    ok(parent.get('isEnabled'), "isEnabled should be true");
+    ok(parent.get('isEnabledInPane'), "isEnabledInPane should be true");
+    ok(!view.get('isEnabled'), "isEnabled should be false");
+    ok(!view.get('isEnabledInPane'), "isEnabledInPane should be false");
+    ok(child.get('isEnabled'), "isEnabled should be true");
+    ok(!child.get('isEnabledInPane'), "isEnabledInPane should be false");
+  });
+
+  SC.run(function () {
+    child.set('isEnabled', false);
+  });
+
+  // Test expected state of the views.
+  SC.run(function () {
+    equal(parent.enabledState, SC.CoreView.ENABLED, "A regular parent view should be in the state");
+    equal(view.enabledState, SC.CoreView.DISABLED, "A disabled view should be in the state");
+    equal(child.enabledState, SC.CoreView.DISABLED_AND_BY_PARENT, "A disabled child view with disabled ancestor should be in the state");
+    ok(parent.get('isEnabled'), "isEnabled should be true");
+    ok(parent.get('isEnabledInPane'), "isEnabledInPane should be true");
+    ok(!view.get('isEnabled'), "isEnabled should be false");
+    ok(!view.get('isEnabledInPane'), "isEnabledInPane should be false");
+    ok(!child.get('isEnabled'), "isEnabled should be true");
+    ok(!child.get('isEnabledInPane'), "isEnabledInPane should be false");
+  });
+
+  SC.run(function () {
+    view.set('isEnabled', true);
+  });
+
+  // Test expected state of the views.
+  SC.run(function () {
+    equal(parent.enabledState, SC.CoreView.ENABLED, "A regular parent view should be in the state");
+    equal(view.enabledState, SC.CoreView.ENABLED, "A regular view should be in the state");
+    equal(child.enabledState, SC.CoreView.DISABLED, "A disabled child view should be in the state");
+    ok(parent.get('isEnabled'), "isEnabled should be true");
+    ok(parent.get('isEnabledInPane'), "isEnabledInPane should be true");
+    ok(view.get('isEnabled'), "isEnabled should be false");
+    ok(view.get('isEnabledInPane'), "isEnabledInPane should be false");
+    ok(!child.get('isEnabled'), "isEnabled should be true");
+    ok(!child.get('isEnabledInPane'), "isEnabledInPane should be false");
+  });
+});
+
+/**
+  Test changing isEnabled to false on the view.
+  */
+test("Test toggling isEnabled on parent.", function () {
+  SC.run(function () {
+    parent.set('isEnabled', false);
+  });
+
+  // Test expected state of the views.
+  SC.run(function () {
+    equal(parent.enabledState, SC.CoreView.DISABLED, "A disabled parent view should be in the state");
+    equal(view.enabledState, SC.CoreView.DISABLED_BY_PARENT, "A regular view with disabled parent should be in the state");
+    equal(child.enabledState, SC.CoreView.DISABLED_BY_PARENT, "A regular child view with disabled ancestor should be in the state");
+    ok(!parent.get('isEnabled'), "disabled parent isEnabled should be false");
+    ok(!parent.get('isEnabledInPane'), "disabled parent isEnabledInPane should be false");
+    ok(view.get('isEnabled'), "view isEnabled should be true");
+    ok(!view.get('isEnabledInPane'), "view isEnabledInPane should be false");
+    ok(child.get('isEnabled'), "child isEnabled should be true");
+    ok(!child.get('isEnabledInPane'), "child isEnabledInPane should be false");
+  });
+
+  SC.run(function () {
+    child.set('isEnabled', false);
+  });
+
+  // Test expected state of the views.
+  SC.run(function () {
+    equal(parent.enabledState, SC.CoreView.DISABLED, "A disabled parent view should be in the state");
+    equal(view.enabledState, SC.CoreView.DISABLED_BY_PARENT, "A regular view with disabled parent should be in the state");
+    equal(child.enabledState, SC.CoreView.DISABLED_AND_BY_PARENT, "A disabled child view with disabled ancestor should be in the state");
+    ok(!parent.get('isEnabled'), "isEnabled should be false");
+    ok(!parent.get('isEnabledInPane'), "isEnabledInPane should be false");
+    ok(view.get('isEnabled'), "view isEnabled should be true");
+    ok(!view.get('isEnabledInPane'), "view isEnabledInPane should be false");
+    ok(!child.get('isEnabled'), "disabled child isEnabled should be false");
+    ok(!child.get('isEnabledInPane'), "disabled child isEnabledInPane should be false");
+  });
+
+  SC.run(function () {
+    parent.set('isEnabled', true);
+  });
+
+  // Test expected state of the views.
+  SC.run(function () {
+    equal(parent.enabledState, SC.CoreView.ENABLED, "A regular parent view should be in the state");
+    equal(view.enabledState, SC.CoreView.ENABLED, "A regular view should be in the state");
+    equal(child.enabledState, SC.CoreView.DISABLED, "A disabled child view should be in the state");
+    ok(parent.get('isEnabled'), "isEnabled should be true");
+    ok(parent.get('isEnabledInPane'), "isEnabledInPane should be true");
+    ok(view.get('isEnabled'), "isEnabled should be true");
+    ok(view.get('isEnabledInPane'), "isEnabledInPane should be true");
+    ok(!child.get('isEnabled'), "disabled child isEnabled should be false");
+    ok(!child.get('isEnabledInPane'), "disabled child isEnabledInPane should be false");
+  });
+});
+
+/**
+  Test changing isEnabled to false on the view.
+  */
+test("Test toggling isEnabled on view.", function () {
+  SC.run(function () {
+    view.set('isEnabled', false);
+  });
+
+  // Test expected state of the views.
+  SC.run(function () {
+    equal(parent.enabledState, SC.CoreView.ENABLED, "A regular parent view should be in the state");
+    equal(view.enabledState, SC.CoreView.DISABLED, "A disabled view should be in the state");
+    equal(child.enabledState, SC.CoreView.DISABLED_BY_PARENT, "A regular child view with disabled ancestor should be in the state");
+    ok(parent.get('isEnabled'), "isEnabled should be true");
+    ok(parent.get('isEnabledInPane'), "isEnabledInPane should be true");
+    ok(!view.get('isEnabled'), "isEnabled should be false");
+    ok(!view.get('isEnabledInPane'), "isEnabledInPane should be false");
+    ok(child.get('isEnabled'), "isEnabled should be true");
+    ok(!child.get('isEnabledInPane'), "isEnabledInPane should be false");
+  });
+
+  SC.run(function () {
+    child.set('isEnabled', false);
+  });
+
+  // Test expected state of the views.
+  SC.run(function () {
+    equal(parent.enabledState, SC.CoreView.ENABLED, "A regular parent view should be in the state");
+    equal(view.enabledState, SC.CoreView.DISABLED, "A disabled view should be in the state");
+    equal(child.enabledState, SC.CoreView.DISABLED_AND_BY_PARENT, "A disabled child view with disabled ancestor should be in the state");
+    ok(parent.get('isEnabled'), "isEnabled should be true");
+    ok(parent.get('isEnabledInPane'), "isEnabledInPane should be true");
+    ok(!view.get('isEnabled'), "isEnabled should be false");
+    ok(!view.get('isEnabledInPane'), "isEnabledInPane should be false");
+    ok(!child.get('isEnabled'), "isEnabled should be true");
+    ok(!child.get('isEnabledInPane'), "isEnabledInPane should be false");
+  });
+
+  SC.run(function () {
+    view.set('isEnabled', true);
+  });
+
+  // Test expected state of the views.
+  SC.run(function () {
+    equal(parent.enabledState, SC.CoreView.ENABLED, "A regular parent view should be in the state");
+    equal(view.enabledState, SC.CoreView.ENABLED, "A regular view should be in the state");
+    equal(child.enabledState, SC.CoreView.DISABLED, "A disabled child view should be in the state");
+    ok(parent.get('isEnabled'), "isEnabled should be true");
+    ok(parent.get('isEnabledInPane'), "isEnabledInPane should be true");
+    ok(view.get('isEnabled'), "isEnabled should be false");
+    ok(view.get('isEnabledInPane'), "isEnabledInPane should be false");
+    ok(!child.get('isEnabled'), "isEnabled should be true");
+    ok(!child.get('isEnabledInPane'), "isEnabledInPane should be false");
+  });
+});
+
+/**
+  Test changing isEnabled to false on the view.
+  */
+test("Test shouldInheritEnabled.", function () {
+  SC.run(function () {
+    view.set('shouldInheritEnabled', false);
+    parent.set('isEnabled', false);
+  });
+
+  // Test expected state of the views.
+  SC.run(function () {
+    equal(parent.enabledState, SC.CoreView.DISABLED, "A disabled parent view should be in the state");
+    equal(view.enabledState, SC.CoreView.ENABLED, "A regular view with shouldInheritEnabled with disabled parent should be in the state");
+    equal(child.enabledState, SC.CoreView.ENABLED, "A regular child view should be in the state");
+  });
+
+  SC.run(function () {
+    view.set('isEnabled', false);
+  });
+
+  // Test expected state of the views.
+  SC.run(function () {
+    equal(parent.enabledState, SC.CoreView.DISABLED, "A disabled parent view should be in the state");
+    equal(view.enabledState, SC.CoreView.DISABLED, "A disabled view with shouldInheritEnabled and disabled parent should be in the state");
+    equal(child.enabledState, SC.CoreView.DISABLED_BY_PARENT, "A regular child view with disabled ancestor should be in the state");
+  });
+
+  SC.run(function () {
+    parent.set('isEnabled', true);
+  });
+
+  // Test expected state of the views.
+  SC.run(function () {
+    equal(parent.enabledState, SC.CoreView.ENABLED, "A regular parent view should be in the state");
+    equal(view.enabledState, SC.CoreView.DISABLED, "A disabled view should be in the state");
+    equal(child.enabledState, SC.CoreView.DISABLED_BY_PARENT, "A regular child view with disabled ancestor should be in the state");
+  });
+});
+
+test("Test toggling isEnabled adds/removes disabled class.", function () {
+  parent.createLayer();
+  parent._doAttach(document.body);
+
+  ok(!parent.$().hasClass('disabled'), "A regular parent should not have disabled class.");
+  SC.run(function () {
+    parent.set('isEnabled', false);
+  });
+
+  // Test expected state of the views.
+  SC.run(function () {
+    ok(parent.$().hasClass('disabled'), "A disabled parent should have disabled class.");
+  });
+
+  SC.run(function () {
+    parent.set('isEnabled', true);
+  });
+
+  // Test expected state of the views.
+  SC.run(function () {
+    ok(!parent.$().hasClass('disabled'), "A re-enabled parent should not have disabled class.");
+  });
+
+  parent._doDetach();
+  parent.destroyLayer();
+});
+
+test("Test optimized display update.", function () {
+  SC.run(function () {
+    parent.set('isEnabled', false);
+  });
+
+  parent.createLayer();
+  parent._doAttach(document.body);
+
+  // Test expected state of the views.
+  SC.run(function () {
+    ok(parent.$().hasClass('disabled'), "A disabled when attached parent should have disabled class.");
+  });
+
+  parent._doDetach();
+  parent.destroyLayer();
+  parent.createLayer();
+  parent._doAttach(document.body);
+
+  SC.run(function () {
+    parent.set('isEnabled', true);
+  });
+
+  // Test expected state of the views.
+  SC.run(function () {
+    ok(!parent.$().hasClass('disabled'), "A re-enabled parent should not have disabled class.");
+  });
+
+  parent._doDetach();
+  parent.destroyLayer();
+});
+
+test("initializing with isEnabled: false, should still add the proper class on append", function () {
+  var newView = SC.View.create({
+    isEnabled: false
+  });
+
+  parent.createLayer();
+  parent._doAttach(document.body);
+  parent.appendChild(newView);
+
+  ok(newView.$().hasClass('disabled'), "An initialized as disabled view should have disabled class on append.");
+});
+
+});minispade.register('sproutcore-views/~tests/view/findLayerInParentLayer', function() {// ==========================================================================
+// Project:   SproutCore - JavaScript Application Framework
+// Copyright: ©2006-2011 Apple Inc. and contributors.
+// License:   Licensed under MIT license (see license.js)
+// ==========================================================================
+
+/*global module test equals context ok same */
+
+// ..........................................................
+// createChildViews()
+//
+var view, parentDom, childDom, layerId ;
+module("SC.View#findLayerInParentLayer", {
+  setup: function() {
+
+    layerId = 'foo-123';
+
+    // manually construct a test layer.  next childDom a few layers deep
+    childDom = document.createElement('div');
+    SC.$(childDom).attr('id', layerId);
+
+    var intermediate = document.createElement('div');
+    intermediate.appendChild(childDom);
+
+    parentDom = document.createElement('div');
+    parentDom.appendChild(intermediate);
+    intermediate = null;
+
+
+    // setup view w/ layerId
+    view = SC.View.create({ layerId: layerId });
+  },
+
+  teardown: function() {
+    view.destroy();
+    view = parentDom = childDom = layerId = null;
+  }
+});
+
+test("discovers layer by finding element with matching layerId - when DOM is in document already", function() {
+  document.body.appendChild(parentDom);
+  equal(view.findLayerInParentLayer(parentDom), childDom, 'should find childDom');
+  document.body.removeChild(parentDom); // cleanup or else next test may fail
+});
+
+test("discovers layer by finding element with matching layerId - when parent DOM is NOT in document", function() {
+  if(parentDom.parentNode) equal(parentDom.parentNode.nodeType, 11, 'precond - NOT in parent doc');
+  else equal(parentDom.parentNode, null, 'precond - NOT in parent doc');
+  equal(view.findLayerInParentLayer(parentDom), childDom, 'found childDom');
+});
+
+
+});minispade.register('sproutcore-views/~tests/view/init', function() {// ==========================================================================
+// Project:   SproutCore - JavaScript Application Framework
+// Copyright: ©2006-2011 Apple Inc. and contributors.
+// License:   Licensed under MIT license (see license.js)
+// ==========================================================================
+
+/*global module test equals context ok same */
+
+module("SC.View#init");
+
+test("registers view in the global views hash using layerId for event targeted", function () {
+  var v = SC.View.create();
+  equal(SC.View.views[v.get('layerId')], v, 'registers view');
+});
+
+test("adds displayDidChange observer on all display properties (when rendered)", function () {
+  var didChange = NO;
+  var v = SC.View.create({
+    // override just to make sure the registration works...
+    displayDidChange: function () { didChange = YES; },
+
+    displayProperties: 'foo bar'.w(),
+
+    foo: 'foo',
+    bar: 'bar'
+  });
+
+  v.set('foo', 'baz');
+  ok(!didChange, '!didChange on set(foo) before view is rendered');
+  didChange = NO;
+
+  v.set('bar', 'baz');
+  ok(!didChange, '!didChange on set(bar) before view is rendered');
+
+  // Render the view.
+  v._doRender();
+
+  v.set('foo', 'buz');
+  ok(didChange, 'didChange on set(foo) after view is rendered');
+  didChange = NO;
+
+  v.set('bar', 'buz');
+  ok(didChange, 'didChange on set(bar) after view is rendered');
+});
+
+test("invokes createChildViews()", function () {
+  var didInvoke = NO;
+  var v = SC.View.create({
+    // override just for test
+    createChildViews: function () { didInvoke = YES; }
+  });
+  ok(didInvoke, 'did invoke createChildViews()');
+});
+
+test("does NOT create layer", function () {
+  var v = SC.View.create();
+  equal(v.get('layer'), null, 'did not create layer');
+});
+
+
+
+});minispade.register('sproutcore-views/~tests/view/insertBefore', function() {// ==========================================================================
+// Project:   SproutCore - JavaScript Application Framework
+// Copyright: ©2006-2011 Apple Inc. and contributors.
+// License:   Licensed under MIT license (see license.js)
+// ==========================================================================
+
+/*global module test equals context ok same */
+
+var parent, child;
+module("SC.View#insertBefore", {
+	setup: function() {
+	  child = SC.View.create();
+	  parent = SC.View.create({
+	    childViews: [SC.View]
+	  });
+	}
+});
+
+test("returns receiver", function() {
+  equal(parent.insertBefore(child, null), parent, 'receiver');
+});
+
+test("makes set child.parentView = to new parent view", function() {
+	ok(child.get('parentView')!==parent, 'precond - parent is not child.parentView yet');
+
+	// add observer to make sure property change triggers
+	var callCount = 0;
+	child.addObserver('parentView', function() {
+	  callCount++;
+	});
+
+	parent.insertBefore(child, null);
+	equal(child.get('parentView'), parent, 'parent is child.parentView');
+	equal(callCount, 1, 'observer did fire');
+});
+
+test("insertBefore(child, null) appends child to end of parent.childView's array", function() {
+	parent.insertBefore(child, null);
+	equal(parent.childViews[parent.childViews.length-1], child, 'child is last childView');
+});
+
+test("insertBefore(child, otherChild) inserts child before other child view", function() {
+
+  var otherChild = parent.childViews[0]; // get current first child
+  ok(otherChild, 'precond - otherChild is not null');
+  parent.insertBefore(child, otherChild);
+  equal(parent.childViews[0], child, 'child inserted before other child');
+});
+
+test("invokes willAddChild() on receiver if defined before adding child" ,function() {
+
+  // monkey patch to test
+  var callCount = 0;
+  var otherChild = parent.childViews[0];
+  parent.willAddChild = function(newChild, beforeView) {
+
+  	// verify params
+  	equal(newChild, child, 'passed newChild');
+  	equal(beforeView, otherChild, 'passed beforeView');
+
+  	// verify this is called BEFORE the view is added
+  	ok(parent.childViews.indexOf(child)<0, 'should not have child yet');
+  	ok(child.get('parentView')!==parent, 'childView not changed yet either');
+  	callCount++;
+  };
+
+
+  parent.insertBefore(child, otherChild);
+  equal(callCount, 1, 'invoked');
+});
+
+test("invokes willAddToParent() on child view if defined before adding child" ,function() {
+
+  // monkey patch to test
+  var callCount = 0;
+  var otherChild = parent.childViews[0];
+  child.willAddToParent = function(parentView, beforeView) {
+
+  	// verify params
+  	equal(parentView, parent, 'passed parent');
+  	equal(beforeView, otherChild, 'passed beforeView');
+
+  	// verify this is called BEFORE the view is added
+  	ok(parent.childViews.indexOf(child)<0, 'should not have child yet');
+  	ok(child.get('parentView')!==parent, 'childView not changed yet either');
+  	callCount++;
+  };
+
+
+  parent.insertBefore(child, otherChild);
+  equal(callCount, 1, 'invoked');
+});
+
+test("invokes didAddChild() on receiver if defined after adding child" ,function() {
+
+  // monkey patch to test
+  var callCount = 0;
+  var otherChild = parent.childViews[0];
+  parent.didAddChild = function(newChild, beforeView) {
+
+  	// verify params
+  	equal(newChild, child, 'passed newChild');
+  	equal(beforeView, otherChild, 'passed beforeView');
+
+  	// verify this is called AFTER the view is added
+  	ok(parent.childViews.indexOf(child)>=0, 'should have child');
+  	ok(child.get('parentView')===parent, 'childView should have new parentView');
+  	callCount++;
+  };
+
+  SC.RunLoop.begin();
+  parent.insertBefore(child, otherChild);
+  SC.RunLoop.end();
+
+  equal(callCount, 1, 'invoked');
+});
+
+test("invokes didAddToParent() on child view if defined after adding child" ,function() {
+
+  // monkey patch to test
+  var callCount = 0;
+  var otherChild = parent.childViews[0];
+  child.didAddToParent = function(parentView, beforeView) {
+
+  	// verify params
+  	equal(parentView, parent, 'passed parent');
+  	equal(beforeView, otherChild, 'passed beforeView');
+
+  	// verify this is called AFTER the view is added
+  	ok(parent.childViews.indexOf(child)>=0, 'should have child');
+  	ok(child.get('parentView')===parent, 'childView should have new parentView');
+  	callCount++;
+  };
+
+  SC.RunLoop.begin();
+  parent.insertBefore(child, otherChild);
+  SC.RunLoop.end();
+
+  equal(callCount, 1, 'invoked');
+});
+
+// VERIFY LAYER CHANGES ARE DEFERRED
+test("should not move layer immediately");
+// , function() {
+
+//   parent.createLayer();
+//   child.createLayer();
+
+//   ok(parent.get('layer'), 'precond - parent has layer');
+//   ok(child.get('layer'), 'precond - child has layer');
+
+//   parent.insertBefore(child, null);
+//   ok(child.get('layer').parentNode !== parent.get('layer'), 'did not move layer');
+
+// });
+
+// .......................................................
+// appendChild()
+//
+
+module('SC.View#appendChild', {
+  setup: function() {
+    parent = SC.View.create({
+      childViews: [SC.View, SC.View]
+    });
+
+    child = SC.View.create();
+  }
+});
+
+test("returns receiver", function() {
+  equal(parent.appendChild(child, null), parent, 'receiver');
+});
+
+
+test("should add child to end of childViews", function() {
+  parent.appendChild(child);
+  equal(parent.childViews[parent.childViews.length-1], child, 'child is last child view');
+});
+
+
+
+});minispade.register('sproutcore-views/~tests/view/isVisible', function() {// // ==========================================================================
+// // Project:   SproutCore - JavaScript Application Framework
+// // Copyright: ©2006-2011 Strobe Inc. and contributors.
+// //            ©2008-2011 Apple Inc. All rights reserved.
+// // License:   Licensed under MIT license (see license.js)
+// // ==========================================================================
+// // ========================================================================
+// // View metrics Unit Tests
+// // ========================================================================
+// /*globals module test ok isObj equals expects */
+//
+// /**
+//   These tests verify that all view metrics -- frame, clippingFrame,
+//   isVisibleInWindow, etc. are correct.
+// */
+//
+// // ..........................................................
+// // BASE TESTS
+// //
+// // These tests exercise the API.  See below for tests that cover edge
+// // conditions.  If you find a bug, we recommend that you add a test in the
+// // edge case section.
+//
+// var FRAME = { x: 10, y: 10, width: 30, height: 30 };
+//
+// var pane, view; // test globals
+//
+// module("isVisible", {
+//
+//   setup: function() {
+//     pane = SC.MainPane.create();
+//     view = SC.View.create();
+//   },
+//
+//   teardown: function() {
+//     view.destroy();
+//     pane.remove().destroy();
+//     pane = view = null;
+//   }
+//
+// });
+//
+// test("a new view should not be visible initially", function() {
+//   ok(view.get('isVisible'), "view.get('isVisible') === NO");
+// });
+//
+// test("initializing with isVisible: false, should still add the proper class on append", function() {
+//   var newView = SC.View.create({
+//     isVisible: false
+//   });
+//
+//   SC.RunLoop.begin();
+//   pane.append();
+//   pane.appendChild(newView);
+//   SC.RunLoop.end();
+//   ok(newView.$().hasClass('sc-hidden'), "newView.$().hasClass('sc-hidden') should be true");
+// });
+//
+// test("adding a new view to a visible pane should make it visible", function() {
+//   ok(view.get('isVisible'), "view.get('isVisible') === YES");
+//   ok(pane.get('isVisible'), "pane.get('isVisible') === YES");
+//   SC.RunLoop.begin();
+//   pane.appendChild(view);
+//   pane.append();
+//   view.set('isVisible', NO);
+//   SC.RunLoop.end();
+//   ok(!view.get('isVisible'), "after pane.appendChild(view), view.get('isVisible') === YES");
+//   ok(view.$().hasClass('sc-hidden'), "after view.set('isVisible', NO), view.$().hasClass('sc-hidden') should be true");
+// });
+//
+// test("a view with visibility can have a child view without visibility", function() {
+//   var pane = SC.Pane.create({
+//     childViews: ['visibleChild'],
+//
+//     visibleChild: SC.View.design({
+//       childViews: ['noVisibilityChild'],
+//       noVisibilityChild: SC.CoreView
+//     })
+//   });
+//
+//   var errored = false;
+//
+//   try {
+//     pane.append();
+//     pane.remove().destroy();
+//   } catch(e) {
+//     errored = true;
+//   } finally {
+//     try {
+//       pane.remove().destroy();
+//     } catch(e2) {
+//       errored = true;
+//     }
+//   }
+//
+//   ok(!errored, "Inserting a pane containing a child with visibility that itself has a child without visibility does not cause an error");
+// });
+//
+// // Test for issue #1093.
+// test("a view whose pane is removed during an isVisible transition gets correctly hidden", function() {
+//   SC.RunLoop.begin();
+//   var pane = SC.Pane.create({
+//     childViews: ['childView'],
+//     childView: SC.View.extend({
+//       transitionHide: { run: function (view) {
+//         view.animate('opacity', 0, 0.4, function () { this.didTransitionOut(); });
+//       }}
+//     })
+//   });
+//   pane.append();
+//   pane.childView.set('isVisible', NO);
+//   equal(pane.childView.get('viewState'), SC.CoreView.ATTACHED_HIDING, 'View is transitioning');
+//   pane.remove();
+//   SC.RunLoop.end();
+//   SC.RunLoop.begin();
+//   pane.append();
+//   ok(pane.childView.$().hasClass('sc-hidden'), 'View was successfully hidden.')
+//   pane.remove();
+//   pane.destroy();
+//   SC.RunLoop.end();
+// });
+
+});minispade.register('sproutcore-views/~tests/view/isVisibleInWindow', function() {// // ==========================================================================
+// // Project:   SproutCore - JavaScript Application Framework
+// // Copyright: ©2006-2011 Strobe Inc. and contributors.
+// //            ©2008-2011 Apple Inc. All rights reserved.
+// // License:   Licensed under MIT license (see license.js)
+// // ==========================================================================
+// // ========================================================================
+// // View metrics Unit Tests
+// // ========================================================================
+// /*global module, test, ok, equals */
+//
+// /**
+//   These tests verify that all view metrics -- frame, clippingFrame,
+//   isVisibleInWindow, etc. are correct.
+// */
+//
+// // ..........................................................
+// // BASE TESTS
+// //
+// // These tests exercise the API.  See below for tests that cover edge
+// // conditions.  If you find a bug, we recommend that you add a test in the
+// // edge case section.
+//
+// var pane, view; // test globals
+//
+// module("isVisibleInWindow", {
+//
+//   setup: function () {
+//     pane = SC.MainPane.create();
+//     pane.append();
+//     view = SC.View.create();
+//   },
+//
+//   teardown: function () {
+//     view.destroy();
+//     pane.remove().destroy();
+//     pane = null;
+//   }
+//
+// });
+//
+// test("a new view should not be visible initially", function () {
+//   ok(!view.get('isVisibleInWindow'), "view.get('isVisibleInWindow') === NO");
+// });
+//
+// test("adding a new view to a visible pane should make it visible", function () {
+//   ok(!view.get('isVisibleInWindow'), "view.get('isVisibleInWindow') === NO");
+//   ok(pane.get('isVisibleInWindow'), "pane.get('isVisibleInWindow') === YES");
+//
+//   pane.appendChild(view);
+//   ok(view.get('isVisibleInWindow'), "after pane.appendChild(view), view.get('isVisibleInWindow') === YES");
+// });
+//
+// test("removing a view from a visible pane should make it invisible again", function () {
+//   ok(!view.get('isVisibleInWindow'), "view.get('isVisibleInWindow') === NO");
+//   ok(pane.get('isVisibleInWindow'), "pane.get('isVisibleInWindow') === YES");
+//   pane.appendChild(view);
+//   ok(view.get('isVisibleInWindow'), "after pane.appendChild(view), view.get('isVisibleInWindow') === YES");
+//
+//   view.removeFromParent();
+//   ok(!view.get('isVisibleInWindow'), "after view.removeFromParent(), view.get('isVisibleInWindow') === NO");
+// });
+//
+// // .......................................................
+// // integration with updateLayer and layoutChildViews
+// //
+// test("_executeDoUpdateContent should not be invoked even if layer becomes dirty until isVisibleInWindow changes, then it should invoke", function () {
+//
+//   var callCount = 0;
+//   view._executeDoUpdateContent = function () {
+//     SC.View.prototype._executeDoUpdateContent.apply(this, arguments);
+//     callCount++;
+//   };
+//   ok(!view.get('isVisibleInWindow'), 'precond - view should not be visible to start');
+//
+//   SC.run(function () {
+//     view.displayDidChange();
+//   });
+//   equal(callCount, 0, '_executeDoUpdateContent should not run b/c it\'s not visible');
+//
+//   view.set('isVisible', false);
+//
+//   SC.run(function () {
+//     pane.appendChild(view); // Attach the view.
+//     view.displayDidChange();
+//   });
+//   equal(callCount, 0, '_executeDoUpdateContent should not run b/c it\'s not visible');
+//
+//   SC.run(function () {
+//     view.set('isVisible', true);
+//     ok(view.get('isVisibleInWindow'), 'view should now be visible in window');
+//   });
+//   equal(callCount, 1, '_executeDoUpdateContent should exec now b/c the view is visible');
+// });
+//
+// test("_doUpdateLayoutStyle should not be invoked even if layer needs layout until isVisibleInWindow changes, then it should invoke", function () {
+//
+//   var child = SC.View.create();
+//   view.appendChild(child);
+//
+//   var callCount = 0;
+//   child._doUpdateLayoutStyle = function () { callCount++; };
+//   ok(!view.get('isVisibleInWindow'), 'precond - view should not be visible to start');
+//
+//   SC.run(function () {
+//     child.layoutDidChange();
+//   });
+//
+//   equal(callCount, 0, '_doUpdateLayoutStyle should not run b/c its not shown');
+//
+//   view.set('isVisible', false);
+//
+//   SC.run(function () {
+//     pane.appendChild(view); // Attach the view.
+//     child.layoutDidChange();
+//   });
+//   equal(callCount, 0, '_doUpdateLayoutStyle should not run b/c its not shown');
+//
+//   SC.run(function () {
+//     view.set('isVisible', true);
+//     ok(view.get('isVisibleInWindow'), 'view should now be visible in window');
+//   });
+//   equal(callCount, 1, '_doUpdateLayoutStyle should exec now b/c the child was appended to a shown parent');
+// });
+//
+// test("setting isVisible to NO should trigger a layer update to hide the view", function () {
+//
+//   SC.RunLoop.begin();
+//   pane.appendChild(view);
+//   SC.RunLoop.end();
+//
+//   SC.RunLoop.begin();
+//   view.set('isVisible', NO);
+//   SC.RunLoop.end();
+//
+//   ok(view.renderContext(view.get('layer')).classes().indexOf('sc-hidden') >= 0, "layer should have the 'sc-hidden' class");
+// });
+
+});minispade.register('sproutcore-views/~tests/view/keyboard', function() {// ==========================================================================
+// Project:   SproutCore - JavaScript Application Framework
+// Copyright: ©2006-2011 Strobe Inc. and contributors.
+//            ©2008-2011 Apple Inc. All rights reserved.
+// License:   Licensed under MIT license (see license.js)
+// ==========================================================================
+/*global module, test, ok, equals */
+var originalTabbing;
+
+module("SC.View - Keyboard support with Tabbing Only Inside Document", {
+  setup: function () {
+    originalTabbing = SC.TABBING_ONLY_INSIDE_DOCUMENT;
+    SC.TABBING_ONLY_INSIDE_DOCUMENT = YES;
+  },
+
+  teardown: function () {
+    SC.TABBING_ONLY_INSIDE_DOCUMENT = originalTabbing;
+  }
+});
+
+test("Views only attempt to call performKeyEquivalent on child views that support it", function () {
+  var performKeyEquivalentCalled = 0;
+
+  var view = SC.View.design({
+    childViews: ['unsupported', 'supported'],
+
+    unsupported: SC.CoreView,
+    supported: SC.View.design({
+      performKeyEquivalent: function (str) {
+        performKeyEquivalentCalled++;
+        return NO;
+      }
+    })
+  });
+
+  view = view.create();
+  view.performKeyEquivalent("ctrl_r");
+
+  ok(performKeyEquivalentCalled > 0, "performKeyEquivalent is called on the view that supports it");
+  view.destroy();
+});
+
+/**
+  nextValidKeyView tests
+*/
+
+test("nextValidKeyView is receiver if it is the only view that acceptsFirstResponder", function () {
+  var testView = SC.View.extend({acceptsFirstResponder: YES}),
+  pane = SC.Pane.create({
+    childViews: ['view1', 'view2'],
+
+    view1: SC.View.extend({
+      childViews: ['view3', 'view4'],
+
+      view3: SC.View,
+
+      view4: testView
+    }),
+
+    view2: SC.View.extend({
+      childViews: ['view5', 'view6'],
+
+      view5: SC.View,
+
+      view6: SC.View
+    })
+  });
+  pane.append();
+
+  equal(pane.view1.view4.get('nextValidKeyView'), pane.view1.view4, "nextValidKeyView is receiver");
+
+  pane.remove();
+  pane.destroy();
+});
+
+test("nextValidKeyView is null if no views have acceptsFirstResponder === YES", function () {
+  var pane = SC.Pane.create({
+    childViews: ['view1', 'view2'],
+
+    view1: SC.View.extend({
+      childViews: ['view3', 'view4'],
+
+      view3: SC.View,
+
+      view4: SC.View
+    }),
+
+    view2: SC.View.extend({
+      childViews: ['view5', 'view6'],
+
+      view5: SC.View,
+
+      view6: SC.View
+    })
+  });
+  pane.append();
+
+  ok(SC.none(pane.view1.view4.get('nextValidKeyView')), "nextValidKeyView is null");
+
+  pane.remove();
+  pane.destroy();
+});
+
+test("firstKeyView and nextKeyView of parents are respected", function () {
+  var testView = SC.View.extend({acceptsFirstResponder: YES}),
+  pane = SC.Pane.create({
+    childViews: ['view1', 'view2', 'view7'],
+
+    view1: SC.View.extend({
+      childViews: ['view3', 'view4'],
+
+      view3: testView,
+
+      view4: testView
+    }),
+
+    view2: SC.View.extend({
+      childViews: ['view5', 'view6'],
+
+      view5: testView,
+
+      view6: testView
+    }),
+
+    view7: SC.View.extend({
+      childViews: ['view8', 'view9'],
+
+      view8: testView,
+
+      view9: testView
+    })
+  });
+
+  pane.append();
+
+  equal(pane.view2.view6.get('nextValidKeyView'), pane.view7.view8, "order is correct when first and next not set");
+
+  pane.set('firstKeyView', pane.view2);
+  pane.view2.set('nextKeyView', pane.view1);
+  pane.view1.set('nextKeyView', pane.view7);
+
+  equal(pane.view2.view6.get('nextValidKeyView'), pane.view1.view3, "order is respected when first and next are set");
+  pane.remove();
+  pane.destroy();
+});
+
+test("nextValidKeyView is chosen correctly when nextKeyView is not a sibling", function () {
+  var testView = SC.View.extend({acceptsFirstResponder: YES}),
+  pane = SC.Pane.create({
+    childViews: ['view1', 'view2'],
+
+    view1: SC.View.extend({
+      childViews: ['view3', 'view4'],
+
+      view3: SC.View,
+
+      view4: testView
+    }),
+
+    view2: SC.View.extend({
+      childViews: ['view5', 'view6'],
+
+      view5: testView,
+
+      view6: SC.View
+    })
+  });
+
+  pane.append();
+
+  pane.view1.view4.set('nextKeyView', pane.view2.view5);
+  pane.view2.view5.set('nextKeyView', pane.view1.view4);
+
+  equal(pane.view1.view4.get('nextValidKeyView'), pane.view2.view5, "nextValidKeyView is correct");
+  equal(pane.view2.view5.get('nextValidKeyView'), pane.view1.view4, "nextValidKeyView is correct");
+  pane.remove();
+  pane.destroy();
+});
+
+test("nextValidKeyView is chosen correctly when child of parent's previous sibling has nextKeyView set", function () {
+  var testView = SC.View.extend({acceptsFirstResponder: YES}),
+  pane = SC.Pane.create({
+    childViews: ['view1', 'view2'],
+
+    view1: SC.View.extend({
+      childViews: ['view3', 'view4'],
+
+      view3: testView,
+
+      view4: testView
+    }),
+
+    view2: SC.View.extend({
+      childViews: ['view5', 'view6'],
+
+      view5: testView,
+
+      view6: testView
+    })
+  });
+
+  pane.view1.view3.set('nextKeyView', pane.view1.view4);
+  pane.append();
+
+  equal(pane.view2.view5.get('nextValidKeyView'), pane.view2.view6, "nextValidKeyView chosen is next sibling");
+  pane.remove();
+  pane.destroy();
+});
+
+test("nextValidKeyView checks for acceptsFirstResponder", function () {
+  var pane = SC.Pane.create({
+    childViews: ['view1', 'view2'],
+
+    view1: SC.View.extend({
+      acceptsFirstResponder: YES
+    }),
+
+    view2: SC.View.extend({
+      acceptsFirstResponder: NO
+    })
+  });
+
+  pane.view1.set('nextKeyView', pane.view2);
+  pane.append();
+
+  ok(pane.view1.get('nextValidKeyView') !== pane.view2, "nextValidKeyView is not nextKeyView because nextKeyView acceptsFirstResponder === NO");
+  pane.remove();
+  pane.destroy();
+});
+
+test("nextValidKeyView prioritizes parent's lastKeyView even if nextKeyView is set", function () {
+  var testView = SC.View.extend({acceptsFirstResponder: YES}),
+  pane = SC.Pane.create({
+    childViews: ['view1', 'view2'],
+
+    view1: SC.View.extend({
+      childViews: ['view3', 'view4'],
+
+      lastKeyView: function () {
+        return this.view3;
+      }.property(),
+
+      view3: testView,
+
+      view4: testView
+    }),
+
+    view2: SC.View.extend({
+      childViews: ['view5', 'view6'],
+
+      view5: testView,
+
+      view6: testView
+    })
+  });
+
+  pane.append();
+
+  equal(pane.view1.view3.get('nextValidKeyView'), pane.view2.view5, "lastKeyView was respected; views after lastKeyView were skipped");
+  pane.remove();
+  pane.destroy();
+});
+
+/**
+  previousValidKeyView tests
+*/
+
+test("previousValidKeyView is receiver if it is the only view that acceptsFirstResponder", function () {
+  var testView = SC.View.extend({acceptsFirstResponder: YES}),
+  pane = SC.Pane.create({
+    childViews: ['view1', 'view2'],
+
+    view1: SC.View.extend({
+      childViews: ['view3', 'view4'],
+
+      view3: SC.View,
+
+      view4: testView
+    }),
+
+    view2: SC.View.extend({
+      childViews: ['view5', 'view6'],
+
+      view5: SC.View,
+
+      view6: SC.View
+    })
+  });
+
+  pane.append();
+
+  equal(pane.view1.view4.get('previousValidKeyView'), pane.view1.view4, "previousValidKeyView is receiver");
+  pane.remove();
+  pane.destroy();
+});
+
+test("previousValidKeyView is null if no views have acceptsFirstResponder === YES", function () {
+  var pane = SC.Pane.create({
+    childViews: ['view1', 'view2'],
+
+    view1: SC.View.extend({
+      childViews: ['view3', 'view4'],
+
+      view3: SC.View,
+
+      view4: SC.View
+    }),
+
+    view2: SC.View.extend({
+      childViews: ['view5', 'view6'],
+
+      view5: SC.View,
+
+      view6: SC.View
+    })
+  });
+
+  pane.append();
+
+  ok(SC.none(pane.view1.view4.get('previousValidKeyView')), "previousValidKeyView is null");
+  pane.remove();
+  pane.destroy();
+});
+
+test("lastKeyView and previousKeyView of parents are respected", function () {
+  var testView = SC.View.extend({acceptsFirstResponder: YES}),
+  pane = SC.Pane.create({
+    childViews: ['view1', 'view2', 'view7'],
+
+    view1: SC.View.extend({
+      childViews: ['view3', 'view4'],
+
+      view3: testView,
+
+      view4: testView
+    }),
+
+    view2: SC.View.extend({
+      childViews: ['view5', 'view6'],
+
+      view5: testView,
+
+      view6: testView
+    }),
+
+    view7: SC.View.extend({
+      childViews: ['view8', 'view9'],
+
+      view8: testView,
+
+      view9: testView
+    })
+  });
+
+  pane.append();
+
+  equal(pane.view2.view5.get('previousValidKeyView'), pane.view1.view4, "order is correct when last and previous not set");
+
+  pane.set('lastKeyView', pane.view2);
+  pane.view2.set('previousKeyView', pane.view7);
+  pane.view1.set('previousKeyView', pane.view1);
+
+  equal(pane.view2.view5.get('previousValidKeyView'), pane.view7.view9, "order is respected when last and previous are set");
+  pane.remove();
+  pane.destroy();
+});
+
+test("previousValidKeyView is chosen correctly when previousKeyView is not a sibling", function () {
+  var testView = SC.View.extend({acceptsFirstResponder: YES}),
+  pane = SC.Pane.create({
+    childViews: ['view1', 'view2'],
+
+    view1: SC.View.extend({
+      childViews: ['view3', 'view4'],
+
+      view3: SC.View,
+
+      view4: testView
+    }),
+
+    view2: SC.View.extend({
+      childViews: ['view5', 'view6'],
+
+      view5: testView,
+
+      view6: SC.View
+    })
+  });
+
+  pane.append();
+
+  pane.view1.view4.set('previousKeyView', pane.view2.view5);
+  pane.view2.view5.set('previousKeyView', pane.view1.view4);
+
+  equal(pane.view1.view4.get('previousValidKeyView'), pane.view2.view5, "previousValidKeyView is correct");
+  equal(pane.view2.view5.get('previousValidKeyView'), pane.view1.view4, "previousValidKeyView is correct");
+  pane.remove();
+  pane.destroy();
+});
+
+test("previousValidKeyView prioritizes parent's firstKeyView even if previousKeyView is set", function () {
+  var testView = SC.View.extend({acceptsFirstResponder: YES}),
+  pane = SC.Pane.create({
+    childViews: ['view1', 'view2'],
+
+    view1: SC.View.extend({
+      childViews: ['view3', 'view4'],
+
+      view3: testView,
+
+      view4: testView
+    }),
+
+    view2: SC.View.extend({
+      childViews: ['view5', 'view6'],
+
+      firstKeyView: function () {
+        return this.view6;
+      }.property(),
+
+      view5: testView,
+
+      view6: testView
+    })
+  });
+
+  pane.append();
+
+  equal(pane.view2.view6.get('previousValidKeyView'), pane.view1.view4, "firstKeyView was respected; views before firstKeyView were skipped");
+  pane.remove();
+  pane.destroy();
+});
+
+
+module("SC.View - Keyboard support with Tabbing Outside of Document");
+
+test("forward tab with no next responder moves out of document");
+
+test("backwards tab with no previous responder moves out of document");
+
+});minispade.register('sproutcore-views/~tests/view/layer', function() {// ==========================================================================
+// Project:   SproutCore - JavaScript Application Framework
+// Copyright: ©2006-2011 Apple Inc. and contributors.
+// License:   Licensed under MIT license (see license.js)
+// ==========================================================================
+
+/*global module, test, equals, context, ok, same, precondition */
+
+// NOTE: it is very important to make sure that the layer is not created
+// until the view is actually visible in the window.
+
+module("SC.View#layer");
+
+test("returns null if the view has no layer and no parent view", function() {
+  var view = SC.View.create() ;
+  equal(view.get('parentView'), null, 'precond - has no parentView');
+  equal(view.get('layer'), null, 'has no layer');
+});
+
+test("returns null if the view has no layer and parent view has no layer", function() {
+  var parent = SC.View.create({
+     childViews: [ SC.View.extend() ]
+  });
+  var view = parent.childViews[0];
+
+  equal(view.get('parentView'), parent, 'precond - has parent view');
+  equal(parent.get('layer'), null, 'parentView has no layer');
+  equal(view.get('layer'), null, ' has no layer');
+});
+
+test("returns layer if you set the value", function() {
+  var view = SC.View.create();
+  equal(view.get('layer'), null, 'precond- has no layer');
+
+  var dom = document.createElement('div');
+  view.set('layer', dom);
+
+  equal(view.get('layer'), dom, 'now has set layer');
+
+  dom = null;
+});
+
+var parent, child, parentDom, childDom ;
+module("SC.View#layer - autodiscovery", {
+  setup: function() {
+
+    parent = SC.View.create({
+       childViews: [ SC.View.extend({
+         // redefine this method in order to isolate testing of layer prop.
+         // simple version just returns firstChild of parentLayer.
+         findLayerInParentLayer: function(parentLayer) {
+           return parentLayer.firstChild;
+         }
+       }) ]
+    });
+    child = parent.childViews[0];
+
+    // setup parent/child dom
+    parentDom = document.createElement('div');
+    childDom = document.createElement('div');
+    parentDom.appendChild(childDom);
+
+    // set parent layer...
+    parent.set('layer', parentDom);
+  },
+
+  teardown: function() {
+    parent = child = parentDom = childDom = null ;
+  }
+});
+
+test("discovers layer if has no layer but parent view does have layer", function() {
+  equal(parent.get('layer'), parentDom, 'precond - parent has layer');
+  ok(!!parentDom.firstChild, 'precond - parentDom has first child');
+
+  equal(child.get('layer'), childDom, 'view discovered child');
+});
+
+test("once its discovers layer, returns the same element, even if you remove it from the parent view", function() {
+  equal(child.get('layer'), childDom, 'precond - view discovered child');
+  parentDom.removeChild(childDom) ;
+
+  equal(child.get('layer'), childDom, 'view kept layer cached (i.e. did not do a discovery again)');
+});
+
+module("SC.View#layer - destroying");
+
+test("returns null again if it has layer and layer is destroyed");
+
+test("returns null again if parent view's layer is destroyed");
+
+var pane, view ;
+module("SC.View#$", {
+  setup: function() {
+    pane = SC.Pane.design()
+      .childView(SC.View.design({
+        render: function(context, firstTime) {
+          context.push('<span></span>');
+        }
+      })).create();
+
+    view = pane.childViews[0];
+
+    SC.RunLoop.begin();
+    pane.append(); // add to create layer...
+    SC.RunLoop.end();
+  },
+
+  teardown: function() {
+    SC.RunLoop.begin();
+    pane.remove();
+    SC.RunLoop.end();
+  }
+});
+
+test("returns an empty CQ object if no layer", function() {
+  var v = SC.View.create();
+  ok(!v.get('layer'), 'precond - should have no layer');
+  equal(v.$().size(), 0, 'should return empty CQ object');
+  equal(v.$('span').size(), 0, 'should return empty CQ object even if filter passed');
+});
+
+test("returns CQ object selecting layer if provided", function() {
+  ok(view.get('layer'), 'precond - should have layer');
+
+  var cq = view.$();
+  equal(cq.size(), 1, 'view.$() should have one element');
+  equal(cq.get(0), view.get('layer'), 'element should be layer');
+});
+
+test("returns CQ object selecting element inside layer if provided", function() {
+  ok(view.get('layer'), 'precond - should have layer');
+
+  var cq = view.$('span');
+  equal(cq.size(), 1, 'view.$() should have one element');
+  equal(cq.get(0).parentNode, view.get('layer'), 'element should be in layer');
+});
+
+test("returns empty CQ object if filter passed that does not match item in parent", function() {
+  ok(view.get('layer'), 'precond - should have layer');
+
+  var cq = view.$('body'); // would normally work if not scoped to view
+  equal(cq.size(), 0, 'view.$(body) should have no elements');
+});
+
+var parentView;
+
+module("Notifies that layer has changed whenever re-render", {
+
+  setup: function () {
+    parentView = SC.View.create({
+      childViews: ['a', 'b', SC.View],
+
+      containerLayer: function () {
+        return this.$('._wrapper')[0];
+      }.property('layer').cacheable(),
+
+      a: SC.View,
+      b: SC.View,
+
+      render: function (context) {
+        context = context.begin().addClass('_wrapper');
+        this.renderChildViews(context);
+        context = context.end();
+      }
+    });
+  },
+
+  teardown: function () {
+    parentView.destroy();
+    parentView = null;
+  }
+
+});
+
+/**
+  If the containerLayer property is cached, then when the view re-renders and the original container layer
+  element is lost, the containerLayer property will be invalid.  Instead, whenever the view updates,
+  we have to indicate that the 'layer' property has changed.
+  */
+test("containerLayer should be able to be dependent on layer so that it invalidates when updated", function () {
+  var containerLayer;
+
+  // Render the parent view and attach.
+  parentView.createLayer();
+  parentView._doAttach(document.body);
+
+  // Get the container layer.
+  containerLayer = parentView.get('containerLayer');
+
+  // Rerender the view.
+  SC.run(function () {
+    parentView.displayDidChange();
+  });
+
+  ok(containerLayer !== parentView.get('containerLayer'), "The container layer should not be the same anymore.");
+});
+
+});minispade.register('sproutcore-views/~tests/view/layout', function() {// ==========================================================================
+// Project:   SproutCore - JavaScript Application Framework
+// Copyright: ©2006-2011 Strobe Inc. and contributors.
+//            ©2008-2011 Apple Inc. All rights reserved.
+// License:   Licensed under MIT license (see license.js)
+// ==========================================================================
+
+/*global module, test, equals, ok */
+
+var view;
+
+/** Test isFixedLayout via isFixedSize and isFixedPosition properties. */
+module("SC.View.prototype.isFixedLayout", {
+
+  setup: function () {
+    // Create a basic view.
+    view = SC.View.create({});
+  },
+
+  teardown: function () {
+    // Clean up.
+    view.destroy();
+    view = null;
+  }
+
+});
+
+test("Test isFixedSize for various layouts.", function () {
+  ok(!view.get('isFixedSize'), "The default layout doesn't correspond to a fixed size.");
+
+  SC.run(function () { view.set('layout', { width: 100 }); });
+  ok(!view.get('isFixedSize'), "A width alone doesn't correspond to a fixed size.");
+
+  SC.run(function () { view.set('layout', { height: 100 }); });
+  ok(!view.get('isFixedSize'), "A height alone doesn't correspond to a fixed size.");
+
+  SC.run(function () { view.set('layout', { width: 100, height: 100 }); });
+  ok(view.get('isFixedSize'), "A width & height corresponds to a fixed size.");
+});
+
+test("Test isFixedPosition for various layouts.", function () {
+  ok(view.get('isFixedPosition'), "The default layout corresponds to a fixed position.");
+
+  SC.run(function () { view.set('layout', { left: 0 }); });
+  ok(view.get('isFixedPosition'), "A left: 0 (implied top, bottom, right) corresponds to a fixed position.");
+
+  SC.run(function () { view.set('layout', { top: 0 }); });
+  ok(view.get('isFixedPosition'), "A top: 0 (implied left, bottom, right) corresponds to a fixed position.");
+
+  SC.run(function () { view.set('layout', { left: 0, top: 0 }); });
+  ok(view.get('isFixedPosition'), "A left: 0, top: 0 corresponds to a fixed position.");
+
+  SC.run(function () { view.set('layout', { left: 50 }); });
+  ok(view.get('isFixedPosition'), "A left: 50 corresponds to a fixed position.");
+
+  SC.run(function () { view.set('layout', { top: 50 }); });
+  ok(view.get('isFixedPosition'), "A top: 50 corresponds to a fixed position.");
+
+  SC.run(function () { view.set('layout', { left: 50, top: 50 }); });
+  ok(view.get('isFixedPosition'), "A left: 50, top: 50 corresponds to a fixed position.");
+
+  SC.run(function () { view.set('layout', { right: 0 }); });
+  ok(view.get('isFixedPosition'), "A right: 0 (implied left) corresponds to a fixed position.");
+
+  SC.run(function () { view.set('layout', { bottom: 0 }); });
+  ok(view.get('isFixedPosition'), "A bottom: 0 (implied top) corresponds to a fixed position.");
+
+  SC.run(function () { view.set('layout', { right: 50 }); });
+  ok(view.get('isFixedPosition'), "A right: 50 (implied left) corresponds to a fixed position.");
+
+  SC.run(function () { view.set('layout', { bottom: 50 }); });
+  ok(view.get('isFixedPosition'), "A bottom: 50 (implied top) corresponds to a fixed position.");
+
+  SC.run(function () { view.set('layout', { width: 100 }); });
+  ok(view.get('isFixedPosition'), "A width: 100 (implied left) corresponds to a fixed position.");
+
+  SC.run(function () { view.set('layout', { height: 100 }); });
+  ok(view.get('isFixedPosition'), "A height: 100 (implied top) corresponds to a fixed position.");
+
+  SC.run(function () { view.set('layout', { right: 0, width: 100 }); });
+  ok(!view.get('isFixedPosition'), "A right: 0, width: 100 (overridden left) doesn't correspond to a fixed position.");
+
+  SC.run(function () { view.set('layout', { bottom: 0, height: 100 }); });
+  ok(!view.get('isFixedPosition'), "A bottom: 0, height: 100 (overridden top) doesn't correspond to a fixed position.");
+
+  SC.run(function () { view.set('layout', { centerX: 0, width: 100 }); });
+  ok(!view.get('isFixedPosition'), "A centerX: 0, width: 100 (overridden left) doesn't correspond to a fixed position.");
+
+  SC.run(function () { view.set('layout', { centerY: 0, height: 100 }); });
+  ok(!view.get('isFixedPosition'), "A centerY: 0, height: 100 (overridden top) doesn't correspond to a fixed position.");
+
+  SC.run(function () { view.set('layout', { left: 0.2 }); });
+  ok(!view.get('isFixedPosition'), "A left: 0.2 (percentage left) doesn't correspond to a fixed position.");
+
+  SC.run(function () { view.set('layout', { top: 0.2 }); });
+  ok(!view.get('isFixedPosition'), "A top: 0.2 (percentage top) doesn't correspond to a fixed position.");
+
+  SC.run(function () { view.set('layout', { left: SC.LAYOUT_AUTO }); });
+  ok(!view.get('isFixedPosition'), "A left: SC.LAYOUT_AUTO (auto left) doesn't correspond to a fixed position.");
+
+  SC.run(function () { view.set('layout', { top: SC.LAYOUT_AUTO }); });
+  ok(!view.get('isFixedPosition'), "A top: SC.LAYOUT_AUTO (auto top) doesn't correspond to a fixed position.");
+});
+
+});minispade.register('sproutcore-views/~tests/view/layoutChildViews', function() {// ==========================================================================
+// Project:   SproutCore - JavaScript Application Framework
+// Copyright: ©2006-2011 Apple Inc. and contributors.
+// License:   Licensed under MIT license (see license.js)
+// ==========================================================================
+
+/*global module test equals context ok same */
+
+// .......................................................
+// layoutChildViews()
+//
+module("SC.View#layoutChildViews");
+
+test("calls renderLayout() on child views on views that need layout if they have a layer", function() {
+
+	var callCount = 0 ;
+	var ChildView = SC.View.extend({
+		updateLayout: function(context) { callCount++; }
+	});
+
+	var view = SC.View.create({
+		childViews: [ChildView, ChildView, ChildView]
+	});
+
+	var cv1 = view.childViews[0];
+	var cv2 = view.childViews[1];
+
+	// add to set...
+	view.layoutDidChangeFor(cv1);
+	view.layoutDidChangeFor(cv2);
+
+	view.layoutChildViews();
+	equal(callCount, 2, 'updateLayout should be called on two dirty child views');
+
+	// Clean up.
+	view.destroy();
+});
+
+// .......................................................
+// updateLayout()
+//
+module("SC.View#updateLayout");
+
+test("if view has layout, calls _doUpdateLayoutStyle", function() {
+
+	// NOTE: renderLayout() is also called when a view's
+	// layer is first created.  We use isTesting below to
+	// avoid running the renderLayout() test code until we
+	// are actually doing layout.
+	var callCount = 0, isTesting = NO ;
+	var view = SC.View.create({
+		_doUpdateLayoutStyle: function() {
+			callCount++;
+		}
+	});
+
+	view.createLayer(); // we need a layer
+	ok(view.get('layer'), 'precond - should have a layer');
+
+	view.updateLayout();
+	equal(callCount, 0, 'should not call _doUpdateLayoutStyle() because the view isn\'t shown');
+
+	view.updateLayout(true);
+	equal(callCount, 1, 'should call _doUpdateLayoutStyle() because we force it');
+
+	// Clean up.
+	view.destroy();
+});
+
+test("if view has NO layout, should not call renderLayout", function() {
+
+	// NOTE: renderLayout() is also called when a view's
+	// layer is first created.  We use isTesting below to
+	// avoid running the renderLayout() test code until we
+	// are actually doing layout.
+	var callCount = 0, isTesting = NO ;
+	var view = SC.View.create({
+		renderLayout: function(context) {
+			if (!isTesting) return ;
+			callCount++;
+		}
+	});
+
+	ok(!view.get('layer'), 'precond - should NOT have a layer');
+
+	isTesting= YES ;
+	view.updateLayout();
+	equal(callCount, 0, 'should NOT call renderLayout()');
+
+	// Clean up.
+	view.destroy();
+});
+
+test("returns receiver", function() {
+	var view = SC.View.create();
+	equal(view.updateLayout(), view, 'should return receiver');
+
+	// Clean up.
+	view.destroy();
+});
+
+// .......................................................
+//  renderLayout()
+//
+module('SC.View#renderLayout');
+
+test("adds layoutStyle property to passed context", function() {
+
+	var view = SC.View.create({
+		// mock style for testing...
+		layoutStyle: { width: 50, height: 50 }
+	});
+	var context = view.renderContext();
+
+	ok(context.styles().width !== 50, 'precond - should NOT have width style');
+	ok(context.styles().height !== 50, 'precond - should NOT have height style');
+
+
+	view.renderLayout(context);
+
+	equal(context.styles().width, 50, 'should have width style');
+	equal(context.styles().height, 50, 'should have height style');
+
+	// Clean up.
+	view.destroy();
+});
+
+// .......................................................
+// layoutChildViewsIfNeeded()
+//
+var view, callCount ;
+module('SC.View#layoutChildViewsIfNeeded', {
+	setup: function() {
+		callCount = 0;
+		view = SC.View.create({
+			layoutChildViews: function() { callCount++; }
+		});
+	},
+	teardown: function() {
+		// Clean up.
+		view.destroy();
+		view = null;
+	}
+});
+
+test("calls layoutChildViews() if childViewsNeedLayout and isVisibleInWindow & sets childViewsNeedLayout to NO", function() {
+
+	view.childViewsNeedLayout = YES ;
+	view.isVisibleInWindow = YES ;
+	view.layoutChildViewsIfNeeded();
+	equal(callCount, 1, 'should call layoutChildViews()');
+	equal(view.get('childViewsNeedLayout'),NO,'should set childViewsNeedLayout to NO');
+});
+
+test("does not call layoutChildViews() if childViewsNeedLayout is NO", function() {
+
+	view.childViewsNeedLayout = NO ;
+	view.isVisibleInWindow = YES ;
+	view.layoutChildViewsIfNeeded();
+	equal(callCount, 0, 'should NOT call layoutChildViews()');
+});
+
+test("returns receiver", function() {
+	equal(view.layoutChildViewsIfNeeded(), view, 'should return receiver');
+});
+
+
+
+});minispade.register('sproutcore-views/~tests/view/layoutDidChange', function() {// ==========================================================================
+// Project:   SproutCore - JavaScript Application Framework
+// Copyright: ©2006-2011 Apple Inc. and contributors.
+// License:   Licensed under MIT license (see license.js)
+// ==========================================================================
+
+/*global module, test, equals, ok */
+
+module("SC.View.prototype.layoutDidChange");
+
+test("notifies layoutStyle & frame change", function () {
+
+  var view = SC.View.create();
+  var layoutStyleCallCount = 0, frameCallCount = 0;
+
+  view.addObserver('layoutStyle', function () { layoutStyleCallCount++; });
+  view.addObserver('frame', function () { frameCallCount++; });
+
+  SC.run(function () {
+    // Manually indicate a layout change.
+    view.layoutDidChange();
+  });
+
+  equal(frameCallCount, 1, 'should trigger observers for frame');
+  equal(layoutStyleCallCount, 0, 'should not trigger observers for layoutStyle');
+
+  // Attach to the document.
+  var parent = SC.Pane.create();
+  parent.append();
+  parent.appendChild(view);
+
+  equal(frameCallCount, 2, 'should trigger observers for frame when attached to the document');
+  equal(layoutStyleCallCount, 0, 'should still not trigger observers for layoutStyle');
+
+  SC.run(function () {
+    view.adjust('top', 20);
+  });
+
+  equal(frameCallCount, 3, 'should trigger observers for frame when attached to the document');
+  equal(layoutStyleCallCount, 1, 'should trigger observers for layoutStyle');
+
+  // Clean up.
+  view.destroy();
+  parent.destroy();
+});
+
+test("invokes layoutDidChangeFor() on layoutView each time it is called", function () {
+
+  var callCount = 0;
+  var layoutView = SC.View.create({
+    layoutDidChangeFor: function (changedView) {
+      equal(this.get('childViewsNeedLayout'), YES, 'should set childViewsNeedLayout to YES before calling layoutDidChangeFor()');
+
+      equal(view, changedView, 'should pass view');
+      callCount++;
+
+      // Original
+      var set = this._needLayoutViews;
+      if (!set) set = this._needLayoutViews = SC.Set.create();
+      set.add(changedView);
+    }
+  });
+
+  var view = SC.View.create({ layoutView: layoutView });
+
+  SC.run(function () {
+    view.layoutDidChange();
+    view.layoutDidChange();
+    view.layoutDidChange();
+  });
+
+  equal(callCount, 3, 'should call layoutView.layoutDidChangeFor each time');
+
+  // Clean up.
+  layoutView.destroy();
+  view.destroy();
+});
+
+test("invokes layoutChildViewsIfNeeded() on layoutView once per runloop", function () {
+
+  var callCount = 0;
+  var layoutView = SC.View.create({
+    layoutChildViewsIfNeeded: function () {
+      callCount++;
+    }
+  });
+
+  var view = SC.View.create({ layoutView: layoutView });
+
+  SC.run(function () {
+    view.layoutDidChange();
+    view.layoutDidChange();
+    view.layoutDidChange();
+  });
+
+  equal(callCount, 1, 'should call layoutView.layoutChildViewsIfNeeded one time');
+
+  // Clean up.
+  layoutView.destroy();
+  view.destroy();
+});
+
+
+test("should not invoke layoutChildViewsIfNeeded() if layoutDidChangeFor() sets childViewsNeedLayout to NO each time", function () {
+
+  var callCount = 0;
+  var layoutView = SC.View.create({
+    layoutDidChangeFor: function () {
+      this.set('childViewsNeedLayout', NO);
+    },
+
+    layoutChildViewsIfNeeded: function () {
+      callCount++;
+    }
+  });
+
+  var view = SC.View.create({ layoutView: layoutView });
+
+  SC.run(function () {
+    view.layoutDidChange();
+    view.layoutDidChange();
+    view.layoutDidChange();
+  });
+
+  equal(callCount, 0, 'should not call layoutView.layoutChildViewsIfNeeded');
+
+  // Clean up.
+  layoutView.destroy();
+  view.destroy();
+});
+
+test('returns receiver', function () {
+  var view = SC.View.create();
+
+  SC.run(function () {
+    equal(view.layoutDidChange(), view, 'should return receiver');
+  });
+
+  // Clean up.
+  view.destroy();
+});
+
+test("is invoked whenever layout property changes", function () {
+
+  var callCount = 0;
+  var layoutView = SC.View.create({
+    layoutDidChangeFor: function (changedView) {
+      callCount++;
+
+      // Original
+      var set = this._needLayoutViews;
+      if (!set) set = this._needLayoutViews = SC.Set.create();
+      set.add(changedView);
+    }
+  });
+
+  var view = SC.View.create({ layoutView: layoutView });
+
+  SC.run(function () {
+    view.set('layout', { top: 0, left: 10 });
+  });
+  equal(callCount, 1, 'should call layoutDidChangeFor when setting layout of child view');
+
+  // Clean up.
+  layoutView.destroy();
+  view.destroy();
+});
+
+test("is invoked on parentView if no layoutView whenever layout property changes", function () {
+
+  var callCount = 0;
+  var parentView = SC.View.create({
+    layoutDidChangeFor: function (changedView) {
+      callCount++;
+
+      // Original
+      var set = this._needLayoutViews;
+      if (!set) set = this._needLayoutViews = SC.Set.create();
+      set.add(changedView);
+    }
+  });
+
+  var view = SC.View.create({});
+  view.set('parentView', parentView);
+
+  SC.run(function () {
+    view.set('layout', { top: 0, left: 10 });
+  });
+  equal(callCount, 1, 'should call layoutDidChangeFor when setting layout of child view');
+
+  // Clean up.
+  parentView.destroy();
+  view.destroy();
+});
+
+test("sets rotateX when rotate is set", function () {
+  var view = SC.View.create({});
+
+  SC.run(function () {
+    view.set('layout', { rotate: 45 });
+  });
+
+  equal(view.get('layout').rotateX, 45, "should set rotateX");
+
+  // Clean up.
+  view.destroy();
+});
+
+test("rotateX overrides rotate", function () {
+  var view = SC.View.create({});
+
+  SC.run(function () {
+    view.set('layout', { rotate: 45, rotateX: 90 });
+  });
+
+  equal(view.get('layout').rotate, undefined, "should clear rotate for rotateX");
+
+  // Clean up.
+  view.destroy();
+});
+
+// The default implementation for viewDidResize calls internal layout-related
+// methods on child views. This test confirms that child views that do not
+// support layout do not cause this process to explode.
+test("Calling viewDidResize on a view notifies its child views", function () {
+  var regularViewCounter = 0, coreViewCounter = 0;
+
+  var view = SC.View.create({
+    childViews: ['regular', 'core'],
+
+    regular: SC.View.create({
+      viewDidResize: function () {
+        regularViewCounter++;
+        // Make sure we call the default implementation to
+        // ensure potential blow-uppy behavior is invoked
+        this._super();
+      }
+    }),
+
+    core: SC.CoreView.create({
+      viewDidResize: function () {
+        coreViewCounter++;
+        this._super();
+      }
+    })
+  });
+
+  view.viewDidResize();
+
+  equal(regularViewCounter, 1, "regular view's viewDidResize gets called");
+  equal(coreViewCounter, 1, "core view's viewDidResize gets called");
+
+  // Clean up.
+  view.destroy();
+});
+
+});minispade.register('sproutcore-views/~tests/view/layoutStyle', function() {// ==========================================================================
+// Project:   SproutCore - JavaScript Application Framework
+// Copyright: ©2006-2011 Strobe Inc. and contributors.
+//            ©2008-2011 Apple Inc. All rights reserved.
+// License:   Licensed under MIT license (see license.js)
+// ==========================================================================
+// ========================================================================
+// View Layout Unit Tests
+// ========================================================================
+
+/*global module test ok same equals */
+
+
+/* These unit tests verify:  layout(), frame(), styleLayout() and clippingFrame(). */
+(function () {
+  var parent, child, frameKeys, layoutKeys;
+
+  frameKeys = 'x y width height'.w();
+  layoutKeys = ['width', 'height', 'top', 'bottom', 'marginLeft', 'marginTop', 'left', 'right', 'zIndex',
+    'minWidth', 'maxWidth', 'minHeight', 'maxHeight', 'borderTopWidth', 'borderBottomWidth',
+    'borderLeftWidth', 'borderRightWidth'];
+
+  /*
+    helper method to test the layout of a view.  Applies the passed layout to a
+    view, then compares both its frame and layoutStyle properties both before
+    and after adding the view to a parent view.
+
+    You can pass frame rects with some properties missing and they will be
+    filled in for you just so you don't have to write so much code.
+
+    @param {Hash} layout layout hash to test
+    @param {Hash} no_f expected frame for view with no parent
+    @param {Hash} no_s expected layoutStyle for view with no parent
+    @param {Hash} with_f expected frame for view with parent
+    @param {Hash} with_s expected layoutStyle for view with parent
+    @param {Boolean} isFixedShouldBe expected value for view.get('isFixedLayout')
+    @returns {void}
+  */
+  function performLayoutTest(layout, no_f, no_s, with_f, with_s, isFixedShouldBe) {
+    if (SC.platform.supportsCSSTransforms) { layoutKeys.push('transform'); }
+
+    // make sure we add null properties and convert numbers to 'XXpx' to style layout.
+    layoutKeys.forEach(function (key) {
+      if (no_s[key] === undefined) { no_s[key] = null; }
+      if (with_s[key] === undefined) { with_s[key] = null; }
+
+
+      if (typeof no_s[key] === 'number') { no_s[key] = no_s[key].toString() + 'px'; }
+      if (typeof with_s[key] === 'number') { with_s[key] = with_s[key].toString() + 'px'; }
+    });
+
+    // set layout
+    SC.run(function () {
+      child.set('layout', layout);
+    });
+
+    var layoutStyle = child.get('layoutStyle'),
+        frame = child.get('frame'),
+        testKey;
+
+    // test
+    layoutKeys.forEach(function (key) {
+      testKey = key === 'transform' ? SC.browser.domPrefix + 'Transform' : key;
+      equal(layoutStyle[testKey], no_s[key], "STYLE NO PARENT %@".fmt(key));
+    });
+
+    if (no_f !== undefined) {
+      if (frame && no_f) {
+        frameKeys.forEach(function (key) {
+          equal(frame[key], no_f[key], "FRAME NO PARENT %@".fmt(key));
+        });
+      } else {
+        equal(frame, no_f, "FRAME NO PARENT");
+      }
+    }
+
+
+    // add parent
+    SC.RunLoop.begin();
+    parent.appendChild(child);
+    SC.RunLoop.end();
+
+    layoutStyle = child.get('layoutStyle');
+    frame = child.get('frame');
+
+    // test again
+    layoutKeys.forEach(function (key) {
+      testKey = key === 'transform' ? SC.browser.domPrefix + 'Transform' : key;
+      equal(layoutStyle[testKey], with_s[key], "STYLE W/ PARENT %@".fmt(key));
+    });
+
+    if (with_f !== undefined) {
+      if (frame && with_f) {
+        frameKeys.forEach(function (key) {
+          equal(frame[key], with_f[key], "FRAME W/ PARENT %@".fmt(key));
+        });
+      } else {
+        equal(frame, with_f, "FRAME W/ PARENT");
+      }
+    }
+
+    // check if isFixedLayout is correct
+
+    equal(child.get('isFixedLayout'), isFixedShouldBe, "isFixedLayout");
+  }
+
+  /**
+    Helper setup that creates a parent and child view so that you can do basic
+    tests.
+  */
+  var commonSetup = {
+    setup: function () {
+
+      // create basic parent view
+      parent = SC.View.create({
+        layout: { top: 0, left: 0, width: 200, height: 200 }
+      });
+
+      // create child view to test against.
+      child = SC.View.create();
+    },
+
+    teardown: function () {
+      child.destroy();
+      parent.destroy();
+      parent = child = null;
+    }
+  };
+
+  module("NOTIFICATIONS", commonSetup);
+
+  test("Setting layout will notify frame observers", function () {
+    var didNotify = NO, didNotifyStyle = NO;
+    child.addObserver('frame', this, function () { didNotify = YES; });
+    child.addObserver('layoutStyle', this, function () { didNotifyStyle = YES; });
+
+    SC.run(function () {
+      child.set('layout', { left: 0, top: 10, bottom: 20, right: 50 });
+    });
+
+    ok(didNotify, "didNotify");
+    ok(didNotifyStyle, 'didNotifyStyle');
+  });
+
+  // ..........................................................
+  // TEST FRAME/STYLEFRAME WITH BASIC LAYOUT VARIATIONS
+  //
+  // NOTE:  Each test evaluates the frame before and after adding it to the
+  // parent.
+
+  module('BASIC LAYOUT VARIATIONS', commonSetup);
+
+  test("layout {top, left, width, height}", function () {
+
+    var layout = { top: 10, left: 10, width: 50, height: 50 };
+    var s = { top: 10, left: 10, width: 50, height: 50 };
+    var no_f = { x: 10, y: 10, width: 50, height: 50 };
+    var with_f = { x: 10, y: 10, width: 50, height: 50 };
+
+    performLayoutTest(layout, no_f, s, with_f, s, YES);
+  });
+
+  test("layout {top, left, bottom, right}", function () {
+
+    var layout = { top: 10, left: 10, bottom: 10, right: 10 };
+    var no_f = { x: 10, y: 10, width: 0, height: 0 };
+    var with_f = { x: 10, y: 10, width: 180, height: 180 };
+    var s = { top: 10, left: 10, bottom: 10, right: 10 };
+
+    performLayoutTest(layout, no_f, s, with_f, s, NO);
+  });
+
+  test("layout {bottom, right, width, height}", function () {
+
+    var layout = { bottom: 10, right: 10, width: 50, height: 50 };
+    var no_f = { x: 0, y: 0, width: 50, height: 50 };
+    var with_f = { x: 140, y: 140, width: 50, height: 50 };
+    var s = { bottom: 10, right: 10, width: 50, height: 50 };
+
+    performLayoutTest(layout, no_f, s, with_f, s, NO);
+  });
+
+  test("layout {centerX, centerY, width, height}", function () {
+
+    var layout = { centerX: 10, centerY: 10, width: 60, height: 60 };
+    var no_f = { x: 10, y: 10, width: 60, height: 60 };
+    var with_f = { x: 80, y: 80, width: 60, height: 60 };
+    var s = { marginLeft: -20, marginTop: -20, width: 60, height: 60, top: "50%", left: "50%" };
+
+    performLayoutTest(layout, no_f, s, with_f, s, NO);
+  });
+
+  test("layout {top, left, width: auto, height: auto}", function () {
+    // Reset.
+    child.destroy();
+
+    child = SC.View.create({
+      useStaticLayout: YES,
+      render: function (context) {
+        // needed for auto
+        context.push('<div style="padding: 10px"></div>');
+      }
+    });
+
+    // parent MUST have a layer.
+    parent.createLayer();
+    var layer = parent.get('layer');
+    document.body.appendChild(layer);
+
+    var layout = { top: 0, left: 0, width: 'auto', height: 'auto' };
+    var no_f = null;
+    // See test below
+    var with_f; // { x: 0, y: 0, width: 200, height: 200 };
+    var s = { top: 0, left: 0, width: 'auto', height: 'auto' };
+
+    performLayoutTest(layout, no_f, s, with_f, s, NO);
+
+    layer.parentNode.removeChild(layer);
+    child.destroy();
+  });
+
+  // See comment in above test
+  test("layout {top, left, width: auto, height: auto} - frame");
+
+
+
+  // ..........................................................
+  // TEST FRAME/STYLEFRAME WITH BASIC LAYOUT VARIATIONS
+  //
+  // NOTE:  Each test evaluates the frame before and after adding it to the
+  // parent.
+
+  module('BASIC LAYOUT VARIATIONS PERCENTAGE', commonSetup);
+
+  test("layout {top, left, width, height}", function () {
+
+    var layout = { top: 0.1, left: 0.1, width: 0.5, height: 0.5 };
+    var s = { top: '10%', left: '10%', width: '50%', height: '50%' };
+    var no_f = { x: 0, y: 0, width: 0, height: 0 };
+    var with_f = { x: 20, y: 20, width: 100, height: 100 };
+
+    performLayoutTest(layout, no_f, s, with_f, s, NO);
+  });
+
+  test("layout {top, left, bottom, right}", function () {
+
+    var layout = { top: 0.1, left: 0.1, bottom: 0.1, right: 0.1 };
+    var no_f = { x: 0, y: 0, width: 0, height: 0 };
+    var with_f =  { x: 20, y: 20, width: 160, height: 160 };
+    var s = { top: '10%', left: '10%', bottom: '10%', right: '10%' };
+
+    performLayoutTest(layout, no_f, s, with_f, s, NO);
+  });
+
+  test("layout {bottom, right, width, height}", function () {
+
+    var layout = { bottom: 0.1, right: 0.1, width: 0.5, height: 0.5 };
+    var no_f = { x: 0, y: 0, width: 0, height: 0 };
+    var with_f = { x: 80, y: 80, width: 100, height: 100 };
+    var s = { bottom: '10%', right: '10%', width: '50%', height: '50%' };
+
+    performLayoutTest(layout, no_f, s, with_f, s, NO);
+  });
+
+  test("layout {centerX, centerY, width, height}", function () {
+
+    var layout = { centerX: 0.1, centerY: 0.1, width: 0.6, height: 0.6 };
+    var no_f = { x: 0, y: 0, width: 0, height: 0 };
+    var with_f = { x: 60, y: 60, width: 120, height: 120 };
+    var s = { marginLeft: '-20%', marginTop: '-20%', width: '60%', height: '60%', top: "50%", left: "50%" };
+
+    performLayoutTest(layout, no_f, s, with_f, s, NO);
+  });
+
+  // Previously, you couldn't set a % width or height with a centerX/centerY of 0.
+  // But there's no reason that a % sized view can't be centered at 0 and this
+  // test shows that.
+  test("layout {centerX 0, centerY 0, width %, height %}", function () {
+    var layout = { centerX: 0, centerY: 0, width: 0.6, height: 0.6 };
+    var no_f = { x: 0, y: 0, width: 0, height: 0 };
+
+    // The parent frame is 200 x 200.
+    var size = 200 * 0.6;
+    var with_f = { x: (200 - size) * 0.5, y: (200 - size) * 0.5, width: size, height: size };
+    var s = { marginLeft: '-30%', marginTop: '-30%', width: '60%', height: '60%', top: "50%", left: "50%" };
+
+    performLayoutTest(layout, no_f, s, with_f, s, NO);
+  });
+
+  // Edge case: although rare, centered views should be able to have metrics of zero.
+  test("layout {centerX 0, centerY 0, width 0, height 0}", function () {
+    var layout = { centerX: 0, centerY: 0, width: 0, height: 0 };
+    var no_f = { x: 0, y: 0, width: 0, height: 0 };
+
+    // The parent frame is 200 x 200.
+    var size = 0;
+    var with_f = { x: (200 - size) * 0.5, y: (200 - size) * 0.5, width: size, height: size };
+    var s = { marginLeft: '0px', marginTop: '0px', width: '0px', height: '0px', top: '50%', left: '50%' };
+
+    performLayoutTest(layout, no_f, s, with_f, s, NO);
+  });
+
+  test("layout {top, left, width: auto, height: auto}", function () {
+    // Reset.
+    child.destroy();
+
+    child = SC.View.create({
+      useStaticLayout: YES,
+      render: function (context) {
+        // needed for auto
+        context.push('<div style="padding: 10px"></div>');
+      }
+    });
+
+    // parent MUST have a layer.
+    parent.createLayer();
+    var layer = parent.get('layer');
+    document.body.appendChild(layer);
+
+    var layout = { top: 0.1, left: 0.1, width: 'auto', height: 'auto' };
+    var no_f = null;
+    // See pending test below
+    var with_f; // { x: 20, y: 20, width: 180, height: 180 };
+    var s = { top: '10%', left: '10%', width: 'auto', height: 'auto' };
+
+    performLayoutTest(layout, no_f, s, with_f, s, NO);
+
+    layer.parentNode.removeChild(layer);
+    child.destroy();
+  });
+
+  // See commented out lines in test above
+  test("layout {top, left, width: auto, height: auto} - frame");
+
+
+
+  // ..........................................................
+  // TEST CSS TRANSFORM LAYOUT VARIATIONS
+  //
+  // NOTE:  Each test evaluates the frame before and after adding it to the
+  // parent.
+
+  module('CSS TRANSFORM LAYOUT VARIATIONS', {
+    setup: function () {
+      commonSetup.setup();
+      child.createLayer();
+      document.body.appendChild(child.get('layer'));
+    },
+
+    teardown: function () {
+      document.body.removeChild(child.get('layer'));
+      child.destroyLayer();
+      commonSetup.teardown();
+    }
+  });
+
+  function transformFor(view) {
+    return view.get('layer').style[SC.browser.domPrefix + 'Transform'];
+  }
+
+  test("layout {rotateX}", function () {
+    SC.run(function () {
+      child.adjust('rotateX', 45).updateLayout(true);
+    });
+
+    equal(transformFor(child), 'rotateX(45deg)', 'transform attribute should be "rotateX(45deg)"');
+  });
+
+  test("layout {rotateY}", function () {
+    SC.run(function () {
+      child.adjust('rotateY', 45).updateLayout(true);
+    });
+    equal(transformFor(child), 'rotateY(45deg)', 'transform attribute should be "rotateY(45deg)"');
+  });
+
+  test("layout {rotateZ}", function () {
+    SC.run(function () {
+      child.adjust('rotateZ', 45).updateLayout(true);
+    });
+
+    equal(transformFor(child), 'rotateZ(45deg)', 'transform attribute should be "rotateZ(45deg)"');
+  });
+
+  test("layout {rotate}", function () {
+    SC.run(function () {
+      child.adjust('rotate', 45).updateLayout(true);
+    });
+
+    equal(transformFor(child), 'rotateX(45deg)', 'transform attribute should be "rotateX(45deg)"');
+  });
+
+  test("layout {rotateX} with units", function () {
+    SC.run(function () {
+      child.adjust('rotateX', '1rad').updateLayout(true);
+    });
+
+    equal(transformFor(child), 'rotateX(1rad)', 'transform attribute should be "rotateX(1rad)"');
+  });
+
+  test("layout {scale}", function () {
+    SC.run(function () {
+      child.adjust('scale', 2).updateLayout(true);
+    });
+
+    equal(transformFor(child), 'scale(2)', 'transform attribute should be "scale(2)"');
+  });
+
+  test("layout {scale} with multiple", function () {
+    SC.run(function () {
+      child.adjust('scale', [2, 3]).updateLayout(true);
+    });
+
+    equal(transformFor(child), 'scale(2, 3)', 'transform attribute should be "scale(2, 3)"');
+  });
+
+  test("layout {rotateX, scale}", function () {
+    SC.run(function () {
+      child.adjust({ rotateX: 45, scale: 2 }).updateLayout(true);
+    });
+
+    equal(transformFor(child), 'rotateX(45deg) scale(2)', 'transform attribute should be "rotateX(45deg) scale(2)"');
+  });
+
+  test("layout {rotateX} update", function () {
+    SC.run(function () {
+      child.adjust('rotateX', 45).updateLayout(true);
+      child.adjust('rotateX', 90).updateLayout(true);
+    });
+
+    equal(transformFor(child), 'rotateX(90deg)', 'transform attribute should be "rotateX(90deg)"');
+  });
+
+
+  if (SC.platform.supportsCSSTransforms) {
+
+    // ..........................................................
+    // TEST FRAME/STYLEFRAME WITH ACCELERATE LAYOUT VARIATIONS
+    //
+    // NOTE:  Each test evaluates the frame before and after adding it to the
+    // parent.
+
+    module('ACCELERATED LAYOUT VARIATIONS', {
+      setup: function () {
+        commonSetup.setup();
+        child.set('wantsAcceleratedLayer', YES);
+      },
+
+      teardown: commonSetup.teardown
+    });
+
+    test("layout {top, left, width, height}", function () {
+      var layout = { top: 10, left: 10, width: 50, height: 50 };
+      var expectedTransform = 'translateX(10px) translateY(10px)';
+      if (SC.platform.supportsCSS3DTransforms) expectedTransform += ' translateZ(0px)';
+      var s = { top: 0, left: 0, width: 50, height: 50, transform: expectedTransform };
+      var no_f = { x: 10, y: 10, width: 50, height: 50 };
+      var with_f = { x: 10, y: 10, width: 50, height: 50};
+
+      performLayoutTest(layout, no_f, s, with_f, s, YES);
+    });
+
+    test("layout {top, left, bottom, right}", function () {
+
+      var layout = { top: 10, left: 10, bottom: 10, right: 10 };
+      var no_f = { x: 10, y: 10, width: 0, height: 0 };
+      var with_f = { x: 10, y: 10, width: 180, height: 180 };
+      var s = { top: 10, left: 10, bottom: 10, right: 10, transform: null };
+
+      performLayoutTest(layout, no_f, s, with_f, s, NO);
+    });
+
+    test("layout {top, left, width: auto, height: auto}", function () {
+      // Reset.
+      child.destroy();
+
+      child = SC.View.create({
+        wantsAcceleratedLayer: YES,
+        useStaticLayout: YES,
+        render: function (context) {
+          // needed for auto
+          context.push('<div style="padding: 10px"></div>');
+        }
+      });
+
+      // parent MUST have a layer.
+      parent.createLayer();
+      var layer = parent.get('layer');
+      document.body.appendChild(layer);
+
+      var layout = { top: 0, left: 0, width: 'auto', height: 'auto' };
+      var no_f = null;
+      // See test below
+      var with_f; // { x: 0, y: 0, width: 200, height: 200 };
+      var s = { top: 0, left: 0, width: 'auto', height: 'auto', transform: null };
+
+      performLayoutTest(layout, no_f, s, with_f, s, NO);
+
+      layer.parentNode.removeChild(layer);
+
+      child.destroy();
+    });
+
+    // See commented lines in test above
+    test("layout {top, left, width: auto, height: auto} - frame");
+
+    test("layout w/ percentage {top, left, width, height}", function () {
+
+      var layout = { top: 0.1, left: 0.1, width: 0.5, height: 0.5 };
+      var s = { top: '10%', left: '10%', width: '50%', height: '50%', transform: null };
+      var no_f = { x: 0, y: 0, width: 0, height: 0 };
+      var with_f = { x: 20, y: 20, width: 100, height: 100 };
+
+      performLayoutTest(layout, no_f, s, with_f, s, NO);
+    });
+
+  }
+
+
+
+  // ..........................................................
+  // TEST FRAME/STYLEFRAME WITH INVALID LAYOUT VARIATIONS
+  //
+  // NOTE:  Each test evaluates the frame before and after adding it to the
+  // parent.
+
+  module('INVALID LAYOUT VARIATIONS', commonSetup);
+
+  test("layout {top, left} - assume right/bottom=0", function () {
+
+    var layout = { top: 0.1, left: 0.1 };
+    var no_f = { x: 0, y: 0, width: 0, height: 0 };
+    var with_f = { x: 20, y: 20, width: 180, height: 180 };
+    var s = { bottom: 0, right: 0, top: '10%', left: '10%' };
+
+    performLayoutTest(layout, no_f, s, with_f, s, NO);
+  });
+
+  test("layout {height, width} - assume top/left=0", function () {
+
+    var layout = { height: 0.6, width: 0.6 };
+    var no_f = { x: 0, y: 0, width: 0, height: 0 };
+    var with_f = { x: 0, y: 0, width: 120, height: 120 };
+    var s = { width: '60%', height: '60%', top: 0, left: 0 };
+
+    performLayoutTest(layout, no_f, s, with_f, s, NO);
+
+  });
+
+  test("layout {right, bottom} - assume top/left=0", function () {
+
+    var layout = { right: 0.1, bottom: 0.1 };
+    var no_f = { x: 0, y: 0, width: 0, height: 0 };
+    var with_f = { x: 0, y: 0, width: 180, height: 180 };
+    var s = { bottom: '10%', right: '10%', top: 0, left: 0 };
+
+    performLayoutTest(layout, no_f, s, with_f, s, NO);
+
+  });
+
+  test("layout {right, bottom, maxWidth, maxHeight} - assume top/left=null", function () {
+
+    var layout = { right: 0.1, bottom: 0.1, maxWidth: 10, maxHeight: 10 };
+    var no_f = { x: 0, y: 0, width: 0, height: 0 };
+    var with_f = { x: 0, y: 0, width: 10, height: 10 };
+    var s = { bottom: '10%', right: '10%', top: null, left: null, maxWidth: 10, maxHeight: 10 };
+
+    performLayoutTest(layout, no_f, s, with_f, s, NO);
+
+  });
+
+  test("layout {centerX, centerY} - assume width/height=0", function () {
+
+    var layout = { centerX: 0.1, centerY: 0.1 };
+    var no_f = { x: 0, y: 0, width: 0, height: 0 };
+    var with_f = { x: 120, y: 120, width: 0, height: 0 };
+    var s = { width: 0, height: 0, top: "50%", left: "50%", marginTop: "50%", marginLeft: "50%" };
+    performLayoutTest(layout, no_f, s, with_f, s, NO);
+
+  });
+
+  test("layout {top, left, centerX, centerY, height, width} - top/left take presidence", function () {
+
+    var layout = { top: 0.1, left: 0.1, centerX: 0.1, centerY: 0.1, height: 0.6, width: 0.6 };
+    var no_f = { x: 0, y: 0, width: 0, height: 0 };
+    var with_f = { x: 20, y: 20, width: 120, height: 120 };
+    var s = { width: '60%', height: '60%', top: '10%', left: '10%' };
+
+    performLayoutTest(layout, no_f, s, with_f, s, NO);
+
+  });
+
+  test("layout {bottom, right, centerX, centerY, height, width} - bottom/right take presidence", function () {
+
+    var layout = { bottom: 0.1, right: 0.1, centerX: 0.1, centerY: 0.1, height: 0.6, width: 0.6 };
+    var no_f = { x: 0, y: 0, width: 0, height: 0 };
+    var with_f = { x: 60, y: 60, width: 120, height: 120 };
+    var s = { width: '60%', height: '60%', bottom: '10%', right: '10%' };
+
+    performLayoutTest(layout, no_f, s, with_f, s, NO);
+
+  });
+
+  test("layout {top, left, bottom, right, centerX, centerY, height, width} - top/left take presidence", function () {
+
+    var layout = { top: 0.1, left: 0.1, bottom: 0.1, right: 0.1, centerX: 0.1, centerY: 0.1, height: 0.6, width: 0.6 };
+    var no_f = { x: 0, y: 0, width: 0, height: 0 };
+    var with_f = { x: 20, y: 20, width: 120, height: 120 };
+    var s = { width: '60%', height: '60%', top: '10%', left: '10%' };
+
+    performLayoutTest(layout, no_f, s, with_f, s, NO);
+
+  });
+
+
+  test("layout {centerX, centerY, width:auto, height:auto}", function () {
+    var error = 'NONE';
+    var layout = { centerX: 0.1, centerY: 0.1, width: 'auto', height: 'auto' };
+
+    SC.run(function () {
+      child.set('layout', layout);
+    });
+
+    try {
+      child.layoutStyle();
+    } catch (e) {
+      error = e;
+    }
+
+    equal(SC.T_ERROR, SC.typeOf(error), 'Layout style functions should throw an ' +
+                                           'error if centerx/y and width/height are set at the same time ' + error);
+  });
+
+
+  // ..........................................................
+  // TEST BORDER
+  //
+
+  module('BORDER LAYOUT VARIATIONS', commonSetup);
+
+  test("layout {top, left, width, height, border}", function () {
+    var layout = { top: 10, left: 10, width: 50, height: 50, border: 2 };
+    var s = { top: 10, left: 10, width: 46, height: 46,
+              borderTopWidth: 2, borderRightWidth: 2, borderBottomWidth: 2, borderLeftWidth: 2 };
+    var no_f = { x: 12, y: 12, width: 46, height: 46 };
+    var with_f = { x: 12, y: 12, width: 46, height: 46 };
+
+    performLayoutTest(layout, no_f, s, with_f, s, YES);
+  });
+
+  test("layout {top, left, bottom, right, border}", function () {
+    var layout = { top: 10, left: 10, bottom: 10, right: 10, border: 2 };
+    var no_f = { x: 12, y: 12, width: 0, height: 0 };
+    var with_f = { x: 12, y: 12, width: 176, height: 176 };
+    var s = { top: 10, left: 10, bottom: 10, right: 10,
+               borderTopWidth: 2, borderRightWidth: 2, borderBottomWidth: 2, borderLeftWidth: 2 };
+
+    performLayoutTest(layout, no_f, s, with_f, s, NO);
+  });
+
+  test("layout {top, left, bottom, right, borderTop, borderLeft, borderRight, borderBottom}", function () {
+    var layout = { top: 10, left: 10, bottom: 10, right: 10, borderTop: 1, borderRight: 2, borderBottom: 3, borderLeft: 4 };
+    var no_f = { x: 14, y: 11, width: 0, height: 0 };
+    var with_f = { x: 14, y: 11, width: 174, height: 176 };
+    var s = { top: 10, left: 10, bottom: 10, right: 10,
+               borderTopWidth: 1, borderRightWidth: 2, borderBottomWidth: 3, borderLeftWidth: 4 };
+
+    performLayoutTest(layout, no_f, s, with_f, s, NO);
+  });
+
+  test("layout {top, left, bottom, right, border, borderTop, borderLeft}", function () {
+    var layout = { top: 10, left: 10, bottom: 10, right: 10, border: 5, borderTop: 1, borderRight: 2 };
+    var no_f = { x: 15, y: 11, width: 0, height: 0 };
+    var with_f = { x: 15, y: 11, width: 173, height: 174 };
+    var s = { top: 10, left: 10, bottom: 10, right: 10,
+               borderTopWidth: 1, borderRightWidth: 2, borderBottomWidth: 5, borderLeftWidth: 5 };
+
+    performLayoutTest(layout, no_f, s, with_f, s, NO);
+  });
+
+  test("layout {bottom, right, width, height, border}", function () {
+
+    var layout = { bottom: 10, right: 10, width: 50, height: 50, border: 2 };
+    var no_f = { x: 2, y: 2, width: 46, height: 46 };
+    var with_f = { x: 142, y: 142, width: 46, height: 46 };
+    var s = { bottom: 10, right: 10, width: 46, height: 46,
+              borderTopWidth: 2, borderRightWidth: 2, borderBottomWidth: 2, borderLeftWidth: 2 };
+
+    performLayoutTest(layout, no_f, s, with_f, s, NO);
+  });
+
+  test("layout {centerX, centerY, width, height, border}", function () {
+
+    var layout = { centerX: 10, centerY: 10, width: 60, height: 60, border: 2 };
+    var no_f = { x: 12, y: 12, width: 56, height: 56 };
+    var with_f = { x: 82, y: 82, width: 56, height: 56 };
+    var s = { marginLeft: -20, marginTop: -20, width: 56, height: 56, top: "50%", left: "50%",
+              borderTopWidth: 2, borderRightWidth: 2, borderBottomWidth: 2, borderLeftWidth: 2 };
+
+    performLayoutTest(layout, no_f, s, with_f, s, NO);
+  });
+
+  test("layout {top, left, width: auto, height: auto}", function () {
+    // Reset.
+    child.destroy();
+
+    child = SC.View.create({
+      useStaticLayout: YES,
+      render: function (context) {
+        // needed for auto
+        context.push('<div style="padding: 10px"></div>');
+      }
+    });
+
+    // parent MUST have a layer.
+    parent.createLayer();
+    var layer = parent.get('layer');
+    document.body.appendChild(layer);
+
+    var layout = { top: 0, left: 0, width: 'auto', height: 'auto', border: 2 };
+    var no_f = null;
+    var with_f; //{ x: 2, y: 2, width: 196, height: 196 };
+    var s = { top: 0, left: 0, width: 'auto', height: 'auto',
+              borderTopWidth: 2, borderRightWidth: 2, borderBottomWidth: 2, borderLeftWidth: 2 };
+
+    performLayoutTest(layout, no_f, s, with_f, s, NO);
+
+    layer.parentNode.removeChild(layer);
+
+    child.destroy();
+  });
+
+
+  // ..........................................................
+  // TEST FRAME/STYLEFRAME WHEN PARENT VIEW IS RESIZED
+  //
+
+  module('RESIZE FRAME', commonSetup);
+
+  function verifyFrameResize(layout, before, after) {
+    parent.appendChild(child);
+    SC.run(function () { child.set('layout', layout); });
+
+    deepEqual(child.get('frame'), before, "Before: %@ == %@".fmt(SC.inspect(child.get('frame')), SC.inspect(before)));
+    SC.run(function () { parent.adjust('width', 300).adjust('height', 300); });
+
+    deepEqual(child.get('frame'), after, "After: %@ == %@".fmt(SC.inspect(child.get('frame')), SC.inspect(after)));
+
+  }
+
+  test("frame does not change with top/left/w/h", function () {
+    var layout = { top: 10, left: 10, width: 60, height: 60 };
+    var before = { x: 10, y: 10, width: 60, height: 60 };
+    var after =  { x: 10, y: 10, width: 60, height: 60 };
+    verifyFrameResize(layout, before, after);
+  });
+
+  test("frame shifts down with bottom/right/w/h", function () {
+    var layout = { bottom: 10, right: 10, width: 60, height: 60 };
+    var before = { x: 130, y: 130, width: 60, height: 60 };
+    var after =  { x: 230, y: 230, width: 60, height: 60 };
+    verifyFrameResize(layout, before, after);
+  });
+
+  test("frame size shifts with top/left/bottom/right", function () {
+    var layout = { top: 10, left: 10, bottom: 10, right: 10 };
+    var before = { x: 10, y: 10, width: 180, height: 180 };
+    var after =  { x: 10, y: 10, width: 280, height: 280 };
+    verifyFrameResize(layout, before, after);
+  });
+
+  test("frame loc shifts with centerX/centerY", function () {
+    var layout = { centerX: 10, centerY: 10, width: 60, height: 60 };
+    var before = { x: 80, y: 80, width: 60, height: 60 };
+    var after =  { x: 130, y: 130, width: 60, height: 60 };
+    verifyFrameResize(layout, before, after);
+  });
+
+  //with percentage
+
+  test("frame does not change with top/left/w/h - percentage", function () {
+    var layout = { top: 0.1, left: 0.1, width: 0.6, height: 0.6 };
+    var before = { x: 20, width: 120, y: 20, height: 120 };
+    var after =  { x: 30, y: 30, width: 180, height: 180 };
+    verifyFrameResize(layout, before, after);
+  });
+
+  test("frame shifts down with bottom/right/w/h - percentage", function () {
+    var layout = { bottom: 0.1, right: 0.1, width: 0.6, height: 0.6 };
+    var before = { x: 60, y: 60, width: 120, height: 120 };
+    var after =  { x: 90, y: 90, width: 180, height: 180 };
+    verifyFrameResize(layout, before, after);
+  });
+
+  test("frame size shifts with top/left/bottom/right - percentage", function () {
+    var layout = { top: 0.1, left: 0.1, bottom: 0.1, right: 0.1 };
+    var before = { x: 20, y: 20, width: 160, height: 160 };
+    var after =  { x: 30, y: 30, width: 240, height: 240 };
+    verifyFrameResize(layout, before, after);
+  });
+
+  test("frame loc shifts with centerX/centerY - percentage", function () {
+    var layout = { centerX: 0, centerY: 0, width: 0.6, height: 0.6 };
+    var before = { x: 40, y: 40, width: 120, height: 120 };
+    var after =  { x: 60, y: 60, width: 180, height: 180 };
+    verifyFrameResize(layout, before, after);
+  });
+
+  test("for proper null variables");
+  // nothing should get passed through as undefined, instead we want null in certain cases
+
+  module('STATIC LAYOUT VARIATIONS', commonSetup);
+
+  test("no layout", function () {
+
+    var no_f = null,
+        no_s = {},
+        with_f = null,
+        with_s = {};
+
+    child.set('useStaticLayout', true);
+
+    performLayoutTest(SC.View.prototype.layout, no_f, no_s, with_f, with_s, NO);
+  });
+
+  test("with layout", function () {
+
+    var layout = { top: 10, left: 10, width: 50, height: 50 },
+        no_f = null,
+        no_s = { top: 10, left: 10, width: 50, height: 50 },
+        with_f = null,
+        with_s = { top: 10, left: 10, width: 50, height: 50 };
+
+    child.set('useStaticLayout', true);
+
+    performLayoutTest(layout, no_f, no_s, with_f, with_s, YES);
+  });
+
+  // test("frame size shifts with top/left/bottom/right", function () {
+  //   var error=null;
+  //   var layout = { top: 10, left: 10, bottom: 10, right: 10 };
+  //   parent.appendChild(child);
+  //   child.set('layout', layout);
+  //   child.get('frame');
+  //   parent.adjust('width', 'auto').adjust('height', 'auto');
+  //   try{
+  //     child.get('frame');
+  //   }catch(e) {
+  //     error=e;
+  //   }
+  //   equal(SC.T_ERROR,SC.typeOf(error),'Layout style functions should throw and '+
+  //   'error if centerx/y and width/height are set at the same time ' + error );
+  //
+  //
+  // });
+
+  var pane, view;
+  module("COMPUTED LAYOUT", {
+    setup: function () {
+
+      SC.run(function () {
+        // create basic view
+        view = SC.View.create({
+          useTopLayout: YES,
+
+          layout: function () {
+            if (this.get('useTopLayout')) {
+              return { top: 10, left: 10, width: 100, height: 100 };
+            } else {
+              return { bottom: 10, right: 10, width: 200, height: 50 };
+            }
+          }.property('useTopLayout').cacheable()
+        });
+
+        pane = SC.Pane.create({
+          layout: { centerX: 0, centerY: 0, width: 400, height: 400 },
+          childViews: [view]
+        }).append();
+      });
+    },
+
+    teardown: function () {
+      pane.destroy();
+      pane = view = null;
+    }
+  });
+
+  /**
+    There was a regression while moving to jQuery 1.8 and removing the seemingly
+    unuseful buffered jQuery code, where updating the style failed to clear the
+    old style from the view's style attribute.
+  */
+  test("with computed layout", function () {
+    var expectedLayoutStyle,
+      expectedStyleAttr,
+      layoutStyle,
+      styleAttr;
+
+    deepEqual(view.get('layout'), { top: 10, left: 10, width: 100, height: 100 }, "Test the value of the computed layout.");
+    layoutStyle = view.get('layoutStyle');
+    expectedLayoutStyle = { top: "10px", left: "10px", width: "100px", height: "100px" };
+    for (var key in layoutStyle) {
+      equal(layoutStyle[key], expectedLayoutStyle[key], "Test the value of %@ in the layout style.".fmt(key));
+    }
+    styleAttr = view.$().attr('style');
+    styleAttr = styleAttr.split(/;\s*/).filter(function (o) { return o; });
+    expectedStyleAttr = ['left: 10px', 'width: 100px', 'top: 10px', 'height: 100px'];
+    for (var i = styleAttr.length - 1; i >= 0; i--) {
+      ok(expectedStyleAttr.indexOf(styleAttr[i]) >= 0, "Test the expected style attribute includes `%@` found in the actual style attribute.".fmt(styleAttr[i]));
+    }
+
+    SC.run(function () {
+      view.set('useTopLayout', NO);
+    });
+
+    deepEqual(view.get('layout'), { bottom: 10, right: 10, width: 200, height: 50 }, "Test the value of the computed layout.");
+    layoutStyle = view.get('layoutStyle');
+    expectedLayoutStyle = { bottom: "10px", right: "10px", width: "200px", height: "50px" };
+    for (var key in layoutStyle) {
+      equal(layoutStyle[key], expectedLayoutStyle[key], "Test the value of %@ in the layout style.".fmt(key));
+    }
+
+    styleAttr = view.$().attr('style');
+    styleAttr = styleAttr.split(/;\s*/).filter(function (o) { return o; });
+    expectedStyleAttr = ['bottom: 10px', 'width: 200px', 'right: 10px', 'height: 50px'];
+    for (i = styleAttr.length - 1; i >= 0; i--) {
+      ok(expectedStyleAttr.indexOf(styleAttr[i]) >= 0, "Test the expected style attribute includes `%@` found in the actual style attribute.".fmt(styleAttr[i]));
+    }
+  });
+
+
+  module("OTHER LAYOUT STYLE TESTS", {
+    setup: function () {
+
+      SC.run(function () {
+        // create basic view
+        view = SC.View.create({});
+
+        pane = SC.Pane.create({
+          layout: { centerX: 0, centerY: 0, width: 400, height: 400 },
+          childViews: [view]
+        }).append();
+      });
+    },
+
+    teardown: function () {
+      pane.destroy();
+      pane = view = null;
+    }
+  });
+
+
+
+  /*
+    There was a regression where switching from a centered layout to a non-centered
+    layout failed to remove the margin style.
+  */
+  test("Switching from centered to non-centered layouts.", function () {
+    var styleAttr;
+
+    SC.run(function () {
+      view.set('layout', { centerX: 10, centerY: 10, width: 60, height: 60 });
+    });
+
+    SC.run(function () {
+      view.set('layout', { left: 10, top: 10, width: 60, height: 60 });
+    });
+
+    styleAttr = view.$().attr('style');
+    styleAttr = styleAttr.split(/;\s*/).filter(function (o) { return o; });
+    var expectedStyleAttr = ['left: 10px', 'top: 10px', 'width: 60px', 'height: 60px'];
+    for (var i = styleAttr.length - 1; i >= 0; i--) {
+      ok(expectedStyleAttr.indexOf(styleAttr[i]) >= 0, "Test the expected style attribute includes `%@` found in the actual style attribute.".fmt(styleAttr[i]));
+    }
+  });
+})();
+
+});minispade.register('sproutcore-views/~tests/view/removeChild', function() {// ==========================================================================
+// Project:   SproutCore - JavaScript Application Framework
+// Copyright: ©2006-2011 Apple Inc. and contributors.
+// License:   Licensed under MIT license (see license.js)
+// ==========================================================================
+
+/*global module test equals context ok same */
+
+// .......................................................
+// removeChild()
+//
+
+var parent, child;
+module("SC.View#removeChild", {
+	setup: function() {
+		parent = SC.View.create({ childViews: [
+      SC.View.extend({
+        updateLayerLocationIfNeeded: CoreTest.stub('updateLayerLocationIfNeeded', SC.View.prototype.updateLayerLocationIfNeeded)
+      })
+    ] });
+		child = parent.childViews[0];
+	}
+});
+
+test("returns receiver", function() {
+	equal(parent.removeChild(child), parent, 'receiver');
+});
+
+test("removes child from parent.childViews array", function() {
+  ok(parent.childViews.indexOf(child)>=0, 'precond - has child in childViews array before remove');
+  parent.removeChild(child);
+  ok(parent.childViews.indexOf(child)<0, 'removed child');
+});
+
+test("sets parentView property to null", function() {
+  ok(child.get('parentView'), 'precond - has parentView');
+  parent.removeChild(child);
+  ok(!child.get('parentView'), 'parentView is now null');
+});
+
+test("does nothing if passed null", function() {
+
+  // monkey patch callbacks to make sure nothing runs.
+  var callCount = 0;
+  parent.willRemoveChild = parent.didRemoveChild = function() { callCount++; };
+
+  parent.removeChild(null);
+  equal(callCount, 0, 'did not invoke callbacks');
+});
+
+test("invokes child.willRemoveFromParent before removing if defined", function() {
+
+  // monkey patch to test
+  var callCount = 0;
+  child.willRemoveFromParent = function() {
+    // verify invoked BEFORE removal
+    equal(child.get('parentView'), parent, 'still in parent');
+    callCount++;
+  };
+
+  parent.removeChild(child);
+  equal(callCount, 1, 'invoked callback');
+});
+
+test("invokes parent.willRemoveChild before removing if defined", function() {
+
+  // monkey patch to test
+  var callCount = 0;
+  parent.willRemoveChild = function(view) {
+    equal(view, child, 'passed child as param');
+
+    // verify invoked BEFORE removal
+    equal(child.get('parentView'), parent, 'still in parent');
+    callCount++;
+  };
+
+  parent.removeChild(child);
+  equal(callCount, 1, 'invoked callback');
+});
+
+
+test("invokes child.didRemoveFromParent AFTER removing if defined", function() {
+
+  // monkey patch to test
+  var callCount = 0;
+  child.didRemoveFromParent = function(view) {
+    equal(view, parent, 'passed parent as param');
+
+    // verify invoked AFTER removal
+    ok(!child.get('parentView'), 'no longer in parent');
+    callCount++;
+  };
+
+  parent.removeChild(child);
+  equal(callCount, 1, 'invoked callback');
+});
+
+test("invokes parent.didRemoveChild before removing if defined", function() {
+
+  // monkey patch to test
+  var callCount = 0;
+  parent.didRemoveChild = function(view) {
+    equal(view, child, 'passed child as param');
+
+    // verify invoked BEFORE removal
+    ok(!child.get('parentView'), 'no longer in parent');
+    callCount++;
+  };
+
+  parent.removeChild(child);
+  equal(callCount, 1, 'invoked callback');
+});
+
+// VERIFY LAYER CHANGES ARE DEFERRED
+test("should not move layer immediately");
+// , function() {
+
+//   parent.createLayer();
+
+// 	var parentLayer = parent.get('layer'), childLayer = child.get('layer');
+//   ok(parentLayer, 'precond - parent has layer');
+//   ok(childLayer, 'precond - child has layer');
+//   equal(childLayer.parentNode, parentLayer, 'child layer belong to parent');
+
+//   parent.removeChild(child);
+//   equal(childLayer.parentNode, parentLayer, 'child layer belong to parent');
+// });
+
+// .......................................................
+// removeAllChildren()
+//
+var view;
+module("SC.View#removeAllChildren", {
+  setup: function() {
+    view = SC.View.create({
+      childViews: [SC.View, SC.View, SC.View]
+    });
+  }
+});
+
+test("removes all child views", function() {
+  equal(view.childViews.length, 3, 'precond - has child views');
+
+  view.removeAllChildren();
+  equal(view.childViews.length, 0, 'removed all children');
+});
+
+test("returns receiver", function() {
+	equal(view.removeAllChildren(), view, 'receiver');
+});
+
+// .......................................................
+// removeFromParent()
+//
+module("SC.View#removeFromParent");
+
+test("removes view from parent view", function() {
+  parent = SC.View.create({ childViews: [SC.View] });
+  child = parent.childViews[0];
+  ok(child.get('parentView'), 'precond - has parentView');
+
+  child.removeFromParent();
+  ok(!child.get('parentView'), 'no longer has parentView');
+  ok(parent.childViews.indexOf(child)<0, 'no longer in parent childViews');
+});
+
+test("returns receiver", function() {
+	equal(child.removeFromParent(), child, 'receiver');
+});
+
+test("does nothing if not in parentView", function() {
+  var callCount = 0;
+  child = SC.View.create();
+
+	// monkey patch for testing...
+	child.willRemoveFromParent = function() { callCount++; };
+	ok(!child.get('parentView'), 'precond - has no parent');
+
+	child.removeFromParent();
+	equal(callCount, 0, 'did not invoke callback');
+});
+
+
+
+});minispade.register('sproutcore-views/~tests/view/render', function() {// ==========================================================================
+// Project:   SproutCore - JavaScript Application Framework
+// Copyright: ©2006-2011 Apple Inc. and contributors.
+// License:   Licensed under MIT license (see license.js)
+// ==========================================================================
+
+/*global module test equals context ok same */
+
+// .......................................................
+//  render()
+//
+module("SC.View#render");
+
+test("default implementation invokes renderChildViews if firstTime = YES", function() {
+
+  var rendered = 0, updated = 0, parentRendered = 0, parentUpdated = 0 ;
+  var view = SC.View.create({
+    displayProperties: ["triggerRenderProperty"],
+    childViews: ["child"],
+
+    render: function(context) {
+      parentRendered++;
+    },
+
+    update: function(jquery) {
+      parentUpdated++;
+    },
+
+    child: SC.View.create({
+      render: function(context) {
+        rendered++;
+      },
+
+      update: function(jquery) {
+        updated++;
+      }
+    })
+  });
+
+  view.createLayer();
+  equal(rendered, 1, 'rendered the child');
+  equal(parentRendered, 1);
+
+  view.updateLayer(true);
+  equal(rendered, 1, 'didn\'t call render again');
+  equal(parentRendered, 1, 'didn\'t call the parent\'s render again');
+  equal(parentUpdated, 1, 'called the parent\'s update');
+  equal(updated, 0, 'didn\'t call the child\'s update');
+
+  // Clean up.
+  view.destroy();
+});
+
+test("default implementation does not invoke renderChildViews if explicitly rendered in render method", function() {
+
+  var rendered = 0, updated = 0, parentRendered = 0, parentUpdated = 0 ;
+  var view = SC.View.create({
+    displayProperties: ["triggerRenderProperty"],
+    childViews: ["child"],
+
+    render: function(context) {
+      this.renderChildViews(context);
+      parentRendered++;
+    },
+
+    update: function(jquery) {
+      parentUpdated++;
+    },
+
+    child: SC.View.create({
+      render: function(context) {
+        rendered++;
+      },
+
+      update: function(jquery) {
+        updated++;
+      }
+    })
+  });
+
+  view.createLayer();
+  equal(rendered, 1, 'rendered the child once');
+  equal(parentRendered, 1);
+  equal(view.$('div').length, 1);
+
+  view.updateLayer(true);
+  equal(rendered, 1, 'didn\'t call render again');
+  equal(parentRendered, 1, 'didn\'t call the parent\'s render again');
+  equal(parentUpdated, 1, 'called the parent\'s update');
+  equal(updated, 0, 'didn\'t call the child\'s update');
+
+  // Clean up.
+  view.destroy();
+});
+
+test("should invoke renderChildViews if layer is destroyed then re-rendered", function() {
+
+  var rendered = 0, updated = 0, parentRendered = 0, parentUpdated = 0 ;
+  var view = SC.View.create({
+    displayProperties: ["triggerRenderProperty"],
+    childViews: ["child"],
+
+    render: function(context) {
+      parentRendered++;
+    },
+
+    update: function(jquery) {
+      parentUpdated++;
+    },
+
+    child: SC.View.create({
+      render: function(context) {
+        rendered++;
+      },
+
+      update: function(jquery) {
+        updated++;
+      }
+    })
+  });
+
+  view.createLayer();
+  equal(rendered, 1, 'rendered the child once');
+  equal(parentRendered, 1);
+  equal(view.$('div').length, 1);
+
+  view.destroyLayer();
+  view.createLayer();
+  equal(rendered, 2, 'rendered the child twice');
+  equal(parentRendered, 2);
+  equal(view.$('div').length, 1);
+
+  // Clean up.
+  view.destroy();
+});
+// .......................................................
+// renderChildViews()
+//
+
+module("SC.View#renderChildViews");
+
+test("creates a context and then invokes renderToContext or updateLayer on each childView", function() {
+
+  var runCount = 0, curContext, curFirstTime ;
+
+  var ChildView = SC.View.extend({
+    renderToContext: function(context) {
+      equal(context.prevObject, curContext, 'passed child context of curContext');
+
+      equal(context.tagName(), this.get('tagName'), 'context setup with current tag name');
+
+      runCount++; // record run
+    },
+
+    updateLayer: function() {
+      runCount++;
+    }
+  });
+
+  var view = SC.View.create({
+    childViews: [
+      ChildView.extend({ tagName: 'foo' }),
+      ChildView.extend({ tagName: 'bar' }),
+      ChildView.extend({ tagName: 'baz' })
+    ]
+  });
+
+  // VERIFY: firstTime= YES
+  curContext = view.renderContext('div');
+  curFirstTime= YES ;
+  equal(view.renderChildViews(curContext, curFirstTime), curContext, 'returns context');
+  equal(runCount, 3, 'renderToContext() invoked for each child view');
+
+
+  // VERIFY: firstTime= NO
+  runCount = 0 ; //reset
+  curContext = view.renderContext('div');
+  curFirstTime= NO ;
+  equal(view.renderChildViews(curContext, curFirstTime), curContext, 'returns context');
+  equal(runCount, 3, 'updateLayer() invoked for each child view');
+
+  // Clean up.
+  view.destroy();
+});
+
+test("creates a context and then invokes renderChildViews to call renderToContext on each childView", function() {
+
+  var runCount = 0, curContext ;
+
+  var ChildView = SC.View.extend({
+    renderToContext: function(context) {
+      equal(context.prevObject, curContext, 'passed child context of curContext');
+      equal(context.tagName(), this.get('tagName'), 'context setup with current tag name');
+      runCount++; // record run
+    }
+  });
+
+  var view = SC.View.create({
+    childViews: [
+      ChildView.extend({ tagName: 'foo' }),
+      ChildView.extend({ tagName: 'bar' }),
+      ChildView.extend({ tagName: 'baz' })
+    ]
+  });
+
+  // VERIFY: firstTime= YES
+  curContext = view.renderContext('div');
+  view.renderChildViews(curContext);
+  equal(runCount, 3, 'renderToContext() invoked for each child view');
+
+  // Clean up.
+  view.destroy();
+});
+
+});minispade.register('sproutcore-views/~tests/view/render_delegate_support', function() {// ==========================================================================
+// Project:   SproutCore - JavaScript Application Framework
+// Copyright: ©2006-2011 Apple Inc. and contributors.
+// License:   Licensed under MIT license (see license.js)
+// ==========================================================================
+
+/*global module test equals context ok same */
+
+// .......................................................
+//  render()
+//
+module("SC.View#render");
+
+test("Supports backwards-compatible render method", function() {
+  var renderCallCount = 0;
+  var view = SC.View.create({
+    render: function(context, firstTime) {
+      renderCallCount++;
+      ok(context._STYLE_REGEX, 'passes RenderContext');
+      equal(firstTime, YES, 'passes YES for firstTime');
+    }
+  });
+
+  view.createLayer();
+
+  view.render = function(context, firstTime) {
+    renderCallCount++;
+    ok(context._STYLE_REGEX, 'passes RenderContext');
+    equal(firstTime, NO, 'passes NO for firstTime');
+  };
+
+  view.updateLayer();
+
+  equal(renderCallCount, 2, 'render should have been called twice');
+
+  // Clean up.
+  view.destroy();
+});
+
+test("Treats a view as its own render delegate", function() {
+  var renderCallCount = 0,
+      updateCallCount = 0;
+
+  var view = SC.View.create({
+    render: function(context) {
+      // Check for existence of _STYLE_REGEX to determine if this is an instance
+      // of SC.RenderContext
+      ok(context._STYLE_REGEX, 'passes render context');
+      renderCallCount++;
+    },
+
+    update: function(elem) {
+     ok(elem.jquery, 'passes a jQuery object as first parameter');
+     updateCallCount++;
+    }
+  });
+
+  view.createLayer();
+  view.updateLayer();
+  equal(renderCallCount, 1, "calls render once");
+  equal(updateCallCount, 1, "calls update once");
+
+  // Clean up.
+  view.destroy();
+});
+
+test("Passes data source as first parameter if render delegate is not the view", function() {
+  var renderCallCount = 0,
+      updateCallCount = 0;
+
+  var view;
+
+  var renderDelegate = SC.Object.create({
+    render: function(dataSource, context, firstTime) {
+      equal(dataSource, view.get('renderDelegateProxy'), "passes the view's render delegate proxy as data source");
+      ok(context._STYLE_REGEX, "passes render context");
+      equal(firstTime, undefined, "does not pass third parameter");
+      renderCallCount++;
+    },
+
+    update: function(dataSource, elem) {
+      equal(dataSource, view.get('renderDelegateProxy'), "passes view's render delegate proxy as data source");
+      ok(elem.jquery, "passes a jQuery object as first parameter");
+      updateCallCount++;
+    }
+  });
+
+  view = SC.View.create({
+    renderDelegate: renderDelegate
+  });
+
+  view.createLayer();
+  view.updateLayer();
+  equal(renderCallCount, 1, "calls render once");
+  equal(updateCallCount, 1, "calls update once");
+
+  // Clean up.
+  view.destroy();
+});
+
+test("Extending view with render delegate by implementing old render method", function() {
+  var renderCalls = 0, updateCalls = 0;
+  var parentView = SC.View.extend({
+    renderDelegate: SC.Object.create({
+      render: function(context) {
+        renderCalls++;
+      },
+
+      update: function(cq) {
+        updateCalls++;
+      }
+    })
+  });
+
+  var childView = parentView.create({
+    render: function(context, firstTime) {
+      this._super();
+    }
+  });
+
+  childView.createLayer();
+  childView.updateLayer();
+
+  equal(renderCalls, 1, "calls render on render delegate once");
+  equal(updateCalls, 1, "calls update on render delegates once");
+});
+
+test("Views that do not override render should render their child views", function() {
+  var newStyleCount = 0, oldStyleCount = 0, renderDelegateCount = 0;
+
+  var parentView = SC.View.design({
+    childViews: 'newStyle oldStyle renderDelegateView'.w(),
+
+    newStyle: SC.View.design({
+      render: function(context) {
+        newStyleCount++;
+      },
+
+      update: function() {
+        // no op
+      }
+    }),
+
+    oldStyle: SC.View.design({
+      render: function(context, firstTime) {
+        oldStyleCount++;
+      }
+    }),
+
+    renderDelegateView: SC.View.design({
+      renderDelegate: SC.Object.create({
+        render: function(dataSource, context) {
+          ok(dataSource.isViewRenderDelegateProxy, "Render delegate should get passed a view's proxy for its data source");
+          renderDelegateCount++;
+        },
+
+        update: function() {
+          // no op
+        }
+      })
+    })
+  });
+
+  parentView = parentView.create();
+
+  parentView.createLayer();
+  parentView.updateLayer();
+
+  equal(newStyleCount, 1, "calls render on new style view once");
+  equal(oldStyleCount, 1, "calls render on old style view once");
+  equal(renderDelegateCount, 1, "calls render on render delegate once");
+});
+
+});minispade.register('sproutcore-views/~tests/view/replaceAllChildren_test', function() {// ==========================================================================
+// Project:   SproutCore - JavaScript Application Framework
+// Copyright: ©2006-2011 Strobe Inc. and contributors.
+//            ©2008-2011 Apple Inc. All rights reserved.
+// License:   Licensed under MIT license (see license.js)
+// ==========================================================================
+
+/*global module, test, equals, ok */
+
+var parentView;
+
+/*
+ * SC.CoreView.UNRENDERED
+ * SC.CoreView.UNATTACHED
+ * SC.CoreView.UNATTACHED_BY_PARENT
+ * SC.CoreView.ATTACHED_SHOWING
+ * SC.CoreView.ATTACHED_SHOWN
+ * SC.CoreView.ATTACHED_HIDING
+ * SC.CoreView.ATTACHED_HIDDEN
+ * SC.CoreView.ATTACHED_HIDDEN_BY_PARENT
+ * SC.CoreView.ATTACHED_BUILDING_IN
+ * SC.CoreView.ATTACHED_BUILDING_OUT
+ * SC.CoreView.ATTACHED_BUILDING_OUT_BY_PARENT
+ */
+
+
+module("SC.View.prototype.replaceAllChildren", {
+
+  setup: function () {
+    parentView = SC.View.create({
+      childViews: ['a', 'b', SC.View],
+
+      a: SC.View,
+      b: SC.View
+    });
+  },
+
+  teardown: function () {
+    parentView.destroy();
+    parentView = null;
+  }
+
+});
+
+test("Replaces all children. UNRENDERED parent view.", function () {
+  var childViews = parentView.get('childViews'),
+    newChildViews = [SC.View.create(), SC.View.create()];
+
+  equal(childViews.get('length'), 3, "There are this many child views originally");
+
+  // Replace all children.
+  parentView.replaceAllChildren(newChildViews);
+
+  childViews = parentView.get('childViews');
+  equal(childViews.get('length'), 2, "There are this many child views after replaceAllChildren");
+});
+
+
+test("Replaces all children.  UNATTACHED parent view.", function () {
+  var childViews = parentView.get('childViews'),
+    newChildViews = [SC.View.create(), SC.View.create()],
+    childView, jq;
+
+  // Render the parent view.
+  parentView.createLayer();
+
+  equal(childViews.get('length'), 3, "There are this many child views originally");
+
+  jq = parentView.$();
+  for (var i = 0, len = childViews.get('length'); i < len; i++) {
+    childView = childViews.objectAt(i);
+
+    ok(jq.find('#' + childView.get('layerId')).get('length') === 1, "The child view with layer id %@ exists in the parent view's layer".fmt(childView.get('layerId')));
+  }
+
+  // Replace all children.
+  parentView.replaceAllChildren(newChildViews);
+
+  childViews = parentView.get('childViews');
+  equal(childViews.get('length'), 2, "There are this many child views after replaceAllChildren");
+
+  jq = parentView.$();
+  for (i = 0, len = childViews.get('length'); i < len; i++) {
+    childView = childViews.objectAt(i);
+
+    ok(jq.find('#' + childView.get('layerId')).get('length') === 1, "The new child view with layer id %@ exists in the parent view's layer".fmt(childView.get('layerId')));
+  }
+});
+
+
+test("Replaces all children.  ATTACHED_SHOWN parent view.", function () {
+  var childViews = parentView.get('childViews'),
+    newChildViews = [SC.View.create(), SC.View.create()],
+    childView, jq;
+
+  // Render the parent view and attach.
+  parentView.createLayer();
+  parentView._doAttach(document.body);
+
+  equal(childViews.get('length'), 3, "There are this many child views originally");
+
+  jq = parentView.$();
+  for (var i = 0, len = childViews.get('length'); i < len; i++) {
+    childView = childViews.objectAt(i);
+
+    ok(jq.find('#' + childView.get('layerId')).get('length') === 1, "The child view with layer id %@ exists in the parent view's layer".fmt(childView.get('layerId')));
+  }
+
+  // Replace all children.
+  parentView.replaceAllChildren(newChildViews);
+
+  childViews = parentView.get('childViews');
+  equal(childViews.get('length'), 2, "There are this many child views after replaceAllChildren");
+
+  jq = parentView.$();
+  for (i = 0, len = childViews.get('length'); i < len; i++) {
+    childView = childViews.objectAt(i);
+
+    ok(jq.find('#' + childView.get('layerId')).get('length') === 1, "The new child view with layer id %@ exists in the parent view's layer".fmt(childView.get('layerId')));
+  }
+});
+
+
+module("SC.View.prototype.replaceAllChildren", {
+
+  setup: function () {
+    parentView = SC.View.create({
+      childViews: ['a', 'b', SC.View],
+
+      containerLayer: function () {
+        return this.$('._wrapper')[0];
+      }.property('layer').cacheable(),
+
+      a: SC.View,
+      b: SC.View,
+
+      render: function (context) {
+        context = context.begin().addClass('_wrapper');
+        this.renderChildViews(context);
+        context = context.end();
+      }
+    });
+  },
+
+  teardown: function () {
+    parentView.destroy();
+    parentView = null;
+  }
+
+});
+
+
+test("Replaces all children. UNRENDERED parent view.", function () {
+  var childViews = parentView.get('childViews'),
+    newChildViews = [SC.View.create(), SC.View.create()];
+
+  equal(childViews.get('length'), 3, "There are this many child views originally");
+
+  // Replace all children.
+  parentView.replaceAllChildren(newChildViews);
+
+  childViews = parentView.get('childViews');
+  equal(childViews.get('length'), 2, "There are this many child views after replaceAllChildren");
+});
+
+
+test("Replaces all children.  UNATTACHED parent view.", function () {
+  var childViews = parentView.get('childViews'),
+    newChildViews = [SC.View.create(), SC.View.create()],
+    childView, jq;
+
+  // Render the parent view.
+  parentView.createLayer();
+
+  equal(childViews.get('length'), 3, "There are this many child views originally");
+
+  jq = parentView.$('._wrapper');
+  for (var i = 0, len = childViews.get('length'); i < len; i++) {
+    childView = childViews.objectAt(i);
+
+    ok(jq.find('#' + childView.get('layerId')).get('length') === 1, "The child view with layer id %@ exists in the parent view's layer".fmt(childView.get('layerId')));
+  }
+
+  // Replace all children.
+  parentView.replaceAllChildren(newChildViews);
+
+  childViews = parentView.get('childViews');
+  equal(childViews.get('length'), 2, "There are this many child views after replaceAllChildren");
+
+  jq = parentView.$('._wrapper');
+  for (i = 0, len = childViews.get('length'); i < len; i++) {
+    childView = childViews.objectAt(i);
+
+    ok(jq.find('#' + childView.get('layerId')).get('length') === 1, "The new child view with layer id %@ exists in the parent view's layer".fmt(childView.get('layerId')));
+  }
+});
+
+
+test("Replaces all children using containerLayer.  ATTACHED_SHOWN parent view.", function () {
+  var childViews = parentView.get('childViews'),
+    newChildViews = [SC.View.create(), SC.View.create()],
+    childView, jq;
+
+  // Render the parent view and attach.
+  parentView.createLayer();
+  parentView._doAttach(document.body);
+
+  equal(childViews.get('length'), 3, "There are this many child views originally");
+
+  jq = parentView.$('._wrapper');
+  for (var i = 0, len = childViews.get('length'); i < len; i++) {
+    childView = childViews.objectAt(i);
+
+    ok(jq.find('#' + childView.get('layerId')).get('length') === 1, "The child view with layer id %@ exists in the parent view's layer".fmt(childView.get('layerId')));
+  }
+
+  // Replace all children.
+  parentView.replaceAllChildren(newChildViews);
+
+  childViews = parentView.get('childViews');
+  equal(childViews.get('length'), 2, "There are this many child views after replaceAllChildren");
+
+  jq = parentView.$('._wrapper');
+  for (i = 0, len = childViews.get('length'); i < len; i++) {
+    childView = childViews.objectAt(i);
+
+    ok(jq.find('#' + childView.get('layerId')).get('length') === 1, "The new child view with layer id %@ exists in the parent view's layer".fmt(childView.get('layerId')));
+  }
+});
+
+});minispade.register('sproutcore-views/~tests/view/replaceChild', function() {// ==========================================================================
+// Project:   SproutCore - JavaScript Application Framework
+// Copyright: ©2006-2011 Apple Inc. and contributors.
+// License:   Licensed under MIT license (see license.js)
+// ==========================================================================
+
+/*global module test equals context ok same */
+
+var parent, child;
+module("SC.View#replaceChild", {
+	setup: function() {
+	  child = SC.View.create();
+	  parent = SC.View.create({
+	    childViews: [SC.View, SC.View, SC.View]
+	  });		
+	}
+});
+
+
+test("swaps the old child with the new child", function() {
+  var oldChild = parent.childViews[1];
+
+  parent.replaceChild(child, oldChild);
+  equal(child.get('parentView'), parent, 'child has new parent');
+  ok(!oldChild.get('parentView'), 'old child no longer has parent');
+  
+  equal(parent.childViews[1], child, 'parent view has new child at loc 1');
+  equal(parent.childViews.length, 3, 'parent has same number of children');
+});
+
+});minispade.register('sproutcore-views/~tests/view/static_layout', function() {// ==========================================================================
+// Project:   SproutCore - JavaScript Application Framework
+// Copyright: ©2006-2011 Strobe Inc. and contributors.
+//            ©2008-2011 Apple Inc. All rights reserved.
+// License:   Licensed under MIT license (see license.js)
+// ==========================================================================
+
+module("SC.View - Static Layout functionality");
+
+test("Static layout", function() {
+  var view = SC.View.create({
+    useStaticLayout: YES
+  });
+
+  view.createLayer();
+
+  ok(view.$().is('.sc-static-layout'), "views with useStaticLayout get the sc-static-layout class");
+});
+
+});minispade.register('sproutcore-views/~tests/view/theme', function() {// ==========================================================================
+// Project:   SproutCore - JavaScript Application Framework
+// Copyright: ©2006-2011 Strobe Inc. and contributors.
+//            Portions ©2008-2011 Apple Inc. All rights reserved.
+// License:   Licensed under MIT license (see license.js)
+// ==========================================================================
+
+/*global module test equals context ok */
+
+module("SC.View#themes");
+
+// TODO: This isn't passing on master. Alex needs to take a look at it.
+
+//var t1 = SC.Theme.addTheme("sc-test-1", SC.BaseTheme.extend({name: 'test-1' }));
+//var t2 = SC.Theme.addTheme("sc-test-2", SC.BaseTheme.extend({name: 'test-2' }));
+
+test("changing themes propagates to child view.");
+//test("changing themes propagates to child view.", function() {
+  //var view = SC.View.create({
+    //"childViews": "child".w(),
+    //theme: "sc-test-1",
+    //child: SC.View.extend({
+      
+    //})
+  //});
+  
+  //ok(t1 === view.get("theme"), "view's theme should be sc-test-1");
+  //ok(t1 === view.child.get("theme"), "view's child's theme should be sc-test-1");
+  //view.set('themeName', 'sc-test-2');
+  //ok(t2 === view.get("theme"), "view's theme should be sc-test-2");
+  //ok(t2 === view.child.get("theme"), "view's child's theme should be sc-test-2");
+//});
+
+test("adding child to parent propagates theme to child view.");
+//test("adding child to parent propagates theme to child view.", function() {
+  //var child = SC.View.create({});
+  //var view = SC.View.create({
+    //theme: "sc-test-1"
+  //});
+  
+  //ok(t1 === view.get("theme"), "view's theme should be sc-test-1");
+  //equal(child.get("theme"), SC.Theme.find('sc-base'), "view's child's theme should start at base theme");
+  //view.appendChild(child);
+  //equal(t1, child.get("theme"), "view's child's theme should be sc-test-1");
+//});
+
+});minispade.register('sproutcore-views/~tests/view/touch', function() {// ==========================================================================
+// Project:   SproutCore - JavaScript Application Framework
+// Copyright: ©2006-2011 Strobe Inc. and contributors.
+//            portions copyright @2011 Apple Inc.
+// License:   Licensed under MIT license (see license.js)
+// ==========================================================================
+
+var pane;
+
+module("SC.View#touch", {
+  setup: function() {
+    SC.run(function() {
+     pane = SC.Pane.create({
+       layout: { width: 200, height: 200, left: 0, top: 0 },
+       childViews: ['outerView'],
+
+       outerView: SC.View.extend({
+         childViews: ['innerView'],
+
+         innerView: SC.View.extend({
+           layout: { width: 50, height: 50, left: 100, top: 100 }
+         })
+       })
+     }).append();
+    });
+  },
+
+  teardown: function() {
+    pane.remove();
+    pane = null;
+  }
+});
+
+function testTouches (view, left, top, boundary) {
+  var frame = view.get('frame');
+
+  // Just outside the touchBoundary
+  ok(!view.touchIsInBoundary({ pageX: left - boundary - 1, pageY: top }), '{ pageX: %@, pageY: %@ } is not inside %@'.fmt(left - boundary - 1, top, SC.stringFromRect(view.get('_touchBoundaryFrame'))));
+
+  // Just inside the touchBoundary
+  ok(view.touchIsInBoundary({ pageX: left - boundary, pageY: top }), '{ pageX: %@, pageY: %@ } is inside %@'.fmt(left - boundary, top, SC.stringFromRect(view.get('_touchBoundaryFrame'))));
+
+  // Just inside the edge of the view
+  ok(view.touchIsInBoundary({ pageX: left + frame.width, pageY: top }), '{ pageX: %@, pageY: %@ } is inside %@'.fmt(left + frame.width, top, SC.stringFromRect(view.get('_touchBoundaryFrame'))));
+
+  // Just inside the touchBoundary
+  ok(view.touchIsInBoundary({ pageX: left + frame.width + boundary, pageY: top }), '{ pageX: %@, pageY: %@ } is inside %@'.fmt(left + frame.width + boundary, top, SC.stringFromRect(view.get('_touchBoundaryFrame'))));
+
+  // Just outside the touchBoundary
+  ok(!view.touchIsInBoundary({ pageX: left + frame.width + boundary + 1, pageY: top }), '{ pageX: %@, pageY: %@ } is not inside %@'.fmt(left + frame.width + boundary + 1, top, SC.stringFromRect(view.get('_touchBoundaryFrame'))));
+
+  // Just outside the touchBoundary
+  ok(!view.touchIsInBoundary({ pageX: left, pageY: top - boundary - 1 }), '{ pageX: %@, pageY: %@ } is not inside %@'.fmt(left, top - boundary - 1, SC.stringFromRect(view.get('_touchBoundaryFrame'))));
+
+  // Just inside the touchBoundary
+  ok(view.touchIsInBoundary({ pageX: left, pageY: top - boundary }), '{ pageX: %@, pageY: %@ } is inside %@'.fmt(left, top - boundary, SC.stringFromRect(view.get('_touchBoundaryFrame'))));
+
+  // Just inside the edge of the view
+  ok(view.touchIsInBoundary({ pageX: left, pageY: top + frame.height }), '{ pageX: %@, pageY: %@ } is inside %@'.fmt(left, top + frame.height, SC.stringFromRect(view.get('_touchBoundaryFrame'))));
+
+  // Just inside the touchBoundary
+  ok(view.touchIsInBoundary({ pageX: left, pageY: top + frame.height + boundary }), '{ pageX: %@, pageY: %@ } is inside %@'.fmt(left, top + frame.height + boundary, SC.stringFromRect(view.get('_touchBoundaryFrame'))));
+
+  // Just outside the touchBoundary
+  ok(!view.touchIsInBoundary({ pageX: left, pageY: top + frame.height + boundary + 1 }), '{ pageX: %@, pageY: %@ } is not inside %@'.fmt(left, top + frame.height + boundary + 1, SC.stringFromRect(view.get('_touchBoundaryFrame'))));
+
+}
+
+test("touchIsInBoundary() should return appropriate values", function() {
+  var outerView = pane.get('outerView'),
+    innerView = outerView.get('innerView');
+
+  testTouches(innerView, 100, 100, 25);
+
+  // Move the inner view
+  SC.run(function() {
+    innerView.adjust('top', 150);
+  });
+  testTouches(innerView, 100, 150, 25);
+
+  // Move the outer view
+  SC.run(function() {
+    outerView.adjust('left', 100);
+  });
+  testTouches(innerView, 200, 150, 25);
+
+  // Expand the touch boundary
+  SC.run(function() {
+    innerView.set('touchBoundary', { left: 50, bottom: 50, top: 50, right: 50 });
+  });
+  testTouches(innerView, 200, 150, 50);
+
+  // Contract the touch boundary
+  SC.run(function() {
+    innerView.set('touchBoundary', { left: 5, bottom: 5, top: 5, right: 5 });
+  });
+  testTouches(innerView, 200, 150, 5);
+});
+
+test("touchIsInBoundary() should return appropriate values for a newly appended view", function() {
+  var outerView = pane.get('outerView'),
+    innerView = outerView.get('innerView');
+
+  // Append a view
+  var newView = SC.View.create({
+    layout: { width: 10, height: 10, left: 50, top: 50 }
+  });
+
+  SC.run(function() {
+    outerView.appendChild(newView);
+  });
+  testTouches(newView, 50, 50, 25);
+});
+
+});minispade.register('sproutcore-views/~tests/view/updateLayer', function() {// ==========================================================================
+// Project:   SproutCore - JavaScript Application Framework
+// Copyright: ©2006-2011 Apple Inc. and contributors.
+// License:   Licensed under MIT license (see license.js)
+// ==========================================================================
+
+/*global module test equals context ok same */
+
+// NOTE: This file tests both updateLayer() and the related methods that
+// will trigger it.
+
+// ..........................................................
+// TEST: updateLayer()
+//
+module("SC.View#updateLayer");
+
+test("invokes applyAttributesToContext() and then updates layer element", function() {
+  var layer = document.createElement('div');
+
+  var times = 0;
+  var view = SC.View.create({
+    applyAttributesToContext: function() {
+      times++;
+      this.$().addClass('did-update-' + times);
+    }
+  });
+  view.createLayer();
+  view.updateLayer(true);
+  ok(view.$().attr('class').indexOf('did-update-2')>=0, 'has class name added by render()');
+
+  // Clean up.
+  layer = null;
+  view.destroy();
+});
+
+// ..........................................................
+// TEST: updateLayerIfNeeded()
+//
+var view, callCount ;
+module("SC.View#updateLayerIfNeeded", {
+  setup: function() {
+    view = SC.View.create({
+      isVisible: false,
+      _executeDoUpdateContent: function() {
+        callCount++;
+      }
+    });
+    callCount = 0 ;
+
+    view.createLayer();
+    view._doAttach(document.body);
+  },
+
+  teardown: function () {
+    // Clean up.
+    view.destroy();
+    view = null;
+  }
+
+});
+
+test("does not call _executeDoUpdateContent if not in shown state", function() {
+  view.updateLayerIfNeeded();
+  equal(callCount, 0, '_executeDoUpdateContent did NOT run');
+});
+
+test("does call _executeDoUpdateContent if in shown state", function() {
+  view.set('isVisible', true);
+  equal(view.get('isVisibleInWindow'), YES, 'precond - isVisibleInWindow');
+
+  view.updateLayerIfNeeded();
+  ok(callCount > 0, '_executeDoUpdateContent() did run');
+});
+
+test("returns receiver", function() {
+  equal(view.updateLayerIfNeeded(), view, 'returns receiver');
+});
+
+test("only runs _executeDoUpdateContent once if called multiple times (since layerNeedsUpdate is set to NO)", function() {
+  callCount = 0;
+  view.set('isVisible', true);
+  SC.run(function () {
+    view.displayDidChange().displayDidChange().displayDidChange();
+  });
+  equal(callCount, 1, '_executeDoUpdateContent() called only once');
+});
+
+});minispade.register('sproutcore-views/~tests/view/view', function() {// ==========================================================================
+// Project:   SproutCore - JavaScript Application Framework
+// Copyright: ©2006-2011 Strobe Inc. and contributors.
+//            ©2008-2011 Apple Inc. All rights reserved.
+// License:   Licensed under MIT license (see license.js)
+// ==========================================================================
+
+/*global module test equals context ok */
+
+module("SC.View");
+
+test("setting themeName should trigger a theme observer", function() {
+  var count = 0;
+  var view = SC.View.create({
+    themeDidChange: function() {
+      count++;
+    }.observes('theme')
+  });
+
+  view.set('themeName', 'hello');
+  equal(1, count, "theme observers should get called");
+});
+
+test("setting themeName should trigger a theme observer when extending", function() {
+  var count = 0;
+  var View = SC.View.extend({
+    themeDidChange: function() {
+      count++;
+    }.observes('theme')
+  });
+
+  View.create().set('themeName', 'hello');
+  equal(1, count, "theme observers should get called");
+});
+
+test("it still works with the backward compatible theme property", function() {
+  var count = 0;
+  var view = SC.View.create({
+    theme: 'sc-base',
+    themeDidChange: function() {
+      count++;
+    }.observes('theme')
+  });
+
+  equal(SC.Theme.find('sc-base'), view.get('theme'));
+  view.set('themeName', 'hello');
+  equal(1, count, "theme observers should get called");
+});
+
+test("it still works with the backward compatible theme property when extending", function() {
+  var count = 0;
+  var View = SC.View.extend({
+    theme: 'sc-base',
+    themeDidChange: function() {
+      count++;
+    }.observes('theme')
+  });
+
+  var view = View.create();
+  equal(SC.Theme.find('sc-base'), view.get('theme'));
+  view.set('themeName', 'hello');
+  equal(1, count, "theme observers should get called");
+});
+
+
+});minispade.register('sproutcore-views/~tests/view/viewDidResize', function() {// ==========================================================================
+// Project:   SproutCore - JavaScript Application Framework
+// Copyright: ©2006-2011 Apple Inc. and contributors.
+// License:   Licensed under MIT license (see license.js)
+// ==========================================================================
+
+/*global module test equals context ok same $ htmlbody */
+
+// ..........................................................
+// viewDidResize()
+//
+module("SC.View#viewDidResize");
+
+test("invokes parentViewDidResize on all child views", function() {
+  var callCount = 0 ;
+  var ChildView = SC.View.extend({
+    parentViewDidResize: function() { callCount++; }
+  });
+
+  var view = SC.View.create({
+    childViews: [ChildView, ChildView, ChildView]
+  });
+
+  // now test...
+  SC.run(function() { view.viewDidResize(); });
+  equal(callCount, 3, 'should invoke parentViewDidResize() on all children');
+});
+
+test("parentViewDidResize should only be called when the parent's layout property changes in a manner that may affect child views.", function() {
+  var callCount = 0 ;
+  var view = SC.View.create({
+    // use the callback below to detect when viewDidResize is icalled.
+    childViews: [SC.View.extend({
+      parentViewDidResize: function() { callCount++; }
+    })]
+  });
+
+  SC.run(function () { view.set('layout', { top: 10, left: 20, height: 50, width: 40 }); });
+  equal(callCount, 1, 'parentViewDidResize should invoke once');
+
+  SC.run(function () { view.adjust('top', 0); });
+  equal(callCount, 1, 'parentViewDidResize should invoke once');
+
+  SC.run(function () { view.adjust('height', 60); });
+  equal(callCount, 2, 'parentViewDidResize should invoke twice');
+
+  // This is tricky, if the height increases, but the same size border is added, the effective height/width is unchanged.
+  SC.run(function () { view.adjust({'height': 70, 'borderTop': 10 }); });
+  equal(callCount, 2, 'parentViewDidResize should invoke twice');
+});
+
+test("The view's frame should only notify changes when its layout changes if the effective size or position actually change.", function () {
+  var view2 = SC.View.create({
+      frameCallCount: 0,
+      frameDidChange: function() {
+        this.frameCallCount++;
+      }.observes('frame'),
+      viewDidResize: CoreTest.stub('viewDidResize', SC.View.prototype.viewDidResize)
+    }),
+    view1 = SC.View.create({
+      childViews: [view2],
+      layout: { width: 200, height: 200 }
+    });
+
+  SC.run(function () { view2.set('layout', { height: 50, width: 50 }); });
+  equal(view2.get('frameCallCount'), 1, 'frame should have notified changing once.');
+
+  SC.run(function () { view2.adjust('top', 0); });
+  equal(view2.get('frameCallCount'), 2, 'frame should have notified changing once.');
+
+  SC.run(function () { view2.adjust('height', 100); });
+  equal(view2.get('frameCallCount'), 3, 'frame should have notified changing twice.');
+
+  // Tricky.
+  SC.run(function () { view2.adjust({ 'height': 110, 'borderTop': 10, 'top': -10 }); });
+  equal(view2.get('frameCallCount'), 4, 'frame should have notified changing twice.');
+
+  SC.run(function () { view2.adjust('width', null); });
+  equal(view2.get('frameCallCount'), 5, 'frame should have notified changing thrice.');
+
+  // Tricky.
+  SC.run(function () { view2.adjust('width', 200); });
+  equal(view2.get('frameCallCount'), 6, 'frame should have notified changing thrice.');
+});
+
+test("making sure that the frame value is correct inside viewDidResize()", function() {
+  // We want to test to be sure that when the view's viewDidResize() method is
+  // called, its frame has been updated.  But rather than run the test inside
+  // the method itself, we'll cache a global reference to the then-current
+  // value and test it later.
+  var cachedFrame;
+
+  var view = SC.View.create({
+
+    layout: { left:0, top:0, width:400, height:400 },
+
+    viewDidResize: function() {
+        this._super();
+
+        // Set a global reference to my frame at this point so that we can
+        // test for the correct value later.
+        cachedFrame = this.get('frame');
+      }
+  });
+
+
+  // Access the frame once before resizing the view, to make sure that the
+  // previous value was cached.  That way, when we ask for the frame again
+  // after the resize, we can verify that the cache invalidation logic is
+  // working correctly.
+  var originalFrame = view.get('frame');
+
+  SC.RunLoop.begin();
+  view.adjust('height', 314);
+  SC.RunLoop.end();
+
+  // Now that we've adjusted the view, the cached view (as it was inside its
+  // viewDidResize() method) should be the same value, because the cached
+  // 'frame' value should have been invalidated by that point.
+  deepEqual(view.get('frame').height, cachedFrame.height, 'height');
+});
+
+
+// ..........................................................
+// parentViewDidResize()
+//
+module("SC.View#parentViewDidResize");
+
+test("When parentViewDidResize is called on a view, it should only notify on frame and cascade the call to child views if it will be affected by the parent's resize.", function() {
+  var view = SC.View.create({
+      // instrument...
+      frameCallCount: 0,
+      frameDidChange: function() {
+        this.frameCallCount++;
+      }.observes('frame'),
+      viewDidResize: CoreTest.stub('viewDidResize', SC.View.prototype.viewDidResize)
+    }),
+    parentView = SC.View.create({
+      childViews: [view],
+      layout: { height: 100, width: 100 }
+    });
+
+  // try with fixed layout
+  view.set('layout', { top: 10, left: 10, height: 10, width: 10 });
+  view.viewDidResize.reset(); view.frameCallCount = 0;
+  parentView.adjust({ width: 90, height: 90 });
+  view.viewDidResize.expect(0);
+  equal(view.frameCallCount, 0, 'should not notify frame changed when isFixedPosition: %@ and isFixedSize: %@'.fmt(view.get('isFixedPosition'), view.get('isFixedSize')));
+
+  // try with flexible height
+  view.set('layout', { top: 10, left: 10, bottom: 10, width: 10 });
+  view.viewDidResize.reset(); view.frameCallCount = 0;
+  parentView.adjust({ width: 80, height: 80 });
+  view.viewDidResize.expect(1);
+  equal(view.frameCallCount, 1, 'should notify frame changed when isFixedPosition: %@ and isFixedSize: %@'.fmt(view.get('isFixedPosition'), view.get('isFixedSize')));
+
+  // try with flexible width
+  view.set('layout', { top: 10, left: 10, height: 10, right: 10 });
+  view.viewDidResize.reset(); view.frameCallCount = 0;
+  parentView.adjust({ width: 70, height: 70 });
+  view.viewDidResize.expect(1);
+  equal(view.frameCallCount, 1, 'should notify frame changed when isFixedPosition: %@ and isFixedSize: %@'.fmt(view.get('isFixedPosition'), view.get('isFixedSize')));
+
+  // try with right align
+  view.set('layout', { top: 10, right: 10, height: 10, width: 10 });
+  view.viewDidResize.reset(); view.frameCallCount = 0;
+  parentView.adjust({ width: 60, height: 60 });
+  view.viewDidResize.expect(0);
+  equal(view.frameCallCount, 1, 'right align: should notify frame changed when isFixedPosition: %@ and isFixedSize: %@'.fmt(view.get('isFixedPosition'), view.get('isFixedSize')));
+
+  // try with bottom align
+  view.set('layout', { left: 10, bottom: 10, height: 10, width: 10 });
+  view.viewDidResize.reset(); view.frameCallCount = 0;
+  parentView.adjust({ width: 50, height: 50 });
+  view.viewDidResize.expect(0);
+  equal(view.frameCallCount, 1, 'bottom align: should notify frame changed when isFixedPosition: %@ and isFixedSize: %@'.fmt(view.get('isFixedPosition'), view.get('isFixedSize')));
+
+  // try with center horizontal align
+  view.set('layout', { centerX: 10, top: 10, height: 10, width: 10 });
+  view.viewDidResize.reset(); view.frameCallCount = 0;
+  parentView.adjust({ width: 40, height: 40 });
+  view.viewDidResize.expect(0);
+  equal(view.frameCallCount, 1, 'centerX: should notify frame changed when isFixedPosition: %@ and isFixedSize: %@'.fmt(view.get('isFixedPosition'), view.get('isFixedSize')));
+
+  // try with center vertical align
+  view.set('layout', { left: 10, centerY: 10, height: 10, width: 10 });
+  view.viewDidResize.reset(); view.frameCallCount = 0;
+  parentView.adjust({ width: 30, height: 30 });
+  view.viewDidResize.expect(0);
+  equal(view.frameCallCount, 1, 'centerY: should notify frame changed when isFixedPosition: %@ and isFixedSize: %@'.fmt(view.get('isFixedPosition'), view.get('isFixedSize')));
+});
+
+// ..........................................................
+// beginLiveResize()
+//
+module("SC.View#beginLiveResize");
+
+test("invokes willBeginLiveResize on receiver and any child views that implement it", function() {
+  var callCount = 0;
+  var ChildView = SC.View.extend({
+    willBeginLiveResize: function() { callCount++ ;}
+  });
+
+  var view = ChildView.create({ // <-- has callback
+    childViews: [SC.View.extend({ // <-- this does not implement callback
+      childViews: [ChildView] // <-- has callback
+    })]
+  });
+
+  callCount = 0 ;
+  view.beginLiveResize();
+  equal(callCount, 2, 'should invoke willBeginLiveResize when implemented');
+});
+
+test("returns receiver", function() {
+  var view = SC.View.create();
+  equal(view.beginLiveResize(), view, 'returns receiver');
+});
+
+// ..........................................................
+// endLiveResize()
+//
+module("SC.View#endLiveResize");
+
+test("invokes didEndLiveResize on receiver and any child views that implement it", function() {
+  var callCount = 0;
+  var ChildView = SC.View.extend({
+    didEndLiveResize: function() { callCount++; }
+  });
+
+  var view = ChildView.create({ // <-- has callback
+    childViews: [SC.View.extend({ // <-- this does not implement callback
+      childViews: [ChildView] // <-- has callback
+    })]
+  });
+
+  callCount = 0 ;
+  view.endLiveResize();
+  equal(callCount, 2, 'should invoke didEndLiveResize when implemented');
+});
+
+test("returns receiver", function() {
+  var view = SC.View.create();
+  equal(view.endLiveResize(), view, 'returns receiver');
+});
+
+});minispade.register('sproutcore-views/~tests/view/view_states_test', function() {// ==========================================================================
+// Project:   SproutCore - JavaScript Application Framework
+// Copyright: ©2006-2011 Strobe Inc. and contributors.
+//            ©2008-2011 Apple Inc. All rights reserved.
+// License:   Licensed under MIT license (see license.js)
+// ==========================================================================
+
+/*global module, test, equals,ok */
+
+var parentView;
+
+/** Test the SC.View states. */
+module("SC.View States", {
+
+  setup: function () {
+    parentView = SC.View.create();
+  },
+
+  teardown: function () {
+    parentView.destroy();
+    parentView = null;
+  }
+
+});
+
+/**
+  Test the state, in particular supported actions.
+  */
+test("Test unrendered state.", function () {
+  var handled,
+    view = SC.View.create();
+
+  // Test expected state of the view.
+  equal(view.viewState, SC.CoreView.UNRENDERED, "A newly created view should be in the state");
+  ok(!view.get('isAttached'), "isAttached should be false");
+  ok(!view.get('_isRendered'), "_isRendered should be false");
+  ok(!view.get('isVisibleInWindow'), "isVisibleInWindow should be false");
+
+  // _doAttach(document.body)
+  // _doDestroyLayer()
+  // _doDetach()
+  // _doHide()
+  // _doRender()
+  // _doShow()
+  // _doUpdateContent()
+  // _doUpdateLayout()
+
+  // UNHANDLED ACTIONS
+  handled = view._doShow();
+  ok(!handled, "Calling _doShow() should not be handled");
+  equal(view.viewState, SC.CoreView.UNRENDERED, "Calling _doShow() doesn't change state");
+
+  handled = view._doAttach(document.body);
+  ok(!handled, "Calling _doAttach(document.body) should not be handled");
+  equal(view.viewState, SC.CoreView.UNRENDERED, "Calling _doAttach(document.body) doesn't change state");
+
+  handled = view._doDestroyLayer();
+  ok(!handled, "Calling _doDestroyLayer() should not be handled");
+  equal(view.viewState, SC.CoreView.UNRENDERED, "Calling _doDestroyLayer() doesn't change state");
+
+  handled = view._doDetach();
+  ok(!handled, "Calling _doDetach() should not be handled");
+  equal(view.viewState, SC.CoreView.UNRENDERED, "Calling _doDetach() doesn't change state");
+
+  SC.run(function () {
+    handled = view._doHide();
+  });
+  ok(!handled, "Calling _doHide() should not be handled");
+  equal(view.viewState, SC.CoreView.UNRENDERED, "Calling _doHide() doesn't change state");
+
+  handled = view._doUpdateContent();
+  ok(!handled, "Calling _doUpdateContent() should not be handled");
+  equal(view.viewState, SC.CoreView.UNRENDERED, "Calling _doUpdateContent() doesn't change state");
+
+  handled = view._doUpdateLayout();
+  ok(!handled, "Calling _doUpdateLayout() should not be handled");
+  equal(view.viewState, SC.CoreView.UNRENDERED, "Calling _doUpdateLayout() doesn't change state");
+
+
+  // HANDLED ACTIONS
+
+  handled = view._doRender();
+  ok(handled, "Calling _doRender() should be handled");
+  equal(view.viewState, SC.CoreView.UNATTACHED, "Calling _doRender() changes state");
+
+
+  // CLEAN UP
+  view.destroy();
+});
+
+/**
+  Test the state, in particular supported actions.
+  */
+test("Test unattached state.", function () {
+  var handled,
+    view = SC.View.create();
+
+  // Test expected state of the view.
+  view._doRender();
+  equal(view.viewState, SC.CoreView.UNATTACHED, "A newly created view that is rendered should be in the state");
+  ok(!view.get('isAttached'), "isAttached should be false");
+  ok(view.get('_isRendered'), "_isRendered should be true");
+  ok(!view.get('isVisibleInWindow'), "isVisibleInWindow should be false");
+
+  // _doAttach(document.body)
+  // _doDestroyLayer()
+  // _doDetach()
+  // _doHide()
+  // _doRender()
+  // _doShow()
+  // _doUpdateContent()
+  // _doUpdateLayout()
+
+  // UNHANDLED ACTIONS
+  handled = view._doDetach();
+  ok(!handled, "Calling _doDetach() should not be handled");
+  equal(view.viewState, SC.CoreView.UNATTACHED, "Calling _doDetach() doesn't change state");
+
+  handled = view._doRender();
+  ok(!handled, "Calling _doRender() should not be handled");
+  equal(view.viewState, SC.CoreView.UNATTACHED, "Calling _doRender() doesn't change state");
+
+
+  // HANDLED ACTIONS
+
+  SC.run(function () {
+    handled = view._doHide();
+  });
+  ok(handled, "Calling _doHide() should be handled");
+  equal(view.viewState, SC.CoreView.UNATTACHED, "Calling _doHide() doesn't change state");
+
+  handled = view._doShow();
+  ok(handled, "Calling _doShow() should be handled");
+  equal(view.viewState, SC.CoreView.UNATTACHED, "Calling _doShow() doesn't change state");
+
+  handled = view._doAttach(document.body);
+  ok(handled, "Calling _doAttach(document.body) should be handled");
+  equal(view.viewState, SC.CoreView.ATTACHED_SHOWN, "Calling _doAttach(document.body) changes state");
+
+  // Reset
+  view.destroy();
+  view = SC.View.create();
+  view._doRender();
+
+  handled = view._doDestroyLayer();
+  ok(handled, "Calling _doDestroyLayer() should be handled");
+  equal(view.viewState, SC.CoreView.UNRENDERED, "Calling _doDestroyLayer() changes state");
+
+  // Reset
+  view.destroy();
+  view = SC.View.create();
+  view._doRender();
+
+  handled = view._doUpdateContent();
+  ok(handled, "Calling _doUpdateContent() should be handled");
+  equal(view.viewState, SC.CoreView.UNATTACHED, "Calling _doUpdateContent() doesn't change state");
+
+  handled = view._doUpdateLayout();
+  ok(handled, "Calling _doUpdateLayout() should be handled");
+  equal(view.viewState, SC.CoreView.UNATTACHED, "Calling _doUpdateLayout() doesn't change state");
+
+  // Reset
+  view.destroy();
+  view = SC.View.create();
+  view._doRender();
+
+  handled = view._doAttach(document.body);
+  ok(handled, "Calling _doAttach(document.body) with unrendered orphan parentView should be handled");
+  equal(view.viewState, SC.CoreView.ATTACHED_SHOWN, "Calling _doAttach(document.body) changes state");
+
+
+  // CLEAN UP
+  view.destroy();
+});
+
+
+/**
+  Test the state, in particular supported actions.
+  */
+test("Test attached_shown state.", function () {
+  var handled,
+    view = SC.View.create();
+
+  // Test expected state of the view.
+  view._doRender();
+  view._doAttach(document.body);
+  equal(view.viewState, SC.CoreView.ATTACHED_SHOWN, "A newly created orphan view that is rendered and attached should be in the state");
+  ok(view.get('isAttached'), "isAttached should be true");
+  ok(view.get('_isRendered'), "_isRendered should be true");
+  ok(view.get('isVisibleInWindow'), "isVisibleInWindow should be true");
+
+  // _doAttach(document.body)
+  // _doDestroyLayer()
+  // _doDetach()
+  // _doHide()
+  // _doRender()
+  // _doShow()
+  // _doUpdateContent()
+  // _doUpdateLayout()
+
+
+  // UNHANDLED ACTIONS
+  handled = view._doAttach(document.body);
+  ok(!handled, "Calling _doAttach(document.body) should not be handled");
+  equal(view.viewState, SC.CoreView.ATTACHED_SHOWN, "Calling _doAttach(document.body) doesn't change state");
+
+  handled = view._doDestroyLayer();
+  ok(!handled, "Calling _doDestroyLayer() should not be handled");
+  equal(view.viewState, SC.CoreView.ATTACHED_SHOWN, "Calling _doDestroyLayer() doesn't change state");
+
+  handled = view._doRender();
+  ok(!handled, "Calling _doRender() should not be handled");
+  equal(view.viewState, SC.CoreView.ATTACHED_SHOWN, "Calling _doRender() doesn't change state");
+
+  handled = view._doShow();
+  ok(!handled, "Calling _doShow() should not be handled");
+  equal(view.viewState, SC.CoreView.ATTACHED_SHOWN, "Calling _doShow() doesn't change state");
+
+
+  // HANDLED ACTIONS
+
+  handled = view._doUpdateContent();
+  ok(handled, "Calling _doUpdateContent() should be handled");
+  equal(view.viewState, SC.CoreView.ATTACHED_SHOWN, "Calling _doUpdateContent() doesn't change state");
+
+  handled = view._doUpdateLayout();
+  ok(handled, "Calling _doUpdateLayout() should be handled");
+  equal(view.viewState, SC.CoreView.ATTACHED_SHOWN, "Calling _doUpdateLayout() doesn't change state");
+
+  handled = view._doDetach();
+  ok(handled, "Calling _doDetach() should be handled");
+  equal(view.viewState, SC.CoreView.UNATTACHED, "Calling _doDetach() changes state");
+
+  // Reset
+  view.destroy();
+  view = SC.View.create();
+  view._doRender();
+  view._doAttach(document.body);
+
+  SC.run(function () {
+    handled = view._doHide();
+  });
+  ok(handled, "Calling _doHide() should be handled");
+  equal(view.viewState, SC.CoreView.ATTACHED_HIDDEN, "Calling _doHide() changes state");
+
+
+  // CLEAN UP
+  view.destroy();
+});
+
+
+test("Calling destroy layer, clears the layer from all child views.",  function () {
+  var child = SC.View.create(),
+    view = SC.View.create({ childViews: [child] });
+
+  view._doAdopt(parentView);
+  parentView._doRender();
+
+  ok(parentView.get('layer'), "The parentView should have a reference to the layer.");
+  ok(view.get('layer'), "The view should have a reference to the layer.");
+  ok(child.get('layer'), "The child should have a reference to the layer.");
+
+  parentView._doDestroyLayer();
+  equal(parentView.get('layer'), null, "The parentView should not have a reference to the layer.");
+  equal(view.get('layer'), null, "The view should not have a reference to the layer.");
+  equal(child.get('layer'), null, "The child should not have a reference to the layer.");
+
+  // CLEAN UP
+  view.destroy();
+});
+
+/** Test the SC.View state propagation to child views. */
+module("SC.View Adoption", {
+
+  setup: function () {
+    parentView = SC.Pane.create();
+  },
+
+  teardown: function () {
+    parentView.destroy();
+    parentView = null;
+  }
+
+});
+
+
+test("Test adding a child brings that child to the same state as the parentView.", function () {
+  var child = SC.View.create(),
+    view = SC.View.create({ childViews: [child] });
+
+  // Test expected state of the view.
+  view._doAdopt(parentView);
+  equal(parentView.viewState, SC.CoreView.UNRENDERED, "A newly created parentView should be in the state");
+  equal(view.viewState, SC.CoreView.UNRENDERED, "A newly created child view of unrendered parentView should be in the state");
+  equal(child.viewState, SC.CoreView.UNRENDERED, "A newly created child view of unrendered parentView's child view should be in the state");
+  ok(!view.get('_isRendered'), "_isRendered should be false");
+  ok(!view.get('isAttached'), "isAttached should be false");
+  ok(!view.get('isVisibleInWindow'), "isVisibleInWindow should be false");
+
+  // Render the view.
+  view._doRender();
+  equal(view.viewState, SC.CoreView.UNATTACHED, "A rendered child view of unrendered parentView should be in the state");
+  equal(child.viewState, SC.CoreView.UNATTACHED_BY_PARENT, "A rendered child view of unrendered parentView's child view should be in the state");
+  ok(view.get('_isRendered'), "_isRendered should be true");
+  ok(!view.get('isAttached'), "isAttached should be false");
+  ok(!view.get('isVisibleInWindow'), "isVisibleInWindow should be false");
+
+  // Attach the view.
+  view._doAttach(document.body);
+  equal(view.viewState, SC.CoreView.UNATTACHED_BY_PARENT, "An attached child view of unrendered parentView should be in the state");
+  equal(child.viewState, SC.CoreView.UNATTACHED_BY_PARENT, "An attached child view of unrendered parentView's child view should be in the state");
+  ok(view.get('_isRendered'), "_isRendered should be true");
+  ok(!view.get('isAttached'), "isAttached should be false");
+  ok(!view.get('isVisibleInWindow'), "isVisibleInWindow should be false");
+
+  // Reset
+  view.destroy();
+  child = SC.View.create();
+  view = SC.View.create({ childViews: [child] });
+
+  parentView._doRender();
+  view._doAdopt(parentView);
+  equal(parentView.viewState, SC.CoreView.UNATTACHED, "A newly created parentView that is rendered should be in the state");
+  equal(view.viewState, SC.CoreView.UNATTACHED_BY_PARENT, "A newly created child view of unattached parentView should be in the state");
+  equal(child.viewState, SC.CoreView.UNATTACHED_BY_PARENT, "A newly created child view of unattached parentView's child view should be in the state");
+  ok(view.get('_isRendered'), "_isRendered should be true");
+  ok(!view.get('isAttached'), "isAttached should be false");
+  ok(!view.get('isVisibleInWindow'), "isVisibleInWindow should be false");
+
+  // Attach the view.
+  view._doAttach(document.body);
+  equal(view.viewState, SC.CoreView.UNATTACHED_BY_PARENT, "An attached child view of unattached parentView should be in the state");
+  equal(child.viewState, SC.CoreView.UNATTACHED_BY_PARENT, "An attached child view of unattached parentView's child view should be in the state");
+  ok(view.get('_isRendered'), "_isRendered should be true");
+  ok(!view.get('isAttached'), "isAttached should be false");
+  ok(!view.get('isVisibleInWindow'), "isVisibleInWindow should be false");
+
+  // Reset
+  view.destroy();
+  child = SC.View.create();
+  view = SC.View.create({ childViews: [child] });
+
+  parentView._doAttach(document.body);
+  view._doAdopt(parentView);
+  equal(parentView.viewState, SC.CoreView.ATTACHED_SHOWN, "A newly created parentView that is attached should be in the state");
+  equal(view.viewState, SC.CoreView.ATTACHED_SHOWN, "A newly created child view of attached parentView should be in the state");
+  equal(child.viewState, SC.CoreView.ATTACHED_SHOWN, "A child of newly created view of attached parentView should be in the state");
+  ok(view.get('_isRendered'), "_isRendered should be true");
+  ok(view.get('isAttached'), "isAttached should be true");
+  ok(view.get('isVisibleInWindow'), "isVisibleInWindow should be true");
+
+
+  // CLEAN UP
+  view.destroy();
+});
+
+
+test("Test showing and hiding parentView updates child views.", function () {
+  var handled,
+    child = SC.View.create(),
+    view = SC.View.create({ childViews: [child] });
+
+  // Test expected state of the view.
+  parentView._doRender();
+  parentView._doAttach(document.body);
+  view._doAdopt(parentView);
+  equal(parentView.viewState, SC.CoreView.ATTACHED_SHOWN, "A newly created parentView that is attached should be in the state");
+  equal(view.viewState, SC.CoreView.ATTACHED_SHOWN, "A newly created child view of unattached parentView should be in the state");
+  equal(child.viewState, SC.CoreView.ATTACHED_SHOWN, "A newly created child view of unattached parentView's child view should be in the state");
+  ok(view.get('isVisibleInWindow'), "isVisibleInWindow should be true");
+
+  // Hide the parentView.
+  SC.run(function () {
+    parentView._doHide();
+  });
+  equal(parentView.viewState, SC.CoreView.ATTACHED_HIDDEN, "A hidden parentView that is attached should be in the state");
+  equal(view.viewState, SC.CoreView.ATTACHED_HIDDEN_BY_PARENT, "A child view of attached_hidden parentView should be in the state");
+  equal(child.viewState, SC.CoreView.ATTACHED_HIDDEN_BY_PARENT, "A child view of attached_hidden parentView's child view should be in the state");
+  ok(!view.get('isVisibleInWindow'), "isVisibleInWindow should be false");
+
+  // Show the parentView/hide the view.
+  handled = parentView._doShow();
+  ok(handled, "Calling _doShow() on parentView should be handled");
+  equal(view.viewState, SC.CoreView.ATTACHED_SHOWN, "Calling _doShow() on parentView changes state on view.");
+  equal(child.viewState, SC.CoreView.ATTACHED_SHOWN, "Calling _doShow() on parentView changes state on child");
+
+  SC.run(function () {
+    handled = view._doHide();
+  });
+  ok(handled, "Calling _doHide() should be handled");
+  equal(view.viewState, SC.CoreView.ATTACHED_HIDDEN, "Calling _doHide() on view changes state on view");
+  equal(child.viewState, SC.CoreView.ATTACHED_HIDDEN_BY_PARENT, "Calling _doHide() on view changes state on child");
+
+  // Reset
+  SC.run(function () {
+    parentView._doHide();
+  });
+  view.destroy();
+  child = SC.View.create();
+  view = SC.View.create({ childViews: [child] });
+  view._doAdopt(parentView);
+
+  // Add child to already hidden parentView.
+  equal(view.viewState, SC.CoreView.ATTACHED_HIDDEN_BY_PARENT, "A child view of attached_hidden parentView should be in the state");
+  equal(child.viewState, SC.CoreView.ATTACHED_HIDDEN_BY_PARENT, "A child view of attached_hidden parentView's child view should be in the state");
+  ok(!view.get('isVisibleInWindow'), "isVisibleInWindow should be false");
+
+  // Reset
+  parentView.destroy();
+  parentView = SC.View.create();
+  parentView._doRender();
+  child = SC.View.create();
+  view = SC.View.create({ childViews: [child] });
+  view._doAdopt(parentView);
+
+  // Attach a parentView with children
+  equal(view.viewState, SC.CoreView.UNATTACHED_BY_PARENT, "A child view of unattached parentView should be in the state");
+  equal(child.viewState, SC.CoreView.UNATTACHED_BY_PARENT, "A child view of unattached parentView's child view should be in the state");
+  parentView._doAttach(document.body);
+  equal(view.viewState, SC.CoreView.ATTACHED_SHOWN, "A child view of attached_shown parentView should be in the state");
+  equal(child.viewState, SC.CoreView.ATTACHED_SHOWN, "A child view of attached_shown parentView's child view should be in the state");
+
+  // CLEAN UP
+  view.destroy();
+});
+
+test("Test hiding with transitionHide", function () {
+  var child = SC.View.create(),
+    transitionHide = { run: function () {} },
+    view = SC.View.create({ childViews: [child] });
+
+  // Set up.
+  parentView._doRender();
+  parentView._doAttach(document.body);
+  view._doAdopt(parentView);
+
+  // Hide the parentView with transitionHide
+  parentView.set('transitionHide', transitionHide);
+  SC.run(function () {
+    parentView._doHide();
+  });
+  ok(parentView.get('isVisibleInWindow'), "isVisibleInWindow of parentView should be false");
+  ok(view.get('isVisibleInWindow'), "isVisibleInWindow should be true");
+  ok(child.get('isVisibleInWindow'), "isVisibleInWindow of child should be true");
+
+  SC.run(function () {
+    parentView.didTransitionOut();
+  });
+  ok(!parentView.get('isVisibleInWindow'), "isVisibleInWindow of parentView should be false after didTransitionOut");
+  ok(!view.get('isVisibleInWindow'), "isVisibleInWindow should be false after didTransitionOut");
+  ok(!child.get('isVisibleInWindow'), "isVisibleInWindow of child should be false after didTransitionOut");
+
+  // CLEAN UP
+  view.destroy();
+});
+
+test("Adjusting unrelated layout property (not specified in transition's layoutProperties) during transition.", function() {
+  var transition = {
+    layoutProperties: ['opacity'],
+    run: function (view) {
+      view.adjust('opacity', 0);
+      SC.run.scheduleOnce('afterRender', view, view.didTransitionIn);
+    }
+  }
+  var view = SC.View.create({
+    transitionIn: transition,
+    layout: { height: 40 },
+    didTransitionIn: function() {
+      this._super();
+      equal(this.get('layout.height'), 30, "height adjusted during an opacity transition is retained after the transition is complete");
+      start();
+    }
+  });
+
+  SC.run(function() {
+    view._doRender();
+    view._doAttach(document.body);
+    equal(view.get('layout.height'), 40, 'PRELIM: View height starts at 40');
+    equal(view.get('viewState'), SC.View.ATTACHED_BUILDING_IN, "PRELIM: View is building in");
+    view.adjust('height', 30);
+    stop(250);
+  });
+
+});
+
+/** isVisible */
+var child, view;
+module("SC.View isVisible integration with shown and hidden state", {
+
+  setup: function () {
+    SC.run(function () {
+      parentView = SC.View.create();
+      parentView._doRender();
+      parentView._doAttach(document.body);
+
+      child = SC.View.create(),
+      view = SC.View.create({
+        // STUB: _executeDoUpdateContent
+        _executeDoUpdateContent: CoreTest.stub('_executeDoUpdateContent', SC.CoreView.prototype._executeDoUpdateContent),
+        // STUB: _doUpdateVisibleStyle
+        _doUpdateVisibleStyle: CoreTest.stub('_doUpdateVisibleStyle', SC.CoreView.prototype._doUpdateVisibleStyle),
+
+        childViews: [child],
+        displayProperties: ['foo'],
+        foo: false
+      });
+    });
+  },
+
+  teardown: function () {
+    view.destroy();
+    parentView.destroy();
+    parentView = null;
+  }
+
+});
+
+test("Test showing and hiding a hidden view in same run loop should not update visibility or content.", function () {
+  view._doAdopt(parentView);
+
+  SC.run(function () {
+    view.set('isVisible', false);
+  });
+
+  view._executeDoUpdateContent.expect(0);
+  view._doUpdateVisibleStyle.expect(1);
+
+  // Hide the view using isVisible.
+  SC.run(function () {
+    view.set('foo', true);
+    equal(view.viewState, SC.CoreView.ATTACHED_HIDDEN, "The view should be in the state");
+    equal(child.viewState, SC.CoreView.ATTACHED_HIDDEN_BY_PARENT, "The child view should be in the state");
+
+    ok(!view.get('isVisibleInWindow'), "isVisibleInWindow should be false");
+    ok(!child.get('isVisibleInWindow'), "isVisibleInWindow of child should be false");
+
+    view.set('isVisible', true);
+    equal(view.viewState, SC.CoreView.ATTACHED_SHOWN, "The view should now be in the state");
+    equal(child.viewState, SC.CoreView.ATTACHED_SHOWN, "The child view should now be in the state");
+
+    ok(view.get('isVisibleInWindow'), "isVisibleInWindow should be true");
+    ok(child.get('isVisibleInWindow'), "isVisibleInWindow of child should be true");
+
+    view.set('isVisible', false);
+  });
+
+  view._executeDoUpdateContent.expect(0);
+  view._doUpdateVisibleStyle.expect(3);
+});
+
+test("Test hiding and showing a shown view in same run loop should not update visibility.", function () {
+  view._doAdopt(parentView);
+
+  // Hide the view using isVisible.
+  SC.run(function () {
+    view.set('foo', true);
+    view.set('isVisible', false);
+    equal(view.viewState, SC.CoreView.ATTACHED_HIDDEN, "The view should be in the state");
+    equal(child.viewState, SC.CoreView.ATTACHED_HIDDEN_BY_PARENT, "The child view should be in the state");
+
+    ok(!view.get('isVisibleInWindow'), "isVisibleInWindow should be false");
+    ok(!child.get('isVisibleInWindow'), "isVisibleInWindow of child should be false");
+
+    view.set('isVisible', true);
+    equal(view.viewState, SC.CoreView.ATTACHED_SHOWN, "The view should be in the state");
+    equal(child.viewState, SC.CoreView.ATTACHED_SHOWN, "The child view should be in the state");
+
+    ok(view.get('isVisibleInWindow'), "isVisibleInWindow should be true");
+    ok(child.get('isVisibleInWindow'), "isVisibleInWindow of child should be true");
+  });
+
+  view._executeDoUpdateContent.expect(1);
+  view._doUpdateVisibleStyle.expect(2);
+});
+
+
+test("Test showing and hiding a hiding view in same run loop should not update visibility or content.", function () {
+  var transitionHide = { run: function () {} };
+
+  view._doAdopt(parentView);
+
+  view.set('transitionHide', transitionHide);
+
+  SC.run(function () {
+    view.set('foo', true);
+    view.set('isVisible', false);
+  });
+
+  // Hide the view using isVisible.
+  SC.run(function () {
+    equal(view.viewState, SC.CoreView.ATTACHED_HIDING, "The view should be in the state");
+    equal(child.viewState, SC.CoreView.ATTACHED_SHOWN, "The child view should be in the state");
+
+    ok(view.get('isVisibleInWindow'), "isVisibleInWindow should be true");
+    ok(child.get('isVisibleInWindow'), "isVisibleInWindow of child should be true");
+
+    view.set('isVisible', true);
+    equal(view.viewState, SC.CoreView.ATTACHED_SHOWN, "The view should be in the state");
+    equal(child.viewState, SC.CoreView.ATTACHED_SHOWN, "The child view should be in the state");
+
+    ok(view.get('isVisibleInWindow'), "isVisibleInWindow should be true");
+    ok(child.get('isVisibleInWindow'), "isVisibleInWindow of child should be true");
+
+    view.set('isVisible', false);
+  });
+
+  view._executeDoUpdateContent.expect(1);
+  view._doUpdateVisibleStyle.expect(0);
+});
+
+test("Test hiding and showing a showing view in same run loop should not update visibility.", function () {
+  var transitionShow = { run: function () {} };
+
+  view._doAdopt(parentView);
+
+  view.set('transitionShow', transitionShow);
+
+  SC.run(function () {
+    view.set('foo', true);
+    view.set('isVisible', false);
+  });
+
+  SC.run(function () {
+    view.set('isVisible', true);
+  });
+
+  // Hide the view using isVisible.
+  SC.run(function () {
+    equal(view.viewState, SC.CoreView.ATTACHED_SHOWING, "The view should be in the state");
+    equal(child.viewState, SC.CoreView.ATTACHED_HIDDEN_BY_PARENT, "The child view should be in the state");
+
+    ok(view.get('isVisibleInWindow'), "isVisibleInWindow should be true");
+    ok(!child.get('isVisibleInWindow'), "isVisibleInWindow of child should be false");
+
+    view.set('isVisible', false);
+    equal(view.viewState, SC.CoreView.ATTACHED_HIDDEN, "The view should be in the state");
+    equal(child.viewState, SC.CoreView.ATTACHED_HIDDEN_BY_PARENT, "The child view should be in the state");
+
+    ok(!view.get('isVisibleInWindow'), "isVisibleInWindow should be false");
+    ok(!child.get('isVisibleInWindow'), "isVisibleInWindow of child should be false");
+
+    view.set('isVisible', true);
+  });
+
+  view._executeDoUpdateContent.expect(1);
+  view._doUpdateVisibleStyle.expect(4);
+});
+
+
+test("Test hiding and showing an attached child view with child views.", function () {
+  view._doAdopt(parentView);
+
+  // Hide the view using isVisible.
+  SC.run(function () {
+    view.set('isVisible', false);
+  });
+
+  equal(parentView.viewState, SC.CoreView.ATTACHED_SHOWN, "The parentView view should be in the state");
+  equal(view.viewState, SC.CoreView.ATTACHED_HIDDEN, "The view should be in the state");
+  equal(child.viewState, SC.CoreView.ATTACHED_HIDDEN_BY_PARENT, "The child view should be in the state");
+  ok(!view.get('isVisibleInWindow'), "isVisibleInWindow should be false");
+  ok(!child.get('isVisibleInWindow'), "isVisibleInWindow of child should be false");
+
+  // Show the view using isVisible.
+  SC.run(function () {
+    view.set('isVisible', true);
+  });
+
+  equal(view.viewState, SC.CoreView.ATTACHED_SHOWN, "The view should be in the state");
+  equal(child.viewState, SC.CoreView.ATTACHED_SHOWN, "The child view should be in the state");
+  ok(view.get('isVisibleInWindow'), "isVisibleInWindow should now be true");
+  ok(child.get('isVisibleInWindow'), "isVisibleInWindow of child should now be true");
+});
+
+
+test("Test hiding an attached parentView view and then adding child views.", function () {
+  // Hide the parentView using isVisible and then adopting child views.
+  SC.run(function () {
+    parentView.set('isVisible', false);
+    view._doAdopt(parentView);
+  });
+
+  equal(parentView.viewState, SC.CoreView.ATTACHED_HIDDEN, "The parentView view should be in the state");
+  equal(view.viewState, SC.CoreView.ATTACHED_HIDDEN_BY_PARENT, "The view should be in the state");
+  equal(child.viewState, SC.CoreView.ATTACHED_HIDDEN_BY_PARENT, "The child view should be in the state");
+  ok(!view.get('isVisibleInWindow'), "isVisibleInWindow should be false");
+  ok(!child.get('isVisibleInWindow'), "isVisibleInWindow of child should be false");
+
+  // Show the parentView using isVisible.
+  SC.run(function () {
+    parentView.set('isVisible', true);
+  });
+
+  equal(parentView.viewState, SC.CoreView.ATTACHED_SHOWN, "The parentView view should be in the state");
+  equal(view.viewState, SC.CoreView.ATTACHED_SHOWN, "The view should be in the state");
+  equal(child.viewState, SC.CoreView.ATTACHED_SHOWN, "The child view should be in the state");
+  ok(view.get('isVisibleInWindow'), "isVisibleInWindow should be false");
+  ok(child.get('isVisibleInWindow'), "isVisibleInWindow of child should be false");
+});
+
+
+test("Test showing an attached parentView view while hiding the child view.", function () {
+  SC.run(function () {
+    parentView.set('isVisible', false);
+    view._doAdopt(parentView);
+
+    // Hide the view and then show the parentView using isVisible.
+    view.set('isVisible', false);
+    parentView.set('isVisible', true);
+  });
+
+  equal(parentView.viewState, SC.CoreView.ATTACHED_SHOWN, "The parentView view should be in the state");
+  equal(view.viewState, SC.CoreView.ATTACHED_HIDDEN, "The view should be in the state");
+  equal(child.viewState, SC.CoreView.ATTACHED_HIDDEN_BY_PARENT, "The child view should be in the state");
+  ok(!view.get('isVisibleInWindow'), "isVisibleInWindow should be false");
+  ok(!child.get('isVisibleInWindow'), "isVisibleInWindow of child should be false");
+});
+
+
+test("Test adding a hidden child view to attached shown parentView.", function () {
+  // Hide the view with isVisible and then add to parentView.
+  SC.run(function () {
+    view.set('isVisible', false);
+    view._doAdopt(parentView);
+  });
+
+  equal(view.viewState, SC.CoreView.ATTACHED_HIDDEN, "The view should be in the state");
+  equal(child.viewState, SC.CoreView.ATTACHED_HIDDEN_BY_PARENT, "The child view should be in the state");
+  ok(!view.get('isVisibleInWindow'), "isVisibleInWindow should be false");
+  ok(!child.get('isVisibleInWindow'), "isVisibleInWindow of child should be false");
+});
+
+});minispade.register('sproutcore-foundation/~tests/ext/object_test', function() {// // ==========================================================================
 // // Project:   SproutCore - JavaScript Application Framework
 // // Copyright: ©2006-2011 Strobe Inc. and contributors.
 // //            Portions ©2008-2011 Apple Inc. All rights reserved.

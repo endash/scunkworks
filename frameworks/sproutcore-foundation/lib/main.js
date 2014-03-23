@@ -12,6 +12,7 @@ require('sproutcore-foundation/protocols/observable_protocol');
 require('sproutcore-foundation/protocols/sparse_array_delegate');
 require('sproutcore-foundation/protocols/view_transition_protocol');
 require('sproutcore-foundation/system/browser');
+require('sproutcore-foundation/system/device');
 require('sproutcore-foundation/system/builder');
 require('sproutcore-foundation/system/color');
 require('sproutcore-foundation/system/core_query');
