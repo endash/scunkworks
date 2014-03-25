@@ -6,10 +6,6 @@
 // ==========================================================================
 
 require('sproutcore-views/panes/pane');
-require('sproutcore-views/panes/keyboard');
-require('sproutcore-views/panes/layout');
-require('sproutcore-views/panes/manipulation');
-require('sproutcore-views/panes/visibility');
 
 /** @class
 

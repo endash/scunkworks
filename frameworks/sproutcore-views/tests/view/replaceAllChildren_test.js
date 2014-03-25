@@ -46,6 +46,7 @@ test("Replaces all children. UNRENDERED parent view.", function () {
   var childViews = parentView.get('childViews'),
     newChildViews = [SC.View.create(), SC.View.create()];
 
+
   equal(childViews.get('length'), 3, "There are this many child views originally");
 
   // Replace all children.

@@ -95,6 +95,20 @@ SC.MIXED_STATE = '__MIXED__' ;
 SC.Pane = SC.View.extend(SC.ResponderContext,
 /** @scope SC.Pane.prototype */ {
 
+  /** @private */
+  init: function() {
+    // if a layer was set manually then we will just attach to existing
+    // HTML.
+    var hasLayer = !!this.get('layer') ;
+    this._super() ;
+    if (hasLayer) {
+      this._attached();
+    }
+  },
+
+  /** @private */
+  classNames: ['sc-pane'],
+
   /**
     Returns YES for easy detection of when you reached the pane.
     @type Boolean
@@ -168,7 +182,7 @@ SC.Pane = SC.View.extend(SC.ResponderContext,
     // if no handler was found in the responder chain, try the default
     if (!target && (target = this.get('defaultResponder'))) {
       if (typeof target === SC.T_STRING) {
-        target = SC.objectForPropertyPath(target);
+        target = SC.get(target);
       }
 
       if (!target) target = null;
@@ -196,7 +210,7 @@ SC.Pane = SC.View.extend(SC.ResponderContext,
   */
   nextResponder: function() {
     return null;
-  }.property().cacheable(),
+  }.property(),
 
   /**
     The first responder.  This is the first view that should receive action
@@ -530,7 +544,7 @@ SC.Pane = SC.View.extend(SC.ResponderContext,
   */
   hasTouchIntercept: function(){
     return this.get('wantsTouchIntercept') && SC.platform.touch;
-  }.property('wantsTouchIntercept').cacheable(),
+  }.property('wantsTouchIntercept'),
 
   /**
     The Z-Index of the pane. Currently, you have to match this in CSS.
@@ -586,27 +600,257 @@ SC.Pane = SC.View.extend(SC.ResponderContext,
   //   // note: the normal code here to update node location is removed
   //   // because we don't need it for panes.
   //   return this;
-  // },
+  // }
 
-  /** @private */
-  init: function() {
-    // Backwards compatibility
-    // TODO: REMOVE THIS
-    if (this.hasTouchIntercept === YES) {
-      SC.Logger.warn("Do not set hasTouchIntercept directly. Use wantsTouchIntercept instead.");
-      this.hasTouchIntercept = SC.platform.touch;
-    }
+  /**
+   Inserts the pane's layer as the first child of the passed element.
 
-    // if a layer was set manually then we will just attach to existing
-    // HTML.
-    var hasLayer = !!this.get('layer') ;
-    this._super() ;
-    if (hasLayer) {
-      this._attached();
-    }
+   @param {DOMElement|jQuery|String} elem the element to prepend the pane's layer to.
+     This is passed to `jQuery()`, so any value supported by `jQuery()` will work.
+   @returns {SC.Pane} receiver
+  */
+  prependTo: function(elem) {
+   var self = this;
+
+   return this.insert(function () {
+     var el = jQuery(elem)[0];
+     self._doAttach(el, el.firstChild);
+   });
+  },
+
+  /**
+   This method has no effect in the pane.  Instead use remove().
+
+   @returns {void}
+  */
+  removeFromParent: function() {
+   throw SC.Error.desc("SC.Pane cannot be removed from its parent, since it's the root. Did you mean remove()?");
+  },
+
+  /**
+   Last known window size.
+
+   @type Rect
+  */
+  currentWindowSize: SC.computed.alias('rootResponder.currentWindowSize'),
+
+  /**
+   The parent dimensions are always the last known window size.
+
+   @returns {Rect} current window size
+  */
+  computeParentDimensions: function (frame) {
+   if (this.get('designer') && SC.suppressMain) { return this._super(); }
+
+   var wDim = {x: 0, y: 0, width: 1000, height: 1000},
+       layout = this.get('layout');
+
+   // There used to be a whole bunch of code right here to calculate
+   // based first on a stored window size, then on root responder, then
+   // from document... but a) it is incorrect because we don't care about
+   // the window size, but instead, the clientWidth/Height of the body, and
+   // b) the performance benefits are not worth complicating the code that much.
+   if (document && document.body) {
+     wDim.width = document.body.clientWidth;
+     wDim.height = document.body.clientHeight;
+
+     // IE7 is the only browser which reports clientHeight _including_ scrollbar.
+     if (SC.browser.name === SC.BROWSER.ie &&
+         SC.browser.compare(SC.browser.version, "7") === 0) {
+
+       var scrollbarSize = SC.platform.get('scrollbarSize');
+       if (document.body.scrollWidth > wDim.width) {
+         wDim.width -= scrollbarSize;
+       }
+       if (document.body.scrollHeight > wDim.height) {
+         wDim.height -= scrollbarSize;
+       }
+     }
+   }
+
+   // If there is a minWidth or minHeight set on the pane, take that
+   // into account when calculating dimensions.
+
+   if (layout.minHeight || layout.minWidth) {
+     if (layout.minHeight) {
+       wDim.height = Math.max(wDim.height, layout.minHeight);
+     }
+     if (layout.minWidth) {
+       wDim.width = Math.max(wDim.width, layout.minWidth);
+     }
+   }
+   return wDim;
+  },
+
+  /** @private Disable caching due to an known bug in SC. */
+  frame: function () {
+   if (this.get('designer') && SC.suppressMain) { return this._super(); }
+   return this.computeFrameWithParentFrame(null);
+  }.property(),
+
+  /**
+   Invoked by the root responder whenever the window resizes.  This should
+   simply begin the process of notifying children that the view size has
+   changed, if needed.
+
+   @param {Rect} oldSize the old window size
+   @param {Rect} newSize the new window size
+   @returns {SC.Pane} receiver
+  */
+  windowSizeDidChange: function (oldSize, newSize) {
+   this.set('currentWindowSize', newSize);
+   this.setBodyOverflowIfNeeded();
+   this.parentViewDidResize(); // start notifications.
+   return this;
+  },
+
+  /**
+   Changes the body overflow according to whether minWidth or minHeight
+   are present in the layout hash. If there are no minimums, nothing
+   is done unless true is passed as the first argument. If so, then
+   overflow:hidden; will be used.
+
+   It's possible to call this manually and pass YES to remove overflow
+   if setting layout to a hash without minWidth and minHeight, but it's
+   probably not a good idea to do so unless you're doing it from the main
+   pane. There's only one body tag, after all, and if this is called from
+   multiple different panes, the panes could fight over whether it gets
+   an overflow if care isn't taken!
+
+   @param {Boolean} [force=false] force a style to be set even if there are no minimums.
+   @returns {void}
+  */
+  setBodyOverflowIfNeeded: function (force) {
+   //Code to get rid of Lion rubberbanding.
+   var layout = this.get('layout'),
+       size = this.get('currentWindowSize');
+
+   if (!layout || !size || !size.width || !size.height) return;
+
+   var minW = layout.minWidth,
+     minH = layout.minHeight;
+
+   if (force === true || minW || minH) {
+     if ((minH && size.height < minH) || (minW && size.width < minW)) {
+       SC.bodyOverflowArbitrator.requestVisible(this);
+     } else {
+       SC.bodyOverflowArbitrator.requestHidden(this);
+     }
+   }
+  },
+
+  /**
+   Stops controlling the body overflow according to the needs of this pane.
+
+   @returns {void}
+  */
+  unsetBodyOverflowIfNeeded: function () {
+   SC.bodyOverflowArbitrator.withdrawRequest(this);
+  },
+
+  performKeyEquivalent: function(keystring, evt) {
+   var ret = this._super() ; // try normal view behavior first
+   if (!ret) {
+     var defaultResponder = this.get('defaultResponder') ;
+     if (defaultResponder) {
+       // try default responder's own performKeyEquivalent method,
+       // if it has one...
+       if (defaultResponder.performKeyEquivalent) {
+         ret = defaultResponder.performKeyEquivalent(keystring, evt) ;
+       }
+
+       // even if it does have one, if it doesn't handle the event, give
+       // methodName-style key equivalent handling a try
+       if (!ret && defaultResponder.tryToPerform) {
+         ret = defaultResponder.tryToPerform(keystring, evt) ;
+       }
+     }
+   }
+   return ret ;
+  },
+
+  /** @private
+   If the user presses the tab key and the pane does not have a first
+   responder, try to give it to the next eligible responder.
+
+   If the keyDown event reaches the pane, we can assume that no responders in
+   the responder chain, nor the default responder, handled the event.
+  */
+  keyDown: function(evt) {
+   var nextValidKeyView;
+
+   // Handle tab key presses if we don't have a first responder already
+   if (evt.keyCode === 9 && !this.get('firstResponder')) {
+     // Cycle forwards by default, backwards if the shift key is held
+     if (evt.shiftKey) {
+       nextValidKeyView = this.get('previousValidKeyView');
+     } else {
+       nextValidKeyView = this.get('nextValidKeyView');
+     }
+
+     if (nextValidKeyView) {
+       this.makeFirstResponder(nextValidKeyView);
+       return YES;
+     }else if(!SC.TABBING_ONLY_INSIDE_DOCUMENT){
+       evt.allowDefault();
+     }
+   }
+
+   return NO;
+  },
+
+  /** @private method forwards status changes in a generic way. */
+  _forwardKeyChange: function(shouldForward, methodName, pane, isKey) {
+   var keyView, responder, newKeyView;
+   if (shouldForward && (responder = this.get('firstResponder'))) {
+     newKeyView = (pane) ? pane.get('firstResponder') : null ;
+     keyView = this.get('firstResponder') ;
+     if (keyView && keyView[methodName]) { keyView[methodName](newKeyView); }
+
+     if ((isKey !== undefined) && responder) {
+       responder.set('isKeyResponder', isKey);
+     }
+   }
+  },
+
+  _notifyDidAttach: function () {
+   // hook into root responder
+   this.rootResponder.panes.add(this);
+
+   // Legacy.
+   this.set('isPaneAttached', YES);
+   this.paneDidAttach();
+
+   // Legacy?
+   this.recomputeDependentProperties();
+
+   // Set the initial design mode.  The responder will update this if it changes.
+   this.updateDesignMode(this.get('designMode'), this.rootResponder.get('currentDesignMode'));
+
+   // handle intercept if needed
+   this._addIntercept();
+
+   // If the layout is flexible (dependent on the window size), then the view
+   // will resize when appended.
+   if (!this.get('isFixedSize')) {
+     // We call viewDidResize so that it calls parentViewDidResize on all child views.
+     this.viewDidResize();
+   }
+
+   this._super();
   },
 
   /** @private */
-  classNames: ['sc-pane']
+  _notifyWillDetach: function () {
+   this._super();
 
-}) ;
+   // Legacy.
+   this.set('isPaneAttached', NO);
+
+   // remove intercept
+   this._removeIntercept();
+
+   // remove the pane
+   this.rootResponder.panes.remove(this);
+  }
+});

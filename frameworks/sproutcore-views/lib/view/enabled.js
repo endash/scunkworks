@@ -181,7 +181,7 @@ SC.View.reopen(
   */
   _sc_view_isEnabledDidChange: function () {
     // Filter the input channel.
-    this.invokeOnce(this._doUpdateEnabled);
+    SC.run.scheduleOnce('render', this, this._doUpdateEnabled);
   }.observes('isEnabled'),
 
   /** @private */

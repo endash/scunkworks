@@ -110,9 +110,9 @@ test("making sure that the frame value is correct inside viewDidResize()", funct
   // working correctly.
   var originalFrame = view.get('frame');
 
-  SC.RunLoop.begin();
-  view.adjust('height', 314);
-  SC.RunLoop.end();
+  SC.run(function () {
+    view.adjust('height', 314);
+  });
 
   // Now that we've adjusted the view, the cached view (as it was inside its
   // viewDidResize() method) should be the same value, because the cached

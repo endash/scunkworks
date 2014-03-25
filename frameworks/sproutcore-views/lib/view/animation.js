@@ -240,7 +240,7 @@ SC.View.reopen(
       optionsDidChange = NO,
       hash, layout,
       optionsType,
-      pendingAnimations = this._pendingAnimations,
+      pendingAnimations = this.__pendingAnimations,
       timing;
 
     //@if(debug)
@@ -291,8 +291,9 @@ SC.View.reopen(
 
     // In the case of zero duration, just adjust and call the callback.
     if (options.duration === 0) {
+      this.adjust(hash);
+
       SC.run.scheduleOnce('afterRender', this, function () {
-        this.adjust(hash);
         this.runAnimationCallback(options, null, false);
       });
 
@@ -301,12 +302,12 @@ SC.View.reopen(
 
     // In the case that the view is not in the standard visible state, adjust instead of animate.
     if (!this.get('isVisibleInWindow')) {
+      this.adjust(hash);
+
       SC.run.scheduleOnce('afterRender', this, function () {
-        this.adjust(hash);
-        this.runAnimationCallback(options, null);
-        // Note: we may need to find a way to alert the callback that the animation was successful
-        // but instantaneous.
+        this.runAnimationCallback(options, null, false);
       });
+
       return this;
     }
 
@@ -329,7 +330,7 @@ SC.View.reopen(
       this._prevLayout = SC.clone(this.get('layout'));
     }
 
-    if (!pendingAnimations) { pendingAnimations = this._pendingAnimations = {}; }
+    if (!pendingAnimations) { pendingAnimations = this.__pendingAnimations = {}; }
 
     // Get the layout (may be a partially adjusted one already queued up).
     layout = this._animateLayout || SC.clone(this.get('layout'));
@@ -403,7 +404,7 @@ SC.View.reopen(
       this._animateLayout = layout;
 
       // Always run the animation asynchronously so that the original layout is guaranteed to be applied to the DOM.
-      SC.run.scheduleOnce('afterRender', this, this._animate);
+      SC.run.scheduleOnce('animation', this, this._animate);
       // Route.
       if (this.get('viewState') === SC.CoreView.ATTACHED_SHOWN) {
         this.set('viewState', SC.CoreView.ATTACHED_SHOWN_ANIMATING);
@@ -419,6 +420,12 @@ SC.View.reopen(
 
   /** @private */
   _animate: function () {
+    // TODO: make the timing of layout setting and animation triggering make sense
+    // right now, being sure to allow for an initial layout to be set on the layout
+    // queue wipes out _pendingAnimations before we run _animate on the animation
+    // queue, so we do this hacky switcheroo.
+    this._pendingAnimations = this.__pendingAnimations;
+    this.__pendingAnimations = null;
     // Check for _animateLayout.  If an invokeNext call to animate *this* occurs
     // while flushing the invokeNext queue *before* this method runs, an extra
     // call to _animate will run.  Has unit test.
@@ -734,7 +741,8 @@ SC.View.reopen(
    */
   willRenderAnimations: function () {
     // Only apply the style if supported by the platform and the document is visible.
-    if (SC.platform.supportsCSSTransitions && !document.hidden) {
+
+    if (this.platform.supportsCSSTransitions && !document.hidden) {
       var pendingAnimations = this._pendingAnimations;
 
       if (pendingAnimations) {

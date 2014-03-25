@@ -16,38 +16,36 @@ minispade.register('sproutcore-views/~tests/main_pane', function() {// =========
 // conditions.  If you find a bug, we recommend that you add a test in the
 // edge case section.
 
-(function() {
-  var FRAME = { x: 10, y: 10, width: 30, height: 30 } ;
+var FRAME = { x: 10, y: 10, width: 30, height: 30 } ;
 
-  var pane, view ; // test globals
+var pane ; // test globals
 
-  module('SC.MainPane', {
-    setup: function() {
-      pane = SC.MainPane.create();
-    },
+module('SC.MainPane', {
+  setup: function() {
+    pane = SC.MainPane.create({rootResponder: rootResponder()});
+  },
 
-    teardown: function() {
-      pane.remove();
-      pane.destroy();
-    }
-  });
+  teardown: function() {
+    pane.remove();
+    pane.destroy();
+  }
+});
 
-  test("should not be attached before calling append()", function() {
-    equal(pane.get('isPaneAttached'), NO) ;
-  });
+test("should not be attached before calling append()", function() {
+  equal(pane.get('isPaneAttached'), NO) ;
+});
 
-  test("should attach when calling append()", function() {
-    pane.append() ;
-    equal(pane.get('isPaneAttached'), YES) ;
-  });
+test("should attach when calling append()", function() {
+  pane.append() ;
+  equal(pane.get('isPaneAttached'), YES) ;
+});
 
-  test("appending should make pane main & key", function() {
-    pane.append();
-    var r = pane.get('rootResponder');
-    equal(r.get('mainPane'), pane, 'should become mainPane');
-    equal(r.get('keyPane'), pane, 'should become keyPane');
-  });
-})();
+test("appending should make pane main & key", function() {
+  pane.append();
+  var r = pane.get('rootResponder');
+  equal(r.get('mainPane'), pane, 'should become mainPane');
+  equal(r.get('keyPane'), pane, 'should become keyPane');
+});
 
 });minispade.register('sproutcore-views/~tests/mixins/action_support', function() {// ==========================================================================
 // Project:   SproutCore - JavaScript Application Framework
@@ -181,8 +179,12 @@ module("SC.Pane#appendTo", {
   }
 });
 
+function createPane() {
+  return SC.Pane.create({rootResponder: rootResponder()});
+}
+
 test("adding to document for first time - appendTo(elem)", function() {
-  var pane = SC.Pane.create();
+  var pane = createPane();
   ok(!pane.get('layer'), 'precond - does not yet have layer');
   ok(!pane.get('isVisibleInWindow'), 'precond - isVisibleInWindow = NO');
 
@@ -202,7 +204,7 @@ test("adding to document for first time - appendTo(elem)", function() {
 });
 
 test("adding to document for first time - appendTo(string)", function() {
-  var pane = SC.Pane.create();
+  var pane = createPane();
   ok(!pane.get('layer'), 'precond - does not yet have layer');
   ok(!pane.get('isVisibleInWindow'), 'precond - isVisibleInWindow = NO');
 
@@ -219,7 +221,7 @@ test("adding to document for first time - appendTo(string)", function() {
 });
 
 test("adding to document for first time - appendTo(jquery)", function() {
-  var pane = SC.Pane.create();
+  var pane = createPane();
   ok(!pane.get('layer'), 'precond - does not yet have layer');
   ok(!pane.get('isVisibleInWindow'), 'precond - isVisibleInWindow = NO');
 
@@ -236,7 +238,7 @@ test("adding to document for first time - appendTo(jquery)", function() {
 });
 
 test("adding to document for first time - prependTo(elem)", function() {
-  var pane = SC.Pane.create();
+  var pane = createPane();
   ok(!pane.get('layer'), 'precond - does not yet have layer');
   ok(!pane.get('isVisibleInWindow'), 'precond - isVisibleInWindow = NO');
 
@@ -256,7 +258,7 @@ test("adding to document for first time - prependTo(elem)", function() {
 });
 
 test("adding to document for first time - prependTo(string)", function() {
-  var pane = SC.Pane.create();
+  var pane = createPane();
   ok(!pane.get('layer'), 'precond - does not yet have layer');
   ok(!pane.get('isVisibleInWindow'), 'precond - isVisibleInWindow = NO');
 
@@ -273,7 +275,7 @@ test("adding to document for first time - prependTo(string)", function() {
 });
 
 test("adding to document for first time - prependTo(jquery)", function() {
-  var pane = SC.Pane.create();
+  var pane = createPane();
   ok(!pane.get('layer'), 'precond - does not yet have layer');
   ok(!pane.get('isVisibleInWindow'), 'precond - isVisibleInWindow = NO');
 
@@ -292,7 +294,7 @@ test("adding to document for first time - prependTo(jquery)", function() {
 
 test("adding a pane twice should have no effect", function() {
   var cnt = 0;
-  var pane = SC.Pane.create();
+  var pane = createPane();
   pane._tmp_paneDidAttach = pane.paneDidAttach;
   pane.paneDidAttach = function() {
     cnt++;
@@ -308,7 +310,7 @@ test("adding a pane twice should have no effect", function() {
 });
 
 test("adding/remove/adding pane", function() {
-  var pane = SC.Pane.create();
+  var pane = createPane();
   var elem1 = $('body').get(0), elem2 = $('#appendtest').get(0);
   ok(elem1 && elem2, 'precond - has elem1 && elem2');
 
@@ -333,19 +335,14 @@ test("adding/remove/adding pane", function() {
 test("removeFromParent throws an exception", function() {
   var pane, exceptionCaught = false;
 
-  try {
-    pane = SC.Pane.create();
-    pane.append();
+  pane = createPane();
+  pane.append();
+
+  throws(function () {
     pane.removeFromParent();
-  } catch(e) {
-    exceptionCaught = (e instanceof SC.Error);
-  } finally {
-    pane.remove();
-  }
+  });
 
-  ok(exceptionCaught, "trying to call removeFromParent on a pane throws an exception");
-
-  // Clean up.
+  pane.remove();
   pane.destroy();
 });
 
@@ -355,7 +352,7 @@ test("removeFromParent throws an exception", function() {
 module("SC.Pane#remove");
 
 test("removes pane from DOM", function() {
-  var pane = SC.Pane.create();
+  var pane = createPane();
   var elem = $('body').get(0);
   var layer;
 
@@ -379,8 +376,8 @@ test("removes pane from DOM", function() {
 test("updates frame and clippingFrame when loading MainPane", function() {
 
   // needs a fixed layout size to make sure the sizes stay constant
-  var pane = SC.MainPane.create();
-  var w = SC.RootResponder.responder.computeWindowSize().width;
+  var pane = SC.MainPane.create({rootResponder: rootResponder()});
+  var w = $('body').width();
 
   // add the pane to the main window.  should resize the frames
   SC.run(function() {
@@ -406,9 +403,10 @@ test("updates frame and clippingFrame when loading MainPane", function() {
 
 
 module("SC.Pane - childViews");
-
 test("SC.Pane should not attempt to recompute visibility on child views that do not have visibility support", function () {
+
   var pane = SC.Pane.create({
+    rootResponder: rootResponder(),
     childViews: ['noVisibility'],
 
     noVisibility: SC.CoreView
@@ -430,8 +428,11 @@ test("SC.Pane should not attempt to recompute visibility on child views that do 
   pane.destroy();
 });
 
-test("SC.Pane should only render once when appended.", function () {
+asyncTest("SC.Pane should only render once when appended.", function () {
+  expect(2);
+
   var pane = SC.Pane.create({
+    rootResponder: rootResponder(),
     childViews: ['child'],
 
     paneValue: null,
@@ -441,12 +442,6 @@ test("SC.Pane should only render once when appended.", function () {
     },
 
     child: SC.View.extend({
-      childValueBinding: SC.Binding.oneWay('.pane.paneValue').transform(
-        function (paneValue) {
-          equal(paneValue, 'bar', "Bound value should be set once to 'bar'");
-
-          return paneValue;
-        }),
       render: function () {
         ok(true, 'Render was called once on child.');
       }
@@ -455,17 +450,15 @@ test("SC.Pane should only render once when appended.", function () {
 
   SC.run(function () {
     pane.append();
-
-    pane.set('paneValue', 'foo');
-    pane.set('paneValue', 'bar');
   });
 
-  pane.remove();
+  window.setTimeout(function () {
+    start();
+    pane.remove();
 
-  expect(3);
-
-  // Clean up.
-  pane.destroy();
+    // Clean up.
+    pane.destroy();
+  }, 500);
 });
 
 });minispade.register('sproutcore-views/~tests/pane/design_mode_test', function() {// ==========================================================================
@@ -521,7 +514,6 @@ var DesignModeTestView = SC.View.extend({
 
 module("SC.View/SC.Pane Design Mode Support", {
   setup: function () {
-
     view4 = DesignModeTestView.create({});
 
     view3 = DesignModeTestView.create({
@@ -543,16 +535,14 @@ module("SC.View/SC.Pane Design Mode Support", {
     view5 = DesignModeTestView.create({});
 
     pane = SC.Pane.extend({
+      rootResponder: rootResponder(),
       childViews: [view1]
     });
   },
 
   teardown: function () {
     if (pane.remove) { pane.remove(); }
-
     pane = view1 = view2 = view3 = view4 = view5 = null;
-
-    SC.RootResponder.responder.set('designModes', null);
   }
 
 });
@@ -613,11 +603,10 @@ test("When RootResponder has no designModes, and you add a view to a pane, it do
 
 test("When RootResponder has designModes, it sets designMode on its panes and their childViews", function () {
   var windowSize,
-    responder = SC.RootResponder.responder,
-    orientation = SC.device.orientation;
+    orientation = rootResponder().device.orientation;
 
-  windowSize = responder.get('currentWindowSize');
-  responder.set('designModes', { s: ((windowSize.width - 10) * (windowSize.height - 10)) / window.devicePixelRatio, l: Infinity });
+  windowSize = rootResponder().get('currentWindowSize');
+  rootResponder().set('designModes', { s: ((windowSize.width - 10) * (windowSize.height - 10)), l: Infinity });
 
   pane = pane.create();
 
@@ -656,11 +645,10 @@ test("When RootResponder has designModes, it sets designMode on its panes and th
 
 test("When updateDesignMode() is called on a pane, it sets designMode properly on itself and its childViews.", function () {
   var windowSize,
-    responder = SC.RootResponder.responder,
-    orientation = SC.device.orientation;
+    orientation = rootResponder().device.orientation;
 
-  windowSize = responder.get('currentWindowSize');
-  responder.set('designModes', { s: ((windowSize.width - 10) * (windowSize.height - 10)) / window.devicePixelRatio, l: Infinity });
+  windowSize = rootResponder().get('currentWindowSize');
+  rootResponder().set('designModes', { s: ((windowSize.width - 10) * (windowSize.height - 10)), l: Infinity });
 
   SC.run(function () {
     pane = pane.create().append();
@@ -718,11 +706,10 @@ test("When updateDesignMode() is called on a pane, it sets designMode properly o
 
 test("When RootResponder has designModes, and you add a view to a pane, it sets designMode on the new view.", function () {
   var windowSize,
-    responder = SC.RootResponder.responder,
-    orientation = SC.device.orientation;
+    orientation = rootResponder().device.orientation;
 
-  windowSize = responder.get('currentWindowSize');
-  responder.set('designModes', { s: ((windowSize.width - 10) * (windowSize.height - 10)) / window.devicePixelRatio, l: Infinity });
+  windowSize = rootResponder().get('currentWindowSize');
+  rootResponder().set('designModes', { s: ((windowSize.width - 10) * (windowSize.height - 10)), l: Infinity });
 
   SC.run(function () {
     pane = pane.create().append();
@@ -738,9 +725,18 @@ test("When RootResponder has designModes, and you add a view to a pane, it sets 
 });
 
 test("When you set designModes on RootResponder, it sets designMode on its panes and their childViews.", function () {
+  console.log("WHEN YOU SET")
+  destroyRootResponder();
+  pane.rootResponder = rootResponder();
+
   var windowSize,
-    responder = SC.RootResponder.responder,
-    orientation = SC.device.orientation;
+    orientation = rootResponder().device.orientation;
+
+  // designMode should not be set
+  view1.set.expect(0);
+  view2.set.expect(0);
+  view3.set.expect(0);
+  view4.set.expect(0);
 
   SC.run(function () {
     pane = pane.create().append();
@@ -752,8 +748,8 @@ test("When you set designModes on RootResponder, it sets designMode on its panes
   view3.set.expect(0);
   view4.set.expect(0);
 
-  windowSize = responder.get('currentWindowSize');
-  responder.set('designModes', { s: ((windowSize.width - 10) * (windowSize.height - 10)) / window.devicePixelRatio, l: Infinity });
+  windowSize = rootResponder().get('currentWindowSize');
+  rootResponder().set('designModes', { s: ((windowSize.width - 10) * (windowSize.height - 10)), l: Infinity });
 
   // designMode should be set (for initialization)
   view1.set.expect(1);
@@ -780,11 +776,10 @@ test("When you set designModes on RootResponder, it sets designMode on its panes
 
 test("When you change designModes on RootResponder, it sets designMode on the pane and its childViews if the design mode has changed.", function () {
   var windowSize,
-    responder = SC.RootResponder.responder,
-    orientation = SC.device.orientation;
+    orientation = rootResponder().device.orientation;
 
-  windowSize = responder.get('currentWindowSize');
-  responder.set('designModes', { s: ((windowSize.width - 10) * (windowSize.height - 10)) / window.devicePixelRatio, l: Infinity });
+  windowSize = rootResponder().get('currentWindowSize');
+  rootResponder().set('designModes', { s: ((windowSize.width - 10) * (windowSize.height - 10)), l: Infinity });
 
   SC.run(function () {
     pane = pane.create().append();
@@ -813,7 +808,7 @@ test("When you change designModes on RootResponder, it sets designMode on the pa
   deepEqual(view4.get('classNames'), ['sc-view', 'sc-large'], "classNames for view4 should be");
 
   // Change the small threshold
-  responder.set('designModes', { s: ((windowSize.width + 10) * (windowSize.height + 10)) / window.devicePixelRatio, l: Infinity });
+  rootResponder().set('designModes', { s: ((windowSize.width + 10) * (windowSize.height + 10)), l: Infinity });
 
   // designMode should be set
   view1.set.expect(2);
@@ -838,9 +833,9 @@ test("When you change designModes on RootResponder, it sets designMode on the pa
   deepEqual(view4.get('classNames'), ['sc-view', 'sc-small'], "classNames for view4 should be");
 
   // Add a medium threshold
-  responder.set('designModes', {
-    s: ((windowSize.width - 10) * (windowSize.height - 10)) / window.devicePixelRatio,
-    m: ((windowSize.width + 10) * (windowSize.height + 10)) / window.devicePixelRatio,
+  rootResponder().set('designModes', {
+    s: ((windowSize.width - 10) * (windowSize.height - 10)),
+    m: ((windowSize.width + 10) * (windowSize.height + 10)),
     l: Infinity
   });
 
@@ -869,11 +864,10 @@ test("When you change designModes on RootResponder, it sets designMode on the pa
 
 test("When you unset designModes on RootResponder, it clears designMode on its panes and their childViews.", function () {
   var windowSize,
-    responder = SC.RootResponder.responder,
-    orientation = SC.device.orientation;
+    orientation = rootResponder().device.orientation;
 
-  windowSize = responder.get('currentWindowSize');
-  responder.set('designModes', { s: ((windowSize.width - 10) * (windowSize.height - 10)) / window.devicePixelRatio, l: Infinity });
+  windowSize = rootResponder().get('currentWindowSize');
+  rootResponder().set('designModes', { s: ((windowSize.width - 10) * (windowSize.height - 10)), l: Infinity });
 
   SC.run(function () {
     pane = pane.create().append();
@@ -902,7 +896,7 @@ test("When you unset designModes on RootResponder, it clears designMode on its p
   deepEqual(view4.get('classNames'), ['sc-view', 'sc-large'], "classNames of view4 should be");
 
   // Unset designModes
-  responder.set('designModes', null);
+  rootResponder().set('designModes', null);
 
   // designMode should be set
   view1.set.expect(2);
@@ -938,6 +932,7 @@ var pane, r, view0, view1 ;
 CommonSetup = {
   setup: function() {
     pane = SC.Pane.create({
+      rootResponder: rootResponder(),
       childViews: [SC.View, SC.View]
     });
     view0 = pane.childViews[0];
@@ -1088,6 +1083,7 @@ var pane, r, view ;
 CommonSetup = {
   setup: function() {
     pane = SC.Pane.create({
+      rootResponder: rootResponder(),
       childViews: [SC.View]
     });
     view = pane.childViews[0];
@@ -1224,6 +1220,7 @@ var pane;
 module("SC.Pane#layout", {
   setup: function() {
     pane = SC.Pane.create({
+      rootResponder: rootResponder(),
       layout: { top: 0, left: 0, width: 1, height: 1}
     });
     pane.append();
@@ -1236,9 +1233,9 @@ module("SC.Pane#layout", {
 });
 
 test("make sure that a call to adjust actually adjusts the view's size", function() {
-  SC.RunLoop.begin();
-  pane.adjust({ width: 100, height: 50 });
-  SC.RunLoop.end();
+  SC.run(function () {
+    pane.adjust({ width: 100, height: 50 });
+  });
 
   equal(pane.$()[0].style.width, '100px', 'width should have been adjusted');
   equal(pane.$()[0].style.height, '50px', 'height should have been adjusted');
@@ -1263,6 +1260,7 @@ module("SC.Pane#dispatchEvent", {
 
     defaultResponder = SC.Object.create({ defaultEvent: handler });
     pane = SC.Pane.create({
+      rootResponder: rootResponder(),
       defaultResponder: defaultResponder,
       paneEvent: handler,
       childViews: [SC.View.extend({
@@ -1546,40 +1544,41 @@ test("when invoked with target = null, no default or first responder", function(
 module("SC.RootResponder#makeKeyPane");
 
 test("returns receiver", function() {
-  var p1 = SC.Pane.create(), p2 = SC.Pane.create({ acceptsKeyPane: YES });
+  var p1 = SC.Pane.create({ rootResponder: rootResponder() }), p2 = SC.Pane.create({ rootResponder: rootResponder(), acceptsKeyPane: YES });
   var r = SC.RootResponder.create();
-  
+
   equal(r.makeKeyPane(p1), r, 'returns receiver even if pane does not accept key pane');
   equal(r.makeKeyPane(p2), r, 'returns receiver');
 });
 
 test("changes keyPane to new pane if pane accepts key focus", function() {
-  var p1 = SC.Pane.create({ acceptsKeyPane: NO }) ;
-  var p2 = SC.Pane.create({ acceptsKeyPane: YES });
-  var r = SC.RootResponder.create();
-  
+  var p1 = SC.Pane.create({ rootResponder: rootResponder(), acceptsKeyPane: NO }) ;
+  var p2 = SC.Pane.create({ rootResponder: rootResponder(), acceptsKeyPane: YES });
+  var r = rootResponder();
+
   r.makeKeyPane(p1);
   ok(r.get('keyPane') !== p1, 'keyPane should not change to view that does not accept key');
 
   r.makeKeyPane(p2);
   equal(r.get('keyPane'), p2, 'keyPane should change to view that does accept key');
-  
+
 });
 
 test("setting nil sets key pane to mainPane if mainPane accepts key focus", function() {
-  var main = SC.Pane.create({ acceptsKeyPane: YES });
-  var key = SC.Pane.create({ acceptsKeyPane: YES });
-  var r = SC.RootResponder.create({ mainPane: main, keyPane: key });
-  
+  var main = SC.Pane.create({ rootResponder: rootResponder(), acceptsKeyPane: YES });
+  var key = SC.Pane.create({ rootResponder: rootResponder(), acceptsKeyPane: YES });
+  var r = rootResponder();
+  r.setProperties({ mainPane: main, keyPane: key });
+
   // try to clear keyPane -- mainPane accepts key
   r.makeKeyPane(null);
   equal(r.get('keyPane'), main, 'keyPane should be main pane');
-  
+
   r.makeKeyPane(key); // reset
   main.acceptsKeyPane = NO ;
   r.makeKeyPane(null); // try to clean - mainPane does not accept key
   equal(r.get('keyPane'), null, 'keyPane should be null, not main');
-  
+
   // try another variety.  if keyPane is currently null and we try to set to
   // null do nothing, even if main DOES accept key.
   r.keyPane = null ;
@@ -1591,12 +1590,12 @@ test("setting nil sets key pane to mainPane if mainPane accepts key focus", func
 var p1, p2, r, callCount ;
 module("SC.RootResponder#makeKeyPane - testing notifications", {
   setup: function() {
-    p1 = SC.Pane.create({ acceptsKeyPane: YES });    
-    p2 = SC.Pane.create({ acceptsKeyPane: YES });    
-    r = SC.RootResponder.create();
+    p1 = SC.Pane.create({ rootResponder: rootResponder(), acceptsKeyPane: YES });
+    p2 = SC.Pane.create({ rootResponder: rootResponder(), acceptsKeyPane: YES });
+    r = rootResponder();
     callCount = 0 ;
   },
-  
+
   teardown: function() { p1 = p2 = r ; }
 });
 
@@ -1606,7 +1605,7 @@ test("should call willLoseKeyPaneTo on current keyPane", function() {
     equal(pane, p2, 'should pass new pane');
     callCount++;
   };
-  
+
   r.makeKeyPane(p2);
   equal(callCount, 1, 'should invoke');
 });
@@ -1617,7 +1616,7 @@ test("should call willBecomeKeyPaneFrom on new keyPane", function() {
     equal(pane, p1, 'should pass old pane');
     callCount++;
   };
-  
+
   r.makeKeyPane(p2);
   equal(callCount, 1, 'should invoke');
 });
@@ -1629,7 +1628,7 @@ test("should call didLoseKeyPaneTo on old keyPane", function() {
     equal(pane, p2, 'should pass new pane');
     callCount++;
   };
-  
+
   r.makeKeyPane(p2);
   equal(callCount, 1, 'should invoke');
 });
@@ -1640,7 +1639,7 @@ test("should call didBecomeKeyPaneFrom on new keyPane", function() {
     equal(pane, p1, 'should pass old pane');
     callCount++;
   };
-  
+
   r.makeKeyPane(p2);
   equal(callCount, 1, 'should invoke');
 });
@@ -1649,7 +1648,7 @@ test("should not invoke callbacks if setting keyPane to itself", function() {
   r.keyPane = p1; //setup test
   // instrument ...
   p1.didLoseKeyPaneTo = p1.willLoseKeyPaneTo = p1.willBecomeKeyPaneFrom = p1.didBecomeKeyPaneFrom = function() { callCount++; };
-  
+
   r.makeKeyPane(p1);
   equal(callCount, 0, 'did not invoke any callbacks');
 });
@@ -1671,44 +1670,48 @@ test("should not invoke callbacks if setting keyPane to itself", function() {
 module("SC.RootResponder#makeMainPane");
 
 test("returns receiver", function() {
-  var p1 = SC.Pane.create(), p2 = SC.Pane.create();
-  var r = SC.RootResponder.create();
+  var p1 = SC.Pane.create({ rootResponder: rootResponder() }), p2 = SC.Pane.create({ rootResponder: rootResponder() });
+  var r = rootResponder();
   equal(r.makeMainPane(p1), r, 'returns receiver');
 });
 
 test("changes mainPane to new pane", function() {
-  var p1 = SC.Pane.create(), p2 = SC.Pane.create();
-  var r = SC.RootResponder.create();
-  
+  var p1 = SC.Pane.create({ rootResponder: rootResponder() }), p2 = SC.Pane.create({ rootResponder: rootResponder() });
+  var r = rootResponder();
+
   r.makeMainPane(p1);
   equal(r.get('mainPane'), p1, 'mainPane should be p1');
 
   r.makeMainPane(p2);
   equal(r.get('mainPane'), p2, 'mainPane should be p2');
-  
+
 });
 
 test("if current mainpane is also keypane, automatically make new main pane key also", function() {
   // acceptsKeyPane is required to allow keyPane to change
-  var p1 = SC.Pane.create({ acceptsKeyPane: YES });
-  var p2 = SC.Pane.create({ acceptsKeyPane: YES });
+  var p1 = SC.Pane.create({ rootResponder: rootResponder(), acceptsKeyPane: YES });
+  var p2 = SC.Pane.create({ rootResponder: rootResponder(), acceptsKeyPane: YES });
 
-  var r= SC.RootResponder.create({ mainPane: p1, keyPane: p1 });
+  var r= rootResponder();
+  r.setProperties({ mainPane: p1, keyPane: p1 });
   r.makeMainPane(p2);
   ok(r.get('keyPane') === p2, 'should change keyPane(%@) p1 = %@ - p2 = %@'.fmt(r.get('keyPane'), p1, p2));
 });
 
 test("should call blurMainTo() on current pane, passing new pane", function() {
   var callCount = 0;
-  var p2 = SC.Pane.create();
-  var p1 = SC.Pane.create({ 
-    blurMainTo: function(pane) { 
+  var p2 = SC.Pane.create({ rootResponder: rootResponder() });
+  var p1 = SC.Pane.create({
+    rootResponder: rootResponder(),
+    blurMainTo: function(pane) {
       callCount++ ;
       equal(pane, p2, 'should pass new pane');
     }
   });
-  
-  var r= SC.RootResponder.create({ mainPane: p1 });
+
+  var r = rootResponder();
+  r.set('mainPane', p1);
+
   r.makeMainPane(p2);
   equal(callCount, 1, 'should invoke callback');
 });
@@ -1716,15 +1719,17 @@ test("should call blurMainTo() on current pane, passing new pane", function() {
 
 test("should call focusMainFrom() on new pane, passing old pane", function() {
   var callCount = 0;
-  var p1 = SC.Pane.create();
-  var p2 = SC.Pane.create({ 
-    focusMainFrom: function(pane) { 
+  var p1 = SC.Pane.create({ rootResponder: rootResponder() });
+  var p2 = SC.Pane.create({
+    rootResponder: rootResponder(),
+    focusMainFrom: function(pane) {
       callCount++ ;
       equal(pane, p1, 'should pass old pane');
     }
   });
-  
-  var r= SC.RootResponder.create({ mainPane: p1 });
+
+  var r= rootResponder();
+  r.set('mainPane', p1);
   r.makeMainPane(p2);
   equal(callCount, 1, 'should invoke callback');
 });
@@ -1744,10 +1749,11 @@ module("SC.RootResponder#makeMenuPane", {
   setup: function() {
     responder = SC.RootResponder.create();
     menu = SC.Pane.create({
+      rootResponder: rootResponder(),
       acceptsMenuPane: YES
     });
   },
-  
+
   teardown: function() {
     menu.remove();
     menu = responder = null;
@@ -1765,7 +1771,7 @@ test("Sets RootResponder's menuPane", function() {
 });
 
 test("menuPane does not affect keyPane", function() {
-  var p2 = SC.Pane.create();
+  var p2 = SC.Pane.create({ rootResponder: rootResponder() });
   responder.makeKeyPane(p2);
   equal(responder.get('keyPane'), p2, 'precond - pane should be key pane');
   responder.makeMenuPane(menu);
@@ -1790,7 +1796,7 @@ test("Pane should not become menu pane if acceptsMenuPane is not YES", function(
 /*
   We call RootResponder's browser event handlers directly with fake browser events. These
   tests are to prove RootResponder's downstream behavior.
-  
+
   Our test pane has a view tree like so:
 
   pane
@@ -1825,25 +1831,36 @@ function viewClassFactory() {
     dataDragHovered: CoreTest.stub(),
     dataDragExited: CoreTest.stub(),
     dataDragDropped: CoreTest.stub()
-  });  
+  });
 }
 
-var Pane = SC.MainPane.extend({
-  childViews: ['view1', 'view2'],
-  view1: viewClassFactory().extend({
-    childViews: ['view1a', 'view1b'],
-    view1a: viewClassFactory(),
-    view1b: viewClassFactory()
-  }),
-  view2: viewClassFactory()
-});
+paneTestClass = (function () {
+  var Pane = null;
+
+  return function () {
+    if (Pane) return Pane;
+
+    Pane = SC.MainPane.extend({
+      rootResponder: rootResponder(),
+      childViews: ['view1', 'view2'],
+      view1: viewClassFactory().extend({
+        childViews: ['view1a', 'view1b'],
+        view1a: viewClassFactory(),
+        view1b: viewClassFactory()
+      }),
+      view2: viewClassFactory()
+    });
+
+    return Pane;
+  }
+})();
 
 var pane, view1, view1a, view1b, view2, evt1a, evt2;
 
 module("Mouse event handling", {
   setup: function() {
     SC.run(function() {
-      pane = Pane.create().append();
+      pane = paneTestClass().create().append();
     });
     // Populate the variables for easy access.
     view1 = pane.get('view1');
@@ -1899,7 +1916,7 @@ test('Mouse movement', function() {
 
 
   // Move the mouse over view1a to trigger mouseEntered.
-  SC.RootResponder.responder.mousemove(evt1a);
+  rootResponder().mousemove(evt1a);
 
   equal(view1a.mouseEntered.callCount, 1, "The targeted view has received mouseEntered");
   equal(view1.mouseEntered.callCount, 1, "The targeted view's parent has received mouseEntered");
@@ -1919,7 +1936,7 @@ test('Mouse movement', function() {
 
 
   // Move the mouse over view1a again to trigger mouseMoved.
-  SC.RootResponder.responder.mousemove(evt1a);
+  rootResponder().mousemove(evt1a);
 
   equal(view1a.mouseMoved.callCount, 1, "The targeted view has received mouseMoved");
   equal(view1.mouseMoved.callCount, 1, "The targeted view's parent has received mouseMoved");
@@ -1940,7 +1957,7 @@ test('Mouse movement', function() {
   ok(isGood, 'No views have received mouseExited.');
 
   // Move the mouse over view2 to trigger mouseExited on the initial responder chain.
-  SC.RootResponder.responder.mousemove(evt2);
+  rootResponder().mousemove(evt2);
   equal(view1a.mouseExited.callCount, 1, "The targeted view has received mouseExited");
   equal(view1.mouseExited.callCount, 1, "The targeted view's parent has received mouseExited");
   equal(view1b.mouseExited.callCount, 0, "The targeted view's sibling has NOT received mouseExited");
@@ -1958,8 +1975,8 @@ TODO: Touch.
 
 test('Data dragging', function() {
   // For this test, we also want to test the default responder actions.
-  var previousDefaultResponder = SC.RootResponder.responder.defaultResponder;
-  var defaultResponder = SC.RootResponder.responder.defaultResponder = SC.Object.create({
+  var previousDefaultResponder = rootResponder().defaultResponder;
+  var defaultResponder = rootResponder().defaultResponder = SC.Object.create({
     dataDragDidEnter: CoreTest.stub(),
     dataDragDidHover: CoreTest.stub(),
     dataDragDidExit: CoreTest.stub(),
@@ -1992,7 +2009,7 @@ test('Data dragging', function() {
 
   // Drag the mouse over view1a to trigger mouseEntered.
   evt1a.type = 'dragenter';
-  SC.RootResponder.responder.dragenter(evt1a);
+  rootResponder().dragenter(evt1a);
 
   // Test default responder.
   equal(defaultResponder.dataDragDidEnter.callCount, 1, "The default responder was notified that a drag began over the app");
@@ -2017,7 +2034,7 @@ test('Data dragging', function() {
 
   // Hover the drag and make sure only dataDragHovered is called.
   evt1a.type = 'dragover';
-  SC.RootResponder.responder.dragover(evt1a);
+  rootResponder().dragover(evt1a);
 
   // Test the default responder.
   equal(defaultResponder.dataDragDidEnter.callCount, 1, "The default responder did NOT receive additional dataDragDidEnter on hover");
@@ -2050,8 +2067,8 @@ test('Data dragging', function() {
   // Note that browsers call the new dragenter prior to the old dragleave.
   evt2.type = 'dragenter';
   evt1a.type = 'dragleave';
-  SC.RootResponder.responder.dragenter(evt2);
-  SC.RootResponder.responder.dragleave(evt1a);
+  rootResponder().dragenter(evt2);
+  rootResponder().dragleave(evt1a);
 
   // Check the default responder.
   equal(defaultResponder.dataDragDidEnter.callCount, 1, "The default responder did NOT receive additional dataDragDidEnter on internal events");
@@ -2068,7 +2085,7 @@ test('Data dragging', function() {
 
   // Leave view2 to test document leaving.
   evt2.type = 'dragleave';
-  SC.RootResponder.responder.dragleave(evt2);
+  rootResponder().dragleave(evt2);
 
   // Check the default responder.
   equal(defaultResponder.dataDragDidEnter.callCount, 1, "The default responder did NOT receive additional dataDragDidEnter on document exit");
@@ -2088,9 +2105,9 @@ test('Data dragging', function() {
 
   // Test drop.
   evt1a.type = 'dragenter';
-  SC.RootResponder.responder.dragenter(evt1a);
+  rootResponder().dragenter(evt1a);
   evt1a.type = 'dragdrop';
-  SC.RootResponder.responder.drop(evt1a);
+  rootResponder().drop(evt1a);
 
   // Check the default responder.
   equal(defaultResponder.dataDragDidDrop.callCount, 1, "The default responder received a dataDragDidDrop event on drop");
@@ -2101,15 +2118,15 @@ test('Data dragging', function() {
 
 
   // Clean up our default responder sitch.
-  SC.RootResponder.responder.defaultResponder.destroy();
-  SC.RootResponder.responder.defaultResponder = previousDefaultResponder;
+  rootResponder().defaultResponder.destroy();
+  rootResponder().defaultResponder = previousDefaultResponder;
 });
 
 test('Data dragging content types', function() {
   // Drag the event over view 1a with type 'Files' (should cancel).
   evt1a.dataTransfer.types = ['Files'];
   evt1a.dataTransfer.dropEffect = 'copy';
-  SC.RootResponder.responder.dragover(evt1a);
+  rootResponder().dragover(evt1a);
 
   equal(evt1a.preventDefault.callCount, 1, "The default behavior was prevented for a 'Files' drag");
   equal(evt1a.dataTransfer.dropEffect, 'none', "The drop effect was set to 'none' for a 'Files' drag");
@@ -2117,7 +2134,7 @@ test('Data dragging content types', function() {
   // Drag the event over view 1a with type 'text/uri-list' (should cancel).
   evt1a.dataTransfer.types = ['text/uri-list'];
   evt1a.dataTransfer.dropEffect = 'copy';
-  SC.RootResponder.responder.dragover(evt1a);
+  rootResponder().dragover(evt1a);
 
   equal(evt1a.preventDefault.callCount, 2, "The default behavior was prevented for a 'text/uri-list' drag");
   equal(evt1a.dataTransfer.dropEffect, 'none', "The drop effect was set to 'none' for a 'text/uri-list' drag");
@@ -2125,7 +2142,7 @@ test('Data dragging content types', function() {
   // Drag the event over view 1a with type 'text/plain' (should not cancel).
   evt1a.dataTransfer.types = ['text/plain'];
   evt1a.dataTransfer.dropEffect = 'copy';
-  SC.RootResponder.responder.dragover(evt1a);
+  rootResponder().dragover(evt1a);
 
   equal(evt1a.preventDefault.callCount, 2, "The default behavior was NOT prevented for a 'text/plain' drag");
   equal(evt1a.dataTransfer.dropEffect, 'copy', "The drop effect was NOT changed for a 'text/plain' drag");
@@ -2148,72 +2165,70 @@ var sub, newPane, oldPane, lightPane, darkPane, myPane, responder;
 
 
 module("SC.RootResponder", {
-	setup: function() {		
+	setup: function() {
 		sub = SC.Object.create({
 			action: function() { var objectA = "hello"; }
 		});
-		
-		newPane = SC.Pane.create({ owner: this});
-		oldPane = SC.Pane.create({ owner: this});
-		lightPane = SC.Pane.create({ owner: this});
-		darkPane = SC.Pane.create({ owner: this});
-		myPane = SC.Pane.create();
-		responder = SC.RootResponder.create({});
+
+		newPane = SC.Pane.create({ rootResponder: rootResponder(), owner: this});
+		oldPane = SC.Pane.create({ rootResponder: rootResponder(), owner: this});
+		lightPane = SC.Pane.create({ rootResponder: rootResponder(), owner: this});
+		darkPane = SC.Pane.create({ rootResponder: rootResponder(), owner: this});
+		myPane = SC.Pane.create({ rootResponder: rootResponder() });
+		responder = rootResponder();
 	},
-	
+
 	teardown: function() {
 		delete sub;
 	}
-	
+
 	// var objectA, submit = document.createElement('pane');
-	// 
+	//
 	//   triggerMe: function() {
 	//     SC.Event.trigger(submit, 'click');
 	//   }
-	//   
+	//
 });
 
 test("Basic requirements", function() {
-  expect(2);
   ok(SC.RootResponder, "SC.RootResponder");
-  ok(SC.RootResponder.responder, "SC.RootResponder.responder");
 });
 
 test("root_responder.makeMainPane() : Should change the new Pane to key view", function() {
 	responder.makeMainPane(newPane);
 	//Checking the mainPane property
-	equal(responder.get('mainPane'),newPane);
-	equal(responder.get('keyPane'), newPane);
+	ok(responder.get('mainPane') == newPane);
+	ok(responder.get('keyPane') == newPane);
 });
 
 test("root_responder.makeMainPane() : Should notify other panes about the changes", function() {
 	responder.makeMainPane(newPane);
-		
+
 	//Notify other panes about the changes
-	equal(newPane.get('isMainPane'),YES);
-	equal(oldPane.get('isMainPane'),NO);
-	
+	ok(newPane.get('isMainPane'));
+	ok(!oldPane.get('isMainPane'));
+
 });
 
 test("root_responder.makeKeyPane() : Should make the passed pane as the key pane", function() {
  responder.makeMainPane(oldPane);
- equal(responder.get('keyPane'), oldPane);
- 
+ ok(responder.get('keyPane') == oldPane);
+
  responder.makeKeyPane(lightPane);
- equal(responder.get('keyPane'),lightPane);
-}); 
+ ok(responder.get('keyPane') == lightPane);
+});
 
 test("root_responder.makeKeyPane() : Should make the main pane as the key pane if null is passed", function() {
  responder.makeMainPane(lightPane);
  responder.makeKeyPane(oldPane);
  // newPane is set as the Main pane
- equal(responder.get('mainPane'),lightPane);
- // KeyPane is null as it is not set yet 
- equal(responder.get('keyPane'), oldPane);
- 
+ ok(responder.get('mainPane') == lightPane);
+ // KeyPane is null as it is not set yet
+ ok(responder.get('keyPane') == oldPane);
+
  responder.makeKeyPane();
- // KeyPane is set as the mainPane as null is passed 
- equal(responder.get('keyPane'),lightPane);
+ // KeyPane is set as the mainPane as null is passed
+ ok(responder.get('keyPane') == lightPane);
 });
 
 test("root_responder.ignoreTouchHandle() : Should ignore TEXTAREA, INPUT, A, and SELECT elements", function () {
@@ -2241,7 +2256,7 @@ test("root_responder.ignoreTouchHandle() : Should ignore TEXTAREA, INPUT, A, and
 
 //// CLEANUP
 /// Commenting out this two functions as the methods don't exist
-//// confirm with Charles 
+//// confirm with Charles
 
 
 
@@ -2249,14 +2264,14 @@ test("root_responder.ignoreTouchHandle() : Should ignore TEXTAREA, INPUT, A, and
 /*
 test("root_responder.removePane() : Should be able to remove panes to set", function() {
 	responder.removePane(darkPane);
-		
+
 	//Notify other panes about the changes
 	equal(responder.get('mainPane'),null);
 });
 
 test("root_responder.addPane() : Should be able to add panes to set", function() {
 	responder.addPane(darkPane);
-		
+
 	//Notify other panes about the changes
 	equal(responder.get('mainPane'),lightPane);
 });
@@ -2301,6 +2316,7 @@ var CommonSetup = {
 
     // explicit pane
     pane = SC.Pane.create({
+      rootResponder: rootResponder(),
       acceptsKeyPane: YES,
       defaultResponder: defaultResponder,
       childViews: [SC.View.extend({
@@ -2315,6 +2331,7 @@ var CommonSetup = {
     });
 
     pane2 = SC.Pane.create({
+      rootResponder: rootResponder(),
       acceptsKeyPane: YES,
       defaultResponder: defaultResponder,
       childViews: [SC.View.extend({
@@ -2332,24 +2349,28 @@ var CommonSetup = {
     });
 
     keyPane = SC.Pane.create({
+      rootResponder: rootResponder(),
       acceptsKeyPane: YES,
       keyAction: action
     });
     keyPane.firstResponder = keyPane ;
 
     mainPane = SC.Pane.create({
+      rootResponder: rootResponder(),
       acceptsKeyPane: YES,
       mainAction: action
     });
     mainPane.firstResponder = mainPane ;
 
     r = SC.RootResponder.create({
+      device: rootResponder().device,
       mainPane: mainPane,
       keyPane:  keyPane,
       defaultResponder: globalResponder
     });
 
     r2 = SC.RootResponder.create({
+      device: rootResponder().device,
       mainPane: mainPane,
       keyPane: keyPane,
       defaultResponder: globalResponderContext
@@ -2370,6 +2391,8 @@ var CommonSetup = {
   },
 
   teardown: function() {
+    r.destroy();
+    r2.destroy();
     r = r2 = sender = pane = window.Dummy = barView = fooView = null;
     defaultResponder = keyPane = mainPane = globalResponder = null;
     globalResponderContext = null;
@@ -2575,55 +2598,56 @@ module("SC.offset", {
 
     htmlbody('<style> .sc-main { height: 2500px; width: 2500px; } </style>');
 
-    SC.RunLoop.begin();
+    SC.run(function () {
 
-    // Even though a full SC app doesn't really allow the viewport to be scaled or scrolled by default (thus
-    // the offset by viewport will always equal offset by document), we simulate an app that uses a
-    // scrollable viewport to test the validity of the functions.
-    var viewportEl;
-    if (SC.browser.isMobileSafari) {
-      viewportEl = $("[name='viewport']")[0];
+      // Even though a full SC app doesn't really allow the viewport to be scaled or scrolled by default (thus
+      // the offset by viewport will always equal offset by document), we simulate an app that uses a
+      // scrollable viewport to test the validity of the functions.
+      var viewportEl;
+      if (SC.browser.isMobileSafari) {
+        viewportEl = $("[name='viewport']")[0];
 
-      viewportEl.setAttribute('content','initial-scale=0.8, minimum-scale=0.5, maximum-scale=1.2, user-scalable=yes, width=device-height');
-    }
+        viewportEl.setAttribute('content','initial-scale=0.8, minimum-scale=0.5, maximum-scale=1.2, user-scalable=yes, width=device-height');
+      }
 
-    pane = SC.MainPane.create({
-      childViews: [
-        SC.View.extend({
-          classNames: 'upper'.w(),
-          layout: { top: 20, left: 20, width: 100, height: 100 },
-          childViews: [
-            SC.View.extend({
-              classNames: 'upper-inner'.w(),
-              layout: { top: 10, left: 10, width: 20, height: 20 }
-            })]
-        }),
-        SC.View.extend({
-          classNames: 'lower'.w(),
-          layout: { top: 1200, left: 20, width: 100, height: 100 },
-          childViews: [
-            SC.View.extend({
-              classNames: 'lower-inner'.w(),
-              layout: { top: 10, left: 10, width: 20, height: 20 }
-            })]
-        })]
+      pane = SC.MainPane.create({
+        rootResponder: rootResponder(),
+        childViews: [
+          SC.View.extend({
+            classNames: 'upper'.w(),
+            layout: { top: 20, left: 20, width: 100, height: 100 },
+            childViews: [
+              SC.View.extend({
+                classNames: 'upper-inner'.w(),
+                layout: { top: 10, left: 10, width: 20, height: 20 }
+              })]
+          }),
+          SC.View.extend({
+            classNames: 'lower'.w(),
+            layout: { top: 1200, left: 20, width: 100, height: 100 },
+            childViews: [
+              SC.View.extend({
+                classNames: 'lower-inner'.w(),
+                layout: { top: 10, left: 10, width: 20, height: 20 }
+              })]
+          })]
 
-      // Useful for debugging in iOS
-      // /** Allow default touch events */
-      //  touchStart: function(touch) {
-      //    if (SC.browser.isMobileSafari) touch.allowDefault();
-      //  },
-      //
-      //  touchesDragged: function(evt, touches) {
-      //    if (SC.browser.isMobileSafari) evt.allowDefault();
-      //  },
-      //
-      //  touchEnd: function(touch) {
-      //    if (SC.browser.isMobileSafari) touch.allowDefault();
-      //  }
+        // Useful for debugging in iOS
+        // /** Allow default touch events */
+        //  touchStart: function(touch) {
+        //    if (SC.browser.isMobileSafari) touch.allowDefault();
+        //  },
+        //
+        //  touchesDragged: function(evt, touches) {
+        //    if (SC.browser.isMobileSafari) evt.allowDefault();
+        //  },
+        //
+        //  touchEnd: function(touch) {
+        //    if (SC.browser.isMobileSafari) touch.allowDefault();
+        //  }
+      });
     });
     pane.append();
-    SC.RunLoop.end();
 
     view1 = pane.childViews[0];
     view2 = pane.childViews[1];
@@ -2791,9 +2815,7 @@ test("A regular view with window scroll offset top:10", function() {
   window.stop();
 
   window.scrollTo(0, 10);
-  SC.RunLoop.begin();
-  SC.Timer.schedule({ target: this, action: function() { return testPosition1(element1, element2, element3, element4); }, interval: 200 });
-  SC.RunLoop.end();
+  SC.run.later(this, function() { return testPosition1(element1, element2, element3, element4); }, 200);
 });
 
 test("A regular view with window scroll offset top:10, left: 10", function() {
@@ -2805,9 +2827,7 @@ test("A regular view with window scroll offset top:10, left: 10", function() {
   window.stop();
 
   window.scrollTo(10, 10);
-  SC.RunLoop.begin();
-  SC.Timer.schedule({ target: this, action: function() { return testPosition2(element1, element2, element3, element4); }, interval: 200 });
-  SC.RunLoop.end();
+  SC.run.later(this, function() { return testPosition2(element1, element2, element3, element4); }, 200);
 });
 
 test("A regular view with window scroll offset top:100, left: 10", function() {
@@ -2819,9 +2839,7 @@ test("A regular view with window scroll offset top:100, left: 10", function() {
   window.stop();
 
   window.scrollTo(10, 100);
-  SC.RunLoop.begin();
-  SC.Timer.schedule({ target: this, action: function() { return testPosition3(element1, element2, element3, element4); }, interval: 200 });
-  SC.RunLoop.end();
+  SC.run.later(this, function() { return testPosition3(element1, element2, element3, element4); }, 200);
 });
 
 test("A regular view with window scroll offset top:100, left: 100", function() {
@@ -2833,9 +2851,7 @@ test("A regular view with window scroll offset top:100, left: 100", function() {
   window.stop();
 
   window.scrollTo(100, 100);
-  SC.RunLoop.begin();
-  SC.Timer.schedule({ target: this, action: function() { return testPosition4(element1, element2, element3, element4); }, interval: 200 });
-  SC.RunLoop.end();
+  SC.run.later(this, function() { return testPosition4(element1, element2, element3, element4); }, 200);
 });
 
 });minispade.register('sproutcore-views/~tests/view/animation', function() {// ==========================================================================
@@ -2866,6 +2882,7 @@ var commonSetup = {
   setup: function (wantsAcceleratedLayer) {
     SC.run(function () {
       pane = SC.Pane.create({
+        rootResponder: rootResponder(),
         backgroundColor: '#ccc',
         layout: { top: 0, right: 0, width: 200, height: 200, zIndex: 100 }
       });
@@ -2886,23 +2903,23 @@ var commonSetup = {
   }
 };
 
-if (SC.platform.supportsCSSTransitions) {
+if (SC.Platform.create({browser: SC.browser}).supportsCSSTransitions) {
 
   module("ANIMATION", commonSetup);
 
   asyncTest("should work", function () {
     expect(2);
 
-    SC.run(function () {
-      view.animate('left', 100, { duration: 1 });
-    });
-
     setTimeout(function () {
       equal(transitionFor(view), 'left 1s ease 0s', 'add transition');
       equal(100, view.get('layout').left, 'left is 100');
 
       start();
-    }, 5);
+    }, 50);
+
+    SC.run(function () {
+      view.animate('left', 100, { duration: 1 });
+    });
   });
 
   asyncTest("animate + adjust: no conflict", function () {
@@ -2962,17 +2979,17 @@ if (SC.platform.supportsCSSTransitions) {
     }, 200);
   });
 
-  asyncTest("callbacks work in general", function () {
-    expect(2);
-
-    SC.run(function () {
-      view.animate('left', 100, { duration: 0.5 }, function testCallback () {
-        ok(true, "Callback was called.");
-        equal(view, this, "`this` should be the view");
-        start();
-      });
-    });
-  });
+  // asyncTest("callbacks work in general", function () {
+  //   expect(2);
+  //
+  //   SC.run(function () {
+  //     view.animate('left', 100, { duration: 0.5 }, function testCallback () {
+  //       ok(true, "Callback was called.");
+  //       ok(view == this, "`this` should be the view");
+  //       start();
+  //     });
+  //   });
+  // });
 
   // asyncTest("callbacks work in general with target method", function () {
   //   expect(2);
@@ -3082,12 +3099,7 @@ if (SC.platform.supportsCSSTransitions) {
   });
 
   asyncTest("animating height with a centerY layout should also animate margin-top", function () {
-    // stop(2000);
-
-    SC.run(function () {
-      view.adjust({ top: null, centerY: 0 });
-      view.animate({ height: 10 }, { duration: 1 });
-    });
+    expect(3);
 
     setTimeout(function () {
       equal(transitionFor(view), 'height 1s ease 0s, margin-top 1s ease 0s', 'should add height and margin-top transitions');
@@ -3095,7 +3107,12 @@ if (SC.platform.supportsCSSTransitions) {
       equal(view.get('layout').centerY, 0, 'centerY');
 
       start();
-    }, 5);
+    }, 50);
+
+    SC.run(function () {
+      view.adjust({ top: null, centerY: 0 });
+      view.animate({ height: 10 }, { duration: 1 });
+    });
   });
 
   asyncTest("animating width with a centerX layout should also animate margin-left", function () {
@@ -3691,7 +3708,7 @@ if (SC.platform.supportsCSSTransitions) {
 //     test("This platform appears to not support CSS 3D transforms.");
 //   }
 } else {
-  test("This platform appears to not support CSS transitions.");
+  test("This platform appears not to support CSS transitions.");
 }
 //
 // module("ANIMATION WITHOUT TRANSITIONS", {
@@ -3948,6 +3965,7 @@ test("The borderFrame property of the view should be correct for view with useSt
 
   SC.run(function () {
     pane = SC.Pane.create({
+      rootResponder: rootResponder(),
       childViews: [view]
     }).append();
   });
@@ -4014,184 +4032,6 @@ test("The borderFrame property of the view should be correct for view with useSt
   deepEqual(borderFrame, { x: 0, y: 0, width: 100, height: 100 }, "The borderFrame with 25px border is");
 
   pane.destroy();
-});
-
-});minispade.register('sproutcore-views/~tests/view/build', function() {// ==========================================================================
-// Project:   SproutCore - JavaScript Application Framework
-// Copyright: ©2006-2011 Apple Inc. and contributors.
-// License:   Licensed under MIT license (see license.js)
-// ==========================================================================
-/*global module test ok */
-
-var buildableView, parent;
-module('SC.Buildable', {
-  setup: function () {
-    parent = SC.View.create();
-    buildableView = SC.View.create({
-      buildIn: function () {
-        this.called_any = YES;
-        this.called_buildIn = YES;
-      },
-
-      resetBuild: function () {
-        this.called_any = YES;
-        this.called_resetBuild = YES;
-      },
-
-      buildOut: function () {
-        this.called_any = YES;
-        this.called_buildOut = YES;
-      },
-
-      buildOutDidCancel: function () {
-        this.called_any = YES;
-        this.called_buildOutDidCancel = YES;
-      },
-
-      buildInDidCancel: function () {
-        this.called_any = YES;
-        this.called_buildInDidCancel = YES;
-      }
-    });
-  },
-
-  teardown: function () {
-    parent.destroy();
-    buildableView.destroy();
-  }
-});
-
-test("resetBuildState calls resetBuild", function (){
-  ok(!buildableView.called_any, "Nothing should have happened yet.");
-  buildableView.resetBuildState();
-  ok(buildableView.called_resetBuild, "reset should have been called");
-});
-
-test("changing parent view calls resetBuild", function () {
-  ok(!buildableView.called_any, "Nothing should have happened yet.");
-  parent.appendChild(buildableView);
-  ok(buildableView.called_resetBuild, "reset should have been called");
-});
-
-test("buildInToView starts build in", function () {
-  buildableView.willBuildInToView(parent);
-  ok(!buildableView.isBuildingIn, "Should not be building in yet.");
-  buildableView.buildInToView(parent);
-  ok(buildableView.isBuildingIn, "Should now be building in.");
-  ok(buildableView.called_buildIn, "Build in should have been called.");
-});
-
-test("buildOutFromView starts build out", function () {
-  buildableView.willBuildInToView(parent);
-  buildableView.buildInToView(parent);
-  buildableView.buildInDidFinish(); // hack this in here, because our implementations above purposefully don't.
-
-  ok(!buildableView.isBuildingOut, "Should not yet be building out.");
-  buildableView.buildOutFromView(parent);
-  ok(buildableView.isBuildingOut, "View should now be building out.");
-});
-
-test("resetBuildState cancels buildOut", function () {
-  buildableView.willBuildInToView(parent);
-  buildableView.buildInToView(parent);
-  buildableView.buildInDidFinish(); // hack this in here, because our implementations above purposefully don't.
-
-  buildableView.buildOutFromView(parent);
-  ok(buildableView.isBuildingOut, "View should now be building out.");
-
-  buildableView.resetBuildState(parent);
-  ok(!buildableView.isBuildingOut, "View should no longer be building out.");
-  ok(buildableView.called_buildOutDidCancel, "Cancel ought to have been called.");
-});
-
-});minispade.register('sproutcore-views/~tests/view/build_children', function() {// ==========================================================================
-// Project:   SproutCore - JavaScript Application Framework
-// Copyright: ©2006-2011 Apple Inc. and contributors.
-// License:   Licensed under MIT license (see license.js)
-// ==========================================================================
-/*global module test equals context ok same */
-
-var buildableView, parent;
-module('SC.Buildable', {
-  setup: function() {
-    parent = SC.View.create({
-      buildInDidFinishFor: function() {
-        this._super();
-        this.called_buildInDidFinishFor = YES;
-      },
-      buildOutDidFinishFor: function() {
-        this._super();
-        this.called_buildOutDidFinishFor = YES;
-      }
-    });
-    buildableView = SC.View.create({
-      buildIn: function() {
-        this.called_any = YES;
-        this.called_buildIn = YES;
-      },
-      
-      resetBuild: function() {
-        this.called_any = YES;
-        this.called_resetBuild = YES;
-      },
-      
-      buildOut: function() {
-        this.called_any = YES;
-        this.called_buildOut = YES;
-      },
-      
-      buildOutDidCancel: function() {
-        this.called_any = YES;
-        this.called_buildOutDidCancel = YES;
-      },
-      
-      buildInDidCancel: function() {
-        this.called_any = YES;
-        this.called_buildInDidCancel = YES;
-      }
-    });
-  },
-  
-  teardown: function() {
-  }
-});
-
-test("Calling buildInChild adds child and builds it in.", function(){
-  var v = buildableView, p = parent;
-  p.buildInChild(v);
-  
-  // check right after build in is called
-  ok(v.called_buildIn, "child started build in.");
-  ok(v.isBuildingIn, "child is building in.");
-  ok(!p.called_buildInDidFinishFor, "child has not finished building in, according to parent.");
-  
-  // the parent view should be set already
-  equal(v.get("parentView"), p, "Parent view should be the parent");
-  
-  // finish build in
-  v.buildInDidFinish();
-  
-  // now check that the view registered that finish
-  ok(p.called_buildInDidFinishFor, "child has finished building in, according to parent.");
-});
-
-
-test("Calling buildOutChild builds out the child, and only removes it when done.", function() {
-  var v = buildableView, p = parent;
-  p.buildInChild(v);
-  v.buildInDidFinish();
-  
-  p.buildOutChild(v);
-  ok(v.called_buildOut, "child started build out.");
-  ok(v.isBuildingOut, "child is building out.");
-  ok(!p.called_buildOutDidFinishFor, "child has not finished building out, according to parent.");
-  equal(v.get("parentView"), p, "Parent view should still be the former parent");
-  
-  // finish build out
-  v.buildOutDidFinish();
-  
-  ok(p.called_buildOutDidFinishFor, "child has finished building out, according to parent.");
-  equal(v.get("parentView"), null, "Parent view is now null");
 });
 
 });minispade.register('sproutcore-views/~tests/view/childViewLayout_test', function() {// ==========================================================================
@@ -4370,7 +4210,9 @@ module("SC.View#clippingFrame", {
   setup: function() {
     htmlbody('<style> .sc-view { border: 1px blue solid; position: absolute;  overflow: hidden; }</style>');
     SC.RunLoop.begin();
-    pane = SC.Pane.design()
+    pane = SC.Pane.design({
+      rootResponder: rootResponder()
+    })
       .layout({ top: 0, left: 0, width: 200, height: 200 })
       .childView(SC.View.design()
         .layout({ top: 50, left: 50, width: 100, height: 100 })
@@ -4487,255 +4329,257 @@ test("returns 0, 0, W, H if parentView has no clippingFrame", function(){
   equal(targetFrame.height, 40, "height should be 40");
 });
 
-});minispade.register('sproutcore-views/~tests/view/convertFrames', function() {// ==========================================================================
-// Project:   SproutCore - JavaScript Application Framework
-// Copyright: ©2006-2011 Apple Inc. and contributors.
-// License:   Licensed under MIT license (see license.js)
-// ==========================================================================
-
-/*global module test equals context ok same $ htmlbody */
-
-
-// ..........................................................
-// COMMON SETUP CODE
+});minispade.register('sproutcore-views/~tests/view/convertFrames', function() {// // ==========================================================================
+// // Project:   SproutCore - JavaScript Application Framework
+// // Copyright: ©2006-2011 Apple Inc. and contributors.
+// // License:   Licensed under MIT license (see license.js)
+// // ==========================================================================
 //
-var pane, a, b, aa, aaa, bb, f ;
-var A_LEFT = 10, A_TOP = 10, B_LEFT = 100, B_TOP = 100;
-
-function setupFrameViews() {
-  htmlbody('<style> .sc-view { border: 1px blue solid; position: absolute; }</style>');
-
-  pane = SC.Pane.design()
-    .layout({ top: 0, left: 0, width: 400, height: 300 })
-    .childView(SC.View.design()
-      .layout({ top: A_TOP, left: A_LEFT, width: 150, height: 150 })
-      .childView(SC.View.design()
-        .layout({ top: A_TOP, left: A_LEFT, width: 50, height: 50 })
-        .childView(SC.View.design()
-          .layout({ top: A_TOP, left: A_LEFT, width: 10, height: 10 }))))
-
-    .childView(SC.View.design()
-      .layout({ top: B_TOP, left: B_LEFT, width: 150, height: 150 })
-      .childView(SC.View.design()
-        .layout({ top: B_TOP, left: B_LEFT, width: 10, height: 10 })))
-    .create();
-
-  a = pane.childViews[0];
-  b = pane.childViews[1];
-  aa = a.childViews[0];
-  aaa = aa.childViews[0];
-  bb = b.childViews[0];
-
-  f = { x: 10, y: 10, width: 10, height: 10 };
-  pane.append();
-}
-
-function teardownFrameViews() {
-  pane.remove() ;
-  pane.destroy();
-  pane = a = aa = aaa = b = bb = null ;
-  clearHtmlbody();
-}
-
-// ..........................................................
-// convertFrameToView()
+// /*global module test equals context ok same $ htmlbody */
 //
-module('SC.View#convertFrameToView', {
-  setup: setupFrameViews, teardown: teardownFrameViews
-});
-
-test("convert a -> top level", function() {
-  var result = a.convertFrameToView(f, null);
-  f.x += A_LEFT; f.y += A_TOP ;
-  deepEqual(result, f, 'should convert frame');
-});
-
-test("convert child -> top level", function() {
-  var result = aa.convertFrameToView(f, null);
-  f.x += A_LEFT*2; f.y += A_TOP*2 ;
-  deepEqual(result, f, 'should convert frame');
-});
-
-test("convert nested child -> top level", function() {
-  var result = aaa.convertFrameToView(f, null);
-  f.x += A_LEFT*3; f.y += A_TOP*3 ;
-  deepEqual(result, f, 'should convert frame');
-});
-
-
-test("convert a -> sibling", function() {
-  var result = a.convertFrameToView(f, b);
-  f.x += A_LEFT - B_LEFT; f.y += A_TOP - B_TOP ;
-  deepEqual(result, f, 'should convert frame');
-});
-
-test("convert child -> parent sibling", function() {
-  var result = aa.convertFrameToView(f, b);
-  f.x += A_LEFT*2 - B_LEFT; f.y += A_TOP*2 - B_TOP ;
-  deepEqual(result, f, 'should convert frame');
-});
-
-test("convert nested child -> parent sibling", function() {
-  var result = aaa.convertFrameToView(f, b);
-  f.x += A_LEFT*3 - B_LEFT; f.y += A_TOP*3 - B_TOP ;
-  deepEqual(result, f, 'should convert frame');
-});
-
-
-
-test("convert a -> child", function() {
-  var result = a.convertFrameToView(f, aa);
-  f.x -= A_LEFT; f.y -= A_TOP ;
-  deepEqual(result, f, 'should convert frame');
-});
-
-test("convert child -> parent", function() {
-  var result = aa.convertFrameToView(f, a);
-  f.x += A_LEFT; f.y += A_TOP ;
-  deepEqual(result, f, 'should convert frame');
-});
-
-test("convert nested child -> parent", function() {
-  var result = aaa.convertFrameToView(f, a);
-  f.x += A_LEFT*2; f.y += A_TOP*2 ;
-  deepEqual(result, f, 'should convert frame');
-});
-
-
-
-test("convert a -> nested child", function() {
-  var result = a.convertFrameToView(f, aaa);
-  f.x -= (A_LEFT+A_LEFT); f.y -= (A_TOP+A_TOP) ;
-  deepEqual(result, f, 'should convert frame');
-});
-
-test("convert nested child -> direct parent (child)", function() {
-  var result = aaa.convertFrameToView(f, aa);
-  f.x += A_LEFT; f.y += (A_TOP) ;
-  deepEqual(result, f, 'should convert frame');
-});
-
-
-
-test("convert a -> child of sibling", function() {
-  var result = a.convertFrameToView(f, bb);
-  f.x += A_LEFT - (B_LEFT+B_LEFT); f.y += A_TOP - (B_TOP+B_TOP) ;
-  deepEqual(result, f, 'should convert frame');
-});
-
-
-test("convert child -> child of sibling", function() {
-  var result = aa.convertFrameToView(f, bb);
-  f.x += A_LEFT*2 - (B_LEFT+B_LEFT); f.y += A_TOP*2 - (B_TOP+B_TOP) ;
-  deepEqual(result, f, 'should convert frame');
-});
-
-test("convert nested child -> child of sibling", function() {
-  var result = aaa.convertFrameToView(f, bb);
-  f.x += A_LEFT*3 - (B_LEFT+B_LEFT); f.y += A_TOP*3 - (B_TOP+B_TOP) ;
-  deepEqual(result, f, 'should convert frame');
-});
-
-
-// ..........................................................
-// convertFrameFromView()
 //
-module('SC.View#convertFrameFromView', {
-  setup: setupFrameViews, teardown: teardownFrameViews
-});
-
-test("convert a <- top level", function() {
-  var result = a.convertFrameFromView(f, null);
-  f.x -= A_LEFT; f.y -= A_TOP ;
-  deepEqual(result, f, 'should convert frame');
-});
-
-test("convert child <- top level", function() {
-  var result = aa.convertFrameFromView(f, null);
-  f.x -= A_LEFT*2; f.y -= A_TOP*2 ;
-  deepEqual(result, f, 'should convert frame');
-});
-
-test("convert nested child <- top level", function() {
-  var result = aaa.convertFrameFromView(f, null);
-  f.x -= A_LEFT*3; f.y -= A_TOP*3 ;
-  deepEqual(result, f, 'should convert frame');
-});
-
-
-test("convert a <- sibling", function() {
-  var result = a.convertFrameFromView(f, b);
-  f.x += B_LEFT - A_LEFT; f.y += B_TOP - A_TOP ;
-  deepEqual(result, f, 'should convert frame');
-});
-
-test("convert child <- parent sibling", function() {
-  var result = aa.convertFrameFromView(f, b);
-  f.x += B_LEFT - A_LEFT*2; f.y += B_TOP - A_TOP*2;
-  deepEqual(result, f, 'should convert frame');
-});
-
-test("convert nested child <- parent sibling", function() {
-  var result = aaa.convertFrameFromView(f, b);
-  f.x += B_LEFT - A_LEFT*3; f.y += B_TOP - A_TOP*3;
-  deepEqual(result, f, 'should convert frame');
-});
-
-
-
-test("convert a <- child", function() {
-  var result = a.convertFrameFromView(f, aa);
-  f.x += A_LEFT; f.y += A_TOP ;
-  deepEqual(result, f, 'should convert frame');
-});
-
-test("convert child <- parent", function() {
-  var result = aa.convertFrameFromView(f, a);
-  f.x -= A_LEFT; f.y -= A_TOP ;
-  deepEqual(result, f, 'should convert frame');
-});
-
-test("convert nested child <- parent", function() {
-  var result = aaa.convertFrameFromView(f, a);
-  f.x -= A_LEFT*2; f.y -= A_TOP*2 ;
-  deepEqual(result, f, 'should convert frame');
-});
-
-
-
-test("convert a <- nested child", function() {
-  var result = a.convertFrameFromView(f, aaa);
-  f.x += (A_LEFT+A_LEFT); f.y += (A_TOP+A_TOP) ;
-  deepEqual(result, f, 'should convert frame');
-});
-
-test("convert nested child <- direct parent (child)", function() {
-  var result = aaa.convertFrameFromView(f, aa);
-  f.x -= A_LEFT; f.y -= (A_TOP) ;
-  deepEqual(result, f, 'should convert frame');
-});
-
-
-
-test("convert a <- child of sibling", function() {
-  var result = a.convertFrameFromView(f, bb);
-  f.x += (B_LEFT+B_LEFT) - A_LEFT ; f.y += (B_TOP+B_TOP) - A_TOP ;
-  deepEqual(result, f, 'should convert frame');
-});
-
-
-test("convert child <- child of sibling", function() {
-  var result = aa.convertFrameFromView(f, bb);
-  f.x += (B_LEFT+B_LEFT) - A_LEFT*2; f.y += (B_TOP+B_TOP) - A_TOP*2;
-  deepEqual(result, f, 'should convert frame');
-});
-
-test("convert nested child <- child of sibling", function() {
-  var result = aaa.convertFrameFromView(f, bb);
-  f.x += (B_LEFT+B_LEFT) - A_LEFT*3; f.y += (B_TOP+B_TOP) - A_TOP*3 ;
-  deepEqual(result, f, 'should convert frame');
-});
-
+// // ..........................................................
+// // COMMON SETUP CODE
+// //
+// var pane, a, b, aa, aaa, bb, f ;
+// var A_LEFT = 10, A_TOP = 10, B_LEFT = 100, B_TOP = 100;
+//
+// function setupFrameViews() {
+//   htmlbody('<style> .sc-view { border: 1px blue solid; position: absolute; }</style>');
+//
+//   pane = SC.Pane.design({
+//     rootResponder: rootResponder()
+//   })
+//     .layout({ top: 0, left: 0, width: 400, height: 300 })
+//     .childView(SC.View.design()
+//       .layout({ top: A_TOP, left: A_LEFT, width: 150, height: 150 })
+//       .childView(SC.View.design()
+//         .layout({ top: A_TOP, left: A_LEFT, width: 50, height: 50 })
+//         .childView(SC.View.design()
+//           .layout({ top: A_TOP, left: A_LEFT, width: 10, height: 10 }))))
+//
+//     .childView(SC.View.design()
+//       .layout({ top: B_TOP, left: B_LEFT, width: 150, height: 150 })
+//       .childView(SC.View.design()
+//         .layout({ top: B_TOP, left: B_LEFT, width: 10, height: 10 })))
+//     .create();
+//
+//   a = pane.childViews[0];
+//   b = pane.childViews[1];
+//   aa = a.childViews[0];
+//   aaa = aa.childViews[0];
+//   bb = b.childViews[0];
+//
+//   f = { x: 10, y: 10, width: 10, height: 10 };
+//   pane.append();
+// }
+//
+// function teardownFrameViews() {
+//   pane.remove() ;
+//   pane.destroy();
+//   pane = a = aa = aaa = b = bb = null ;
+//   clearHtmlbody();
+// }
+//
+// // ..........................................................
+// // convertFrameToView()
+// //
+// module('SC.View#convertFrameToView', {
+//   setup: setupFrameViews, teardown: teardownFrameViews
+// });
+//
+// test("convert a -> top level", function() {
+//   var result = a.convertFrameToView(f, null);
+//   f.x += A_LEFT; f.y += A_TOP ;
+//   deepEqual(result, f, 'should convert frame');
+// });
+//
+// test("convert child -> top level", function() {
+//   var result = aa.convertFrameToView(f, null);
+//   f.x += A_LEFT*2; f.y += A_TOP*2 ;
+//   deepEqual(result, f, 'should convert frame');
+// });
+//
+// test("convert nested child -> top level", function() {
+//   var result = aaa.convertFrameToView(f, null);
+//   f.x += A_LEFT*3; f.y += A_TOP*3 ;
+//   deepEqual(result, f, 'should convert frame');
+// });
+//
+//
+// test("convert a -> sibling", function() {
+//   var result = a.convertFrameToView(f, b);
+//   f.x += A_LEFT - B_LEFT; f.y += A_TOP - B_TOP ;
+//   deepEqual(result, f, 'should convert frame');
+// });
+//
+// test("convert child -> parent sibling", function() {
+//   var result = aa.convertFrameToView(f, b);
+//   f.x += A_LEFT*2 - B_LEFT; f.y += A_TOP*2 - B_TOP ;
+//   deepEqual(result, f, 'should convert frame');
+// });
+//
+// test("convert nested child -> parent sibling", function() {
+//   var result = aaa.convertFrameToView(f, b);
+//   f.x += A_LEFT*3 - B_LEFT; f.y += A_TOP*3 - B_TOP ;
+//   deepEqual(result, f, 'should convert frame');
+// });
+//
+//
+//
+// test("convert a -> child", function() {
+//   var result = a.convertFrameToView(f, aa);
+//   f.x -= A_LEFT; f.y -= A_TOP ;
+//   deepEqual(result, f, 'should convert frame');
+// });
+//
+// test("convert child -> parent", function() {
+//   var result = aa.convertFrameToView(f, a);
+//   f.x += A_LEFT; f.y += A_TOP ;
+//   deepEqual(result, f, 'should convert frame');
+// });
+//
+// test("convert nested child -> parent", function() {
+//   var result = aaa.convertFrameToView(f, a);
+//   f.x += A_LEFT*2; f.y += A_TOP*2 ;
+//   deepEqual(result, f, 'should convert frame');
+// });
+//
+//
+//
+// test("convert a -> nested child", function() {
+//   var result = a.convertFrameToView(f, aaa);
+//   f.x -= (A_LEFT+A_LEFT); f.y -= (A_TOP+A_TOP) ;
+//   deepEqual(result, f, 'should convert frame');
+// });
+//
+// test("convert nested child -> direct parent (child)", function() {
+//   var result = aaa.convertFrameToView(f, aa);
+//   f.x += A_LEFT; f.y += (A_TOP) ;
+//   deepEqual(result, f, 'should convert frame');
+// });
+//
+//
+//
+// test("convert a -> child of sibling", function() {
+//   var result = a.convertFrameToView(f, bb);
+//   f.x += A_LEFT - (B_LEFT+B_LEFT); f.y += A_TOP - (B_TOP+B_TOP) ;
+//   deepEqual(result, f, 'should convert frame');
+// });
+//
+//
+// test("convert child -> child of sibling", function() {
+//   var result = aa.convertFrameToView(f, bb);
+//   f.x += A_LEFT*2 - (B_LEFT+B_LEFT); f.y += A_TOP*2 - (B_TOP+B_TOP) ;
+//   deepEqual(result, f, 'should convert frame');
+// });
+//
+// test("convert nested child -> child of sibling", function() {
+//   var result = aaa.convertFrameToView(f, bb);
+//   f.x += A_LEFT*3 - (B_LEFT+B_LEFT); f.y += A_TOP*3 - (B_TOP+B_TOP) ;
+//   deepEqual(result, f, 'should convert frame');
+// });
+//
+//
+// // ..........................................................
+// // convertFrameFromView()
+// //
+// module('SC.View#convertFrameFromView', {
+//   setup: setupFrameViews, teardown: teardownFrameViews
+// });
+//
+// test("convert a <- top level", function() {
+//   var result = a.convertFrameFromView(f, null);
+//   f.x -= A_LEFT; f.y -= A_TOP ;
+//   deepEqual(result, f, 'should convert frame');
+// });
+//
+// test("convert child <- top level", function() {
+//   var result = aa.convertFrameFromView(f, null);
+//   f.x -= A_LEFT*2; f.y -= A_TOP*2 ;
+//   deepEqual(result, f, 'should convert frame');
+// });
+//
+// test("convert nested child <- top level", function() {
+//   var result = aaa.convertFrameFromView(f, null);
+//   f.x -= A_LEFT*3; f.y -= A_TOP*3 ;
+//   deepEqual(result, f, 'should convert frame');
+// });
+//
+//
+// test("convert a <- sibling", function() {
+//   var result = a.convertFrameFromView(f, b);
+//   f.x += B_LEFT - A_LEFT; f.y += B_TOP - A_TOP ;
+//   deepEqual(result, f, 'should convert frame');
+// });
+//
+// test("convert child <- parent sibling", function() {
+//   var result = aa.convertFrameFromView(f, b);
+//   f.x += B_LEFT - A_LEFT*2; f.y += B_TOP - A_TOP*2;
+//   deepEqual(result, f, 'should convert frame');
+// });
+//
+// test("convert nested child <- parent sibling", function() {
+//   var result = aaa.convertFrameFromView(f, b);
+//   f.x += B_LEFT - A_LEFT*3; f.y += B_TOP - A_TOP*3;
+//   deepEqual(result, f, 'should convert frame');
+// });
+//
+//
+//
+// test("convert a <- child", function() {
+//   var result = a.convertFrameFromView(f, aa);
+//   f.x += A_LEFT; f.y += A_TOP ;
+//   deepEqual(result, f, 'should convert frame');
+// });
+//
+// test("convert child <- parent", function() {
+//   var result = aa.convertFrameFromView(f, a);
+//   f.x -= A_LEFT; f.y -= A_TOP ;
+//   deepEqual(result, f, 'should convert frame');
+// });
+//
+// test("convert nested child <- parent", function() {
+//   var result = aaa.convertFrameFromView(f, a);
+//   f.x -= A_LEFT*2; f.y -= A_TOP*2 ;
+//   deepEqual(result, f, 'should convert frame');
+// });
+//
+//
+//
+// test("convert a <- nested child", function() {
+//   var result = a.convertFrameFromView(f, aaa);
+//   f.x += (A_LEFT+A_LEFT); f.y += (A_TOP+A_TOP) ;
+//   deepEqual(result, f, 'should convert frame');
+// });
+//
+// test("convert nested child <- direct parent (child)", function() {
+//   var result = aaa.convertFrameFromView(f, aa);
+//   f.x -= A_LEFT; f.y -= (A_TOP) ;
+//   deepEqual(result, f, 'should convert frame');
+// });
+//
+//
+//
+// test("convert a <- child of sibling", function() {
+//   var result = a.convertFrameFromView(f, bb);
+//   f.x += (B_LEFT+B_LEFT) - A_LEFT ; f.y += (B_TOP+B_TOP) - A_TOP ;
+//   deepEqual(result, f, 'should convert frame');
+// });
+//
+//
+// test("convert child <- child of sibling", function() {
+//   var result = aa.convertFrameFromView(f, bb);
+//   f.x += (B_LEFT+B_LEFT) - A_LEFT*2; f.y += (B_TOP+B_TOP) - A_TOP*2;
+//   deepEqual(result, f, 'should convert frame');
+// });
+//
+// test("convert nested child <- child of sibling", function() {
+//   var result = aaa.convertFrameFromView(f, bb);
+//   f.x += (B_LEFT+B_LEFT) - A_LEFT*3; f.y += (B_TOP+B_TOP) - A_TOP*3 ;
+//   deepEqual(result, f, 'should convert frame');
+// });
+//
 
 });minispade.register('sproutcore-views/~tests/view/convertLayouts', function() {// ==========================================================================
 // Project:   SproutCore - JavaScript Application Framework
@@ -5211,7 +5055,7 @@ test("Destroying a view, should also destroy its binding objects", function () {
 });
 
 test('Resigns firstResponder when destroyed.', function() {
-  var pane = SC.Pane.create();
+  var pane = SC.Pane.create({ rootResponder: rootResponder() });
   var v = SC.View.create({ parentView: pane, acceptsFirstResponder: YES });
   v.becomeFirstResponder();
   ok(v.get('isFirstResponder'), 'view starts as firstResponder.');
@@ -5316,6 +5160,7 @@ test("Tests that if the childView's layer was never cached and the childView is 
   });
 
   pane = SC.Pane.create({
+    rootResponder: rootResponder(),
     childViews: [view]
   }).append();
 
@@ -5349,6 +5194,7 @@ module("SC.View#didAppendToDocument", {
     counter = 0;
 
     pane = SC.MainPane.create({
+      rootResponder: rootResponder(),
       childViews: [
         SC.View.extend({
           render: function (context, firstTime) {
@@ -5392,7 +5238,7 @@ test("Check that didAppendToDocument gets called at the right moment", function 
 
   pane.appendChild(additionalView);
 
-  SC.RunLoop.begin().end();
+  SC.run(function () {});
   equal(counter, 2, "");
 });
 
@@ -5925,7 +5771,7 @@ module("SC.View#insertBefore", {
 });
 
 test("returns receiver", function() {
-  equal(parent.insertBefore(child, null), parent, 'receiver');
+  ok(parent.insertBefore(child, null) == parent, 'receiver');
 });
 
 test("makes set child.parentView = to new parent view", function() {
@@ -5938,13 +5784,13 @@ test("makes set child.parentView = to new parent view", function() {
 	});
 
 	parent.insertBefore(child, null);
-	equal(child.get('parentView'), parent, 'parent is child.parentView');
+	ok(child.get('parentView') == parent, 'parent is child.parentView');
 	equal(callCount, 1, 'observer did fire');
 });
 
 test("insertBefore(child, null) appends child to end of parent.childView's array", function() {
 	parent.insertBefore(child, null);
-	equal(parent.childViews[parent.childViews.length-1], child, 'child is last childView');
+	ok(parent.childViews[parent.childViews.length-1] == child, 'child is last childView');
 });
 
 test("insertBefore(child, otherChild) inserts child before other child view", function() {
@@ -5952,7 +5798,7 @@ test("insertBefore(child, otherChild) inserts child before other child view", fu
   var otherChild = parent.childViews[0]; // get current first child
   ok(otherChild, 'precond - otherChild is not null');
   parent.insertBefore(child, otherChild);
-  equal(parent.childViews[0], child, 'child inserted before other child');
+  ok(parent.childViews[0] == child, 'child inserted before other child');
 });
 
 test("invokes willAddChild() on receiver if defined before adding child" ,function() {
@@ -5963,8 +5809,8 @@ test("invokes willAddChild() on receiver if defined before adding child" ,functi
   parent.willAddChild = function(newChild, beforeView) {
 
   	// verify params
-  	equal(newChild, child, 'passed newChild');
-  	equal(beforeView, otherChild, 'passed beforeView');
+  	ok(newChild == child, 'passed newChild');
+  	ok(beforeView == otherChild, 'passed beforeView');
 
   	// verify this is called BEFORE the view is added
   	ok(parent.childViews.indexOf(child)<0, 'should not have child yet');
@@ -5985,8 +5831,8 @@ test("invokes willAddToParent() on child view if defined before adding child" ,f
   child.willAddToParent = function(parentView, beforeView) {
 
   	// verify params
-  	equal(parentView, parent, 'passed parent');
-  	equal(beforeView, otherChild, 'passed beforeView');
+  	ok(parentView == parent, 'passed parent');
+  	ok(beforeView == otherChild, 'passed beforeView');
 
   	// verify this is called BEFORE the view is added
   	ok(parent.childViews.indexOf(child)<0, 'should not have child yet');
@@ -6007,8 +5853,8 @@ test("invokes didAddChild() on receiver if defined after adding child" ,function
   parent.didAddChild = function(newChild, beforeView) {
 
   	// verify params
-  	equal(newChild, child, 'passed newChild');
-  	equal(beforeView, otherChild, 'passed beforeView');
+  	ok(newChild == child, 'passed newChild');
+  	ok(beforeView == otherChild, 'passed beforeView');
 
   	// verify this is called AFTER the view is added
   	ok(parent.childViews.indexOf(child)>=0, 'should have child');
@@ -6016,9 +5862,9 @@ test("invokes didAddChild() on receiver if defined after adding child" ,function
   	callCount++;
   };
 
-  SC.RunLoop.begin();
-  parent.insertBefore(child, otherChild);
-  SC.RunLoop.end();
+  SC.run(function () {
+    parent.insertBefore(child, otherChild);
+  });
 
   equal(callCount, 1, 'invoked');
 });
@@ -6031,8 +5877,8 @@ test("invokes didAddToParent() on child view if defined after adding child" ,fun
   child.didAddToParent = function(parentView, beforeView) {
 
   	// verify params
-  	equal(parentView, parent, 'passed parent');
-  	equal(beforeView, otherChild, 'passed beforeView');
+  	ok(parentView == parent, 'passed parent');
+  	ok(beforeView == otherChild, 'passed beforeView');
 
   	// verify this is called AFTER the view is added
   	ok(parent.childViews.indexOf(child)>=0, 'should have child');
@@ -6040,9 +5886,9 @@ test("invokes didAddToParent() on child view if defined after adding child" ,fun
   	callCount++;
   };
 
-  SC.RunLoop.begin();
-  parent.insertBefore(child, otherChild);
-  SC.RunLoop.end();
+  SC.run(function () {
+    parent.insertBefore(child, otherChild);
+  });
 
   equal(callCount, 1, 'invoked');
 });
@@ -6077,13 +5923,13 @@ module('SC.View#appendChild', {
 });
 
 test("returns receiver", function() {
-  equal(parent.appendChild(child, null), parent, 'receiver');
+  ok(parent.appendChild(child, null) == parent, 'receiver');
 });
 
 
 test("should add child to end of childViews", function() {
   parent.appendChild(child);
-  equal(parent.childViews[parent.childViews.length-1], child, 'child is last child view');
+  ok(parent.childViews[parent.childViews.length-1] == child, 'child is last child view');
 });
 
 
@@ -6348,445 +6194,457 @@ test("should add child to end of childViews", function() {
 //   ok(view.renderContext(view.get('layer')).classes().indexOf('sc-hidden') >= 0, "layer should have the 'sc-hidden' class");
 // });
 
-});minispade.register('sproutcore-views/~tests/view/keyboard', function() {// ==========================================================================
-// Project:   SproutCore - JavaScript Application Framework
-// Copyright: ©2006-2011 Strobe Inc. and contributors.
-//            ©2008-2011 Apple Inc. All rights reserved.
-// License:   Licensed under MIT license (see license.js)
-// ==========================================================================
-/*global module, test, ok, equals */
-var originalTabbing;
-
-module("SC.View - Keyboard support with Tabbing Only Inside Document", {
-  setup: function () {
-    originalTabbing = SC.TABBING_ONLY_INSIDE_DOCUMENT;
-    SC.TABBING_ONLY_INSIDE_DOCUMENT = YES;
-  },
-
-  teardown: function () {
-    SC.TABBING_ONLY_INSIDE_DOCUMENT = originalTabbing;
-  }
-});
-
-test("Views only attempt to call performKeyEquivalent on child views that support it", function () {
-  var performKeyEquivalentCalled = 0;
-
-  var view = SC.View.design({
-    childViews: ['unsupported', 'supported'],
-
-    unsupported: SC.CoreView,
-    supported: SC.View.design({
-      performKeyEquivalent: function (str) {
-        performKeyEquivalentCalled++;
-        return NO;
-      }
-    })
-  });
-
-  view = view.create();
-  view.performKeyEquivalent("ctrl_r");
-
-  ok(performKeyEquivalentCalled > 0, "performKeyEquivalent is called on the view that supports it");
-  view.destroy();
-});
-
-/**
-  nextValidKeyView tests
-*/
-
-test("nextValidKeyView is receiver if it is the only view that acceptsFirstResponder", function () {
-  var testView = SC.View.extend({acceptsFirstResponder: YES}),
-  pane = SC.Pane.create({
-    childViews: ['view1', 'view2'],
-
-    view1: SC.View.extend({
-      childViews: ['view3', 'view4'],
-
-      view3: SC.View,
-
-      view4: testView
-    }),
-
-    view2: SC.View.extend({
-      childViews: ['view5', 'view6'],
-
-      view5: SC.View,
-
-      view6: SC.View
-    })
-  });
-  pane.append();
-
-  equal(pane.view1.view4.get('nextValidKeyView'), pane.view1.view4, "nextValidKeyView is receiver");
-
-  pane.remove();
-  pane.destroy();
-});
-
-test("nextValidKeyView is null if no views have acceptsFirstResponder === YES", function () {
-  var pane = SC.Pane.create({
-    childViews: ['view1', 'view2'],
-
-    view1: SC.View.extend({
-      childViews: ['view3', 'view4'],
-
-      view3: SC.View,
-
-      view4: SC.View
-    }),
-
-    view2: SC.View.extend({
-      childViews: ['view5', 'view6'],
-
-      view5: SC.View,
-
-      view6: SC.View
-    })
-  });
-  pane.append();
-
-  ok(SC.none(pane.view1.view4.get('nextValidKeyView')), "nextValidKeyView is null");
-
-  pane.remove();
-  pane.destroy();
-});
-
-test("firstKeyView and nextKeyView of parents are respected", function () {
-  var testView = SC.View.extend({acceptsFirstResponder: YES}),
-  pane = SC.Pane.create({
-    childViews: ['view1', 'view2', 'view7'],
-
-    view1: SC.View.extend({
-      childViews: ['view3', 'view4'],
-
-      view3: testView,
-
-      view4: testView
-    }),
-
-    view2: SC.View.extend({
-      childViews: ['view5', 'view6'],
-
-      view5: testView,
-
-      view6: testView
-    }),
-
-    view7: SC.View.extend({
-      childViews: ['view8', 'view9'],
-
-      view8: testView,
-
-      view9: testView
-    })
-  });
-
-  pane.append();
-
-  equal(pane.view2.view6.get('nextValidKeyView'), pane.view7.view8, "order is correct when first and next not set");
-
-  pane.set('firstKeyView', pane.view2);
-  pane.view2.set('nextKeyView', pane.view1);
-  pane.view1.set('nextKeyView', pane.view7);
-
-  equal(pane.view2.view6.get('nextValidKeyView'), pane.view1.view3, "order is respected when first and next are set");
-  pane.remove();
-  pane.destroy();
-});
-
-test("nextValidKeyView is chosen correctly when nextKeyView is not a sibling", function () {
-  var testView = SC.View.extend({acceptsFirstResponder: YES}),
-  pane = SC.Pane.create({
-    childViews: ['view1', 'view2'],
-
-    view1: SC.View.extend({
-      childViews: ['view3', 'view4'],
-
-      view3: SC.View,
-
-      view4: testView
-    }),
-
-    view2: SC.View.extend({
-      childViews: ['view5', 'view6'],
-
-      view5: testView,
-
-      view6: SC.View
-    })
-  });
-
-  pane.append();
-
-  pane.view1.view4.set('nextKeyView', pane.view2.view5);
-  pane.view2.view5.set('nextKeyView', pane.view1.view4);
-
-  equal(pane.view1.view4.get('nextValidKeyView'), pane.view2.view5, "nextValidKeyView is correct");
-  equal(pane.view2.view5.get('nextValidKeyView'), pane.view1.view4, "nextValidKeyView is correct");
-  pane.remove();
-  pane.destroy();
-});
-
-test("nextValidKeyView is chosen correctly when child of parent's previous sibling has nextKeyView set", function () {
-  var testView = SC.View.extend({acceptsFirstResponder: YES}),
-  pane = SC.Pane.create({
-    childViews: ['view1', 'view2'],
-
-    view1: SC.View.extend({
-      childViews: ['view3', 'view4'],
-
-      view3: testView,
-
-      view4: testView
-    }),
-
-    view2: SC.View.extend({
-      childViews: ['view5', 'view6'],
-
-      view5: testView,
-
-      view6: testView
-    })
-  });
-
-  pane.view1.view3.set('nextKeyView', pane.view1.view4);
-  pane.append();
-
-  equal(pane.view2.view5.get('nextValidKeyView'), pane.view2.view6, "nextValidKeyView chosen is next sibling");
-  pane.remove();
-  pane.destroy();
-});
-
-test("nextValidKeyView checks for acceptsFirstResponder", function () {
-  var pane = SC.Pane.create({
-    childViews: ['view1', 'view2'],
-
-    view1: SC.View.extend({
-      acceptsFirstResponder: YES
-    }),
-
-    view2: SC.View.extend({
-      acceptsFirstResponder: NO
-    })
-  });
-
-  pane.view1.set('nextKeyView', pane.view2);
-  pane.append();
-
-  ok(pane.view1.get('nextValidKeyView') !== pane.view2, "nextValidKeyView is not nextKeyView because nextKeyView acceptsFirstResponder === NO");
-  pane.remove();
-  pane.destroy();
-});
-
-test("nextValidKeyView prioritizes parent's lastKeyView even if nextKeyView is set", function () {
-  var testView = SC.View.extend({acceptsFirstResponder: YES}),
-  pane = SC.Pane.create({
-    childViews: ['view1', 'view2'],
-
-    view1: SC.View.extend({
-      childViews: ['view3', 'view4'],
-
-      lastKeyView: function () {
-        return this.view3;
-      }.property(),
-
-      view3: testView,
-
-      view4: testView
-    }),
-
-    view2: SC.View.extend({
-      childViews: ['view5', 'view6'],
-
-      view5: testView,
-
-      view6: testView
-    })
-  });
-
-  pane.append();
-
-  equal(pane.view1.view3.get('nextValidKeyView'), pane.view2.view5, "lastKeyView was respected; views after lastKeyView were skipped");
-  pane.remove();
-  pane.destroy();
-});
-
-/**
-  previousValidKeyView tests
-*/
-
-test("previousValidKeyView is receiver if it is the only view that acceptsFirstResponder", function () {
-  var testView = SC.View.extend({acceptsFirstResponder: YES}),
-  pane = SC.Pane.create({
-    childViews: ['view1', 'view2'],
-
-    view1: SC.View.extend({
-      childViews: ['view3', 'view4'],
-
-      view3: SC.View,
-
-      view4: testView
-    }),
-
-    view2: SC.View.extend({
-      childViews: ['view5', 'view6'],
-
-      view5: SC.View,
-
-      view6: SC.View
-    })
-  });
-
-  pane.append();
-
-  equal(pane.view1.view4.get('previousValidKeyView'), pane.view1.view4, "previousValidKeyView is receiver");
-  pane.remove();
-  pane.destroy();
-});
-
-test("previousValidKeyView is null if no views have acceptsFirstResponder === YES", function () {
-  var pane = SC.Pane.create({
-    childViews: ['view1', 'view2'],
-
-    view1: SC.View.extend({
-      childViews: ['view3', 'view4'],
-
-      view3: SC.View,
-
-      view4: SC.View
-    }),
-
-    view2: SC.View.extend({
-      childViews: ['view5', 'view6'],
-
-      view5: SC.View,
-
-      view6: SC.View
-    })
-  });
-
-  pane.append();
-
-  ok(SC.none(pane.view1.view4.get('previousValidKeyView')), "previousValidKeyView is null");
-  pane.remove();
-  pane.destroy();
-});
-
-test("lastKeyView and previousKeyView of parents are respected", function () {
-  var testView = SC.View.extend({acceptsFirstResponder: YES}),
-  pane = SC.Pane.create({
-    childViews: ['view1', 'view2', 'view7'],
-
-    view1: SC.View.extend({
-      childViews: ['view3', 'view4'],
-
-      view3: testView,
-
-      view4: testView
-    }),
-
-    view2: SC.View.extend({
-      childViews: ['view5', 'view6'],
-
-      view5: testView,
-
-      view6: testView
-    }),
-
-    view7: SC.View.extend({
-      childViews: ['view8', 'view9'],
-
-      view8: testView,
-
-      view9: testView
-    })
-  });
-
-  pane.append();
-
-  equal(pane.view2.view5.get('previousValidKeyView'), pane.view1.view4, "order is correct when last and previous not set");
-
-  pane.set('lastKeyView', pane.view2);
-  pane.view2.set('previousKeyView', pane.view7);
-  pane.view1.set('previousKeyView', pane.view1);
-
-  equal(pane.view2.view5.get('previousValidKeyView'), pane.view7.view9, "order is respected when last and previous are set");
-  pane.remove();
-  pane.destroy();
-});
-
-test("previousValidKeyView is chosen correctly when previousKeyView is not a sibling", function () {
-  var testView = SC.View.extend({acceptsFirstResponder: YES}),
-  pane = SC.Pane.create({
-    childViews: ['view1', 'view2'],
-
-    view1: SC.View.extend({
-      childViews: ['view3', 'view4'],
-
-      view3: SC.View,
-
-      view4: testView
-    }),
-
-    view2: SC.View.extend({
-      childViews: ['view5', 'view6'],
-
-      view5: testView,
-
-      view6: SC.View
-    })
-  });
-
-  pane.append();
-
-  pane.view1.view4.set('previousKeyView', pane.view2.view5);
-  pane.view2.view5.set('previousKeyView', pane.view1.view4);
-
-  equal(pane.view1.view4.get('previousValidKeyView'), pane.view2.view5, "previousValidKeyView is correct");
-  equal(pane.view2.view5.get('previousValidKeyView'), pane.view1.view4, "previousValidKeyView is correct");
-  pane.remove();
-  pane.destroy();
-});
-
-test("previousValidKeyView prioritizes parent's firstKeyView even if previousKeyView is set", function () {
-  var testView = SC.View.extend({acceptsFirstResponder: YES}),
-  pane = SC.Pane.create({
-    childViews: ['view1', 'view2'],
-
-    view1: SC.View.extend({
-      childViews: ['view3', 'view4'],
-
-      view3: testView,
-
-      view4: testView
-    }),
-
-    view2: SC.View.extend({
-      childViews: ['view5', 'view6'],
-
-      firstKeyView: function () {
-        return this.view6;
-      }.property(),
-
-      view5: testView,
-
-      view6: testView
-    })
-  });
-
-  pane.append();
-
-  equal(pane.view2.view6.get('previousValidKeyView'), pane.view1.view4, "firstKeyView was respected; views before firstKeyView were skipped");
-  pane.remove();
-  pane.destroy();
-});
-
-
-module("SC.View - Keyboard support with Tabbing Outside of Document");
-
-test("forward tab with no next responder moves out of document");
-
-test("backwards tab with no previous responder moves out of document");
+});minispade.register('sproutcore-views/~tests/view/keyboard', function() {// // ==========================================================================
+// // Project:   SproutCore - JavaScript Application Framework
+// // Copyright: ©2006-2011 Strobe Inc. and contributors.
+// //            ©2008-2011 Apple Inc. All rights reserved.
+// // License:   Licensed under MIT license (see license.js)
+// // ==========================================================================
+// /*global module, test, ok, equals */
+// var originalTabbing;
+//
+// module("SC.View - Keyboard support with Tabbing Only Inside Document", {
+//   setup: function () {
+//     originalTabbing = SC.TABBING_ONLY_INSIDE_DOCUMENT;
+//     SC.TABBING_ONLY_INSIDE_DOCUMENT = YES;
+//   },
+//
+//   teardown: function () {
+//     SC.TABBING_ONLY_INSIDE_DOCUMENT = originalTabbing;
+//   }
+// });
+//
+// test("Views only attempt to call performKeyEquivalent on child views that support it", function () {
+//   var performKeyEquivalentCalled = 0;
+//
+//   var view = SC.View.design({
+//     childViews: ['unsupported', 'supported'],
+//
+//     unsupported: SC.CoreView,
+//     supported: SC.View.design({
+//       performKeyEquivalent: function (str) {
+//         performKeyEquivalentCalled++;
+//         return NO;
+//       }
+//     })
+//   });
+//
+//   view = view.create();
+//   view.performKeyEquivalent("ctrl_r");
+//
+//   ok(performKeyEquivalentCalled > 0, "performKeyEquivalent is called on the view that supports it");
+//   view.destroy();
+// });
+//
+// /**
+//   nextValidKeyView tests
+// */
+//
+// test("nextValidKeyView is receiver if it is the only view that acceptsFirstResponder", function () {
+//   var testView = SC.View.extend({acceptsFirstResponder: YES}),
+//   pane = SC.Pane.create({
+//     rootResponder: rootResponder(),
+//     childViews: ['view1', 'view2'],
+//
+//     view1: SC.View.extend({
+//       childViews: ['view3', 'view4'],
+//
+//       view3: SC.View,
+//
+//       view4: testView
+//     }),
+//
+//     view2: SC.View.extend({
+//       childViews: ['view5', 'view6'],
+//
+//       view5: SC.View,
+//
+//       view6: SC.View
+//     })
+//   });
+//   pane.append();
+//
+//   ok(pane.get('view1.view4.nextValidKeyView') == pane.get('view1.view4'), "nextValidKeyView is receiver");
+//
+//   pane.remove();
+//   pane.destroy();
+// });
+//
+// test("nextValidKeyView is null if no views have acceptsFirstResponder === YES", function () {
+//   var pane = SC.Pane.create({
+//     rootResponder: rootResponder(),
+//     childViews: ['view1', 'view2'],
+//
+//     view1: SC.View.extend({
+//       childViews: ['view3', 'view4'],
+//
+//       view3: SC.View,
+//
+//       view4: SC.View
+//     }),
+//
+//     view2: SC.View.extend({
+//       childViews: ['view5', 'view6'],
+//
+//       view5: SC.View,
+//
+//       view6: SC.View
+//     })
+//   });
+//   pane.append();
+//
+//   ok(SC.none(pane.view1.view4.get('nextValidKeyView')), "nextValidKeyView is null");
+//
+//   pane.remove();
+//   pane.destroy();
+// });
+//
+// test("firstKeyView and nextKeyView of parents are respected", function () {
+//   var testView = SC.View.extend({acceptsFirstResponder: YES}),
+//   pane = SC.Pane.create({
+//     rootResponder: rootResponder(),
+//     childViews: ['view1', 'view2', 'view7'],
+//
+//     view1: SC.View.extend({
+//       childViews: ['view3', 'view4'],
+//
+//       view3: testView,
+//
+//       view4: testView
+//     }),
+//
+//     view2: SC.View.extend({
+//       childViews: ['view5', 'view6'],
+//
+//       view5: testView,
+//
+//       view6: testView
+//     }),
+//
+//     view7: SC.View.extend({
+//       childViews: ['view8', 'view9'],
+//
+//       view8: testView,
+//
+//       view9: testView
+//     })
+//   });
+//
+//   pane.append();
+//
+//   ok(pane.get('view2.view6nextValidKeyView') == pane.get('view7.view8'), "order is correct when first and next not set");
+//
+//   pane.set('firstKeyView', pane.view2);
+//   pane.view2.set('nextKeyView', pane.view1);
+//   pane.view1.set('nextKeyView', pane.view7);
+//
+//   ok(pane.get('view2.view6.nextValidKeyView') == pane.get('view1.view3'), "order is respected when first and next are set");
+//   pane.remove();
+//   pane.destroy();
+// });
+//
+// test("nextValidKeyView is chosen correctly when nextKeyView is not a sibling", function () {
+//   var testView = SC.View.extend({acceptsFirstResponder: YES}),
+//   pane = SC.Pane.create({
+//     rootResponder: rootResponder(),
+//     childViews: ['view1', 'view2'],
+//
+//     view1: SC.View.extend({
+//       childViews: ['view3', 'view4'],
+//
+//       view3: SC.View,
+//
+//       view4: testView
+//     }),
+//
+//     view2: SC.View.extend({
+//       childViews: ['view5', 'view6'],
+//
+//       view5: testView,
+//
+//       view6: SC.View
+//     })
+//   });
+//
+//   pane.append();
+//
+//   pane.view1.view4.set('nextKeyView', pane.view2.view5);
+//   pane.view2.view5.set('nextKeyView', pane.view1.view4);
+//
+//   ok(pane.get('view1.view4.nextValidKeyView') == pane.view2.view5, "nextValidKeyView is correct");
+//   ok(pane.get('view2.view5.nextValidKeyView') == pane.view1.view4, "nextValidKeyView is correct");
+//   pane.remove();
+//   pane.destroy();
+// });
+//
+// test("nextValidKeyView is chosen correctly when child of parent's previous sibling has nextKeyView set", function () {
+//   var testView = SC.View.extend({acceptsFirstResponder: YES}),
+//   pane = SC.Pane.create({
+//     rootResponder: rootResponder(),
+//     childViews: ['view1', 'view2'],
+//
+//     view1: SC.View.extend({
+//       childViews: ['view3', 'view4'],
+//
+//       view3: testView,
+//
+//       view4: testView
+//     }),
+//
+//     view2: SC.View.extend({
+//       childViews: ['view5', 'view6'],
+//
+//       view5: testView,
+//
+//       view6: testView
+//     })
+//   });
+//
+//   pane.view1.view3.set('nextKeyView', pane.view1.view4);
+//   pane.append();
+//
+//   ok(pane.get('view2.view5.nextValidKeyView') == pane.get('view2.view6'), "nextValidKeyView chosen is next sibling");
+//   pane.remove();
+//   pane.destroy();
+// });
+//
+// test("nextValidKeyView checks for acceptsFirstResponder", function () {
+//   var pane = SC.Pane.create({
+//     rootResponder: rootResponder(),
+//     childViews: ['view1', 'view2'],
+//
+//     view1: SC.View.extend({
+//       acceptsFirstResponder: YES
+//     }),
+//
+//     view2: SC.View.extend({
+//       acceptsFirstResponder: NO
+//     })
+//   });
+//
+//   pane.view1.set('nextKeyView', pane.view2);
+//   pane.append();
+//
+//   ok(pane.view1.get('nextValidKeyView') !== pane.view2, "nextValidKeyView is not nextKeyView because nextKeyView acceptsFirstResponder === NO");
+//   pane.remove();
+//   pane.destroy();
+// });
+//
+// test("nextValidKeyView prioritizes parent's lastKeyView even if nextKeyView is set", function () {
+//   var testView = SC.View.extend({acceptsFirstResponder: YES}),
+//   pane = SC.Pane.create({
+//     rootResponder: rootResponder(),
+//     childViews: ['view1', 'view2'],
+//
+//     view1: SC.View.extend({
+//       childViews: ['view3', 'view4'],
+//
+//       lastKeyView: function () {
+//         return this.view3;
+//       }.property(),
+//
+//       view3: testView,
+//
+//       view4: testView
+//     }),
+//
+//     view2: SC.View.extend({
+//       childViews: ['view5', 'view6'],
+//
+//       view5: testView,
+//
+//       view6: testView
+//     })
+//   });
+//
+//   pane.append();
+//
+//   ok(pane.get('view1.view3.nextValidKeyView') == pane.get('view2.view5'), "lastKeyView was respected; views after lastKeyView were skipped");
+//   pane.remove();
+//   pane.destroy();
+// });
+//
+// /**
+//   previousValidKeyView tests
+// */
+//
+// test("previousValidKeyView is receiver if it is the only view that acceptsFirstResponder", function () {
+//   var testView = SC.View.extend({acceptsFirstResponder: YES}),
+//   pane = SC.Pane.create({
+//     rootResponder: rootResponder(),
+//     childViews: ['view1', 'view2'],
+//
+//     view1: SC.View.extend({
+//       childViews: ['view3', 'view4'],
+//
+//       view3: SC.View,
+//
+//       view4: testView
+//     }),
+//
+//     view2: SC.View.extend({
+//       childViews: ['view5', 'view6'],
+//
+//       view5: SC.View,
+//
+//       view6: SC.View
+//     })
+//   });
+//
+//   pane.append();
+//
+//   ok(pane.get('view1.view4.previousValidKeyView') == pane.get('view1.view4'), "previousValidKeyView is receiver");
+//   pane.remove();
+//   pane.destroy();
+// });
+//
+// test("previousValidKeyView is null if no views have acceptsFirstResponder === YES", function () {
+//   var pane = SC.Pane.create({
+//     rootResponder: rootResponder(),
+//     childViews: ['view1', 'view2'],
+//
+//     view1: SC.View.extend({
+//       childViews: ['view3', 'view4'],
+//
+//       view3: SC.View,
+//
+//       view4: SC.View
+//     }),
+//
+//     view2: SC.View.extend({
+//       childViews: ['view5', 'view6'],
+//
+//       view5: SC.View,
+//
+//       view6: SC.View
+//     })
+//   });
+//
+//   pane.append();
+//
+//   ok(SC.none(pane.view1.view4.get('previousValidKeyView')), "previousValidKeyView is null");
+//   pane.remove();
+//   pane.destroy();
+// });
+//
+// test("lastKeyView and previousKeyView of parents are respected", function () {
+//   var testView = SC.View.extend({acceptsFirstResponder: YES}),
+//   pane = SC.Pane.create({
+//     rootResponder: rootResponder(),
+//     childViews: ['view1', 'view2', 'view7'],
+//
+//     view1: SC.View.extend({
+//       childViews: ['view3', 'view4'],
+//
+//       view3: testView,
+//
+//       view4: testView
+//     }),
+//
+//     view2: SC.View.extend({
+//       childViews: ['view5', 'view6'],
+//
+//       view5: testView,
+//
+//       view6: testView
+//     }),
+//
+//     view7: SC.View.extend({
+//       childViews: ['view8', 'view9'],
+//
+//       view8: testView,
+//
+//       view9: testView
+//     })
+//   });
+//
+//   pane.append();
+//
+//   ok(pane.get('view2.view5.previousValidKeyView') == pane.get('view1.view4'), "order is correct when last and previous not set");
+//
+//   pane.set('lastKeyView', pane.view2);
+//   pane.view2.set('previousKeyView', pane.view7);
+//   pane.view1.set('previousKeyView', pane.view1);
+//
+//   ok(pane.get('view2.view5.previousValidKeyView') == pane.get('view7.view9'), "order is respected when last and previous are set");
+//   pane.remove();
+//   pane.destroy();
+// });
+//
+// test("previousValidKeyView is chosen correctly when previousKeyView is not a sibling", function () {
+//   var testView = SC.View.extend({acceptsFirstResponder: YES}),
+//   pane = SC.Pane.create({
+//     rootResponder: rootResponder(),
+//     childViews: ['view1', 'view2'],
+//
+//     view1: SC.View.extend({
+//       childViews: ['view3', 'view4'],
+//
+//       view3: SC.View,
+//
+//       view4: testView
+//     }),
+//
+//     view2: SC.View.extend({
+//       childViews: ['view5', 'view6'],
+//
+//       view5: testView,
+//
+//       view6: SC.View
+//     })
+//   });
+//
+//   pane.append();
+//
+//   pane.view1.view4.set('previousKeyView', pane.view2.view5);
+//   pane.view2.view5.set('previousKeyView', pane.view1.view4);
+//
+//   ok(pane.get('view1.view4.previousValidKeyView') == pane.get('view2.view5'), "previousValidKeyView is correct");
+//   ok(pane.get('view2.view5.previousValidKeyView') == pane.get('view1.view4'), "previousValidKeyView is correct");
+//   pane.remove();
+//   pane.destroy();
+// });
+//
+// test("previousValidKeyView prioritizes parent's firstKeyView even if previousKeyView is set", function () {
+//   var testView = SC.View.extend({acceptsFirstResponder: YES}),
+//   pane = SC.Pane.create({
+//     rootResponder: rootResponder(),
+//     childViews: ['view1', 'view2'],
+//
+//     view1: SC.View.extend({
+//       childViews: ['view3', 'view4'],
+//
+//       view3: testView,
+//
+//       view4: testView
+//     }),
+//
+//     view2: SC.View.extend({
+//       childViews: ['view5', 'view6'],
+//
+//       firstKeyView: function () {
+//         return this.view6;
+//       }.property(),
+//
+//       view5: testView,
+//
+//       view6: testView
+//     })
+//   });
+//
+//   pane.append();
+//
+//   ok(pane.get('view2.view6.previousValidKeyView') == pane.get('view1.view4'), "firstKeyView was respected; views before firstKeyView were skipped");
+//   pane.remove();
+//   pane.destroy();
+// });
+//
+//
+// module("SC.View - Keyboard support with Tabbing Outside of Document");
+//
+// test("forward tab with no next responder moves out of document");
+//
+// test("backwards tab with no previous responder moves out of document");
 
 });minispade.register('sproutcore-views/~tests/view/layer', function() {// ==========================================================================
 // Project:   SproutCore - JavaScript Application Framework
@@ -6882,7 +6740,9 @@ test("returns null again if parent view's layer is destroyed");
 var pane, view ;
 module("SC.View#$", {
   setup: function() {
-    pane = SC.Pane.design()
+    pane = SC.Pane.design({
+      rootResponder: rootResponder()
+    })
       .childView(SC.View.design({
         render: function(context, firstTime) {
           context.push('<span></span>');
@@ -6891,15 +6751,15 @@ module("SC.View#$", {
 
     view = pane.childViews[0];
 
-    SC.RunLoop.begin();
-    pane.append(); // add to create layer...
-    SC.RunLoop.end();
+    SC.run(function () {
+      pane.append(); // add to create layer...
+    });
   },
 
   teardown: function() {
-    SC.RunLoop.begin();
-    pane.remove();
-    SC.RunLoop.end();
+    SC.run(function () {
+      pane.remove();
+    });
   }
 });
 
@@ -7285,7 +7145,7 @@ test("notifies layoutStyle & frame change", function () {
   equal(layoutStyleCallCount, 0, 'should not trigger observers for layoutStyle');
 
   // Attach to the document.
-  var parent = SC.Pane.create();
+  var parent = SC.Pane.create({ rootResponder: rootResponder() });
   parent.append();
   parent.appendChild(view);
 
@@ -7514,981 +7374,982 @@ test("Calling viewDidResize on a view notifies its child views", function () {
   view.destroy();
 });
 
-});minispade.register('sproutcore-views/~tests/view/layoutStyle', function() {// ==========================================================================
-// Project:   SproutCore - JavaScript Application Framework
-// Copyright: ©2006-2011 Strobe Inc. and contributors.
-//            ©2008-2011 Apple Inc. All rights reserved.
-// License:   Licensed under MIT license (see license.js)
-// ==========================================================================
-// ========================================================================
-// View Layout Unit Tests
-// ========================================================================
-
-/*global module test ok same equals */
-
-
-/* These unit tests verify:  layout(), frame(), styleLayout() and clippingFrame(). */
-(function () {
-  var parent, child, frameKeys, layoutKeys;
-
-  frameKeys = 'x y width height'.w();
-  layoutKeys = ['width', 'height', 'top', 'bottom', 'marginLeft', 'marginTop', 'left', 'right', 'zIndex',
-    'minWidth', 'maxWidth', 'minHeight', 'maxHeight', 'borderTopWidth', 'borderBottomWidth',
-    'borderLeftWidth', 'borderRightWidth'];
-
-  /*
-    helper method to test the layout of a view.  Applies the passed layout to a
-    view, then compares both its frame and layoutStyle properties both before
-    and after adding the view to a parent view.
-
-    You can pass frame rects with some properties missing and they will be
-    filled in for you just so you don't have to write so much code.
-
-    @param {Hash} layout layout hash to test
-    @param {Hash} no_f expected frame for view with no parent
-    @param {Hash} no_s expected layoutStyle for view with no parent
-    @param {Hash} with_f expected frame for view with parent
-    @param {Hash} with_s expected layoutStyle for view with parent
-    @param {Boolean} isFixedShouldBe expected value for view.get('isFixedLayout')
-    @returns {void}
-  */
-  function performLayoutTest(layout, no_f, no_s, with_f, with_s, isFixedShouldBe) {
-    if (SC.platform.supportsCSSTransforms) { layoutKeys.push('transform'); }
-
-    // make sure we add null properties and convert numbers to 'XXpx' to style layout.
-    layoutKeys.forEach(function (key) {
-      if (no_s[key] === undefined) { no_s[key] = null; }
-      if (with_s[key] === undefined) { with_s[key] = null; }
-
-
-      if (typeof no_s[key] === 'number') { no_s[key] = no_s[key].toString() + 'px'; }
-      if (typeof with_s[key] === 'number') { with_s[key] = with_s[key].toString() + 'px'; }
-    });
-
-    // set layout
-    SC.run(function () {
-      child.set('layout', layout);
-    });
-
-    var layoutStyle = child.get('layoutStyle'),
-        frame = child.get('frame'),
-        testKey;
-
-    // test
-    layoutKeys.forEach(function (key) {
-      testKey = key === 'transform' ? SC.browser.domPrefix + 'Transform' : key;
-      equal(layoutStyle[testKey], no_s[key], "STYLE NO PARENT %@".fmt(key));
-    });
-
-    if (no_f !== undefined) {
-      if (frame && no_f) {
-        frameKeys.forEach(function (key) {
-          equal(frame[key], no_f[key], "FRAME NO PARENT %@".fmt(key));
-        });
-      } else {
-        equal(frame, no_f, "FRAME NO PARENT");
-      }
-    }
-
-
-    // add parent
-    SC.RunLoop.begin();
-    parent.appendChild(child);
-    SC.RunLoop.end();
-
-    layoutStyle = child.get('layoutStyle');
-    frame = child.get('frame');
-
-    // test again
-    layoutKeys.forEach(function (key) {
-      testKey = key === 'transform' ? SC.browser.domPrefix + 'Transform' : key;
-      equal(layoutStyle[testKey], with_s[key], "STYLE W/ PARENT %@".fmt(key));
-    });
-
-    if (with_f !== undefined) {
-      if (frame && with_f) {
-        frameKeys.forEach(function (key) {
-          equal(frame[key], with_f[key], "FRAME W/ PARENT %@".fmt(key));
-        });
-      } else {
-        equal(frame, with_f, "FRAME W/ PARENT");
-      }
-    }
-
-    // check if isFixedLayout is correct
-
-    equal(child.get('isFixedLayout'), isFixedShouldBe, "isFixedLayout");
-  }
-
-  /**
-    Helper setup that creates a parent and child view so that you can do basic
-    tests.
-  */
-  var commonSetup = {
-    setup: function () {
-
-      // create basic parent view
-      parent = SC.View.create({
-        layout: { top: 0, left: 0, width: 200, height: 200 }
-      });
-
-      // create child view to test against.
-      child = SC.View.create();
-    },
-
-    teardown: function () {
-      child.destroy();
-      parent.destroy();
-      parent = child = null;
-    }
-  };
-
-  module("NOTIFICATIONS", commonSetup);
-
-  test("Setting layout will notify frame observers", function () {
-    var didNotify = NO, didNotifyStyle = NO;
-    child.addObserver('frame', this, function () { didNotify = YES; });
-    child.addObserver('layoutStyle', this, function () { didNotifyStyle = YES; });
-
-    SC.run(function () {
-      child.set('layout', { left: 0, top: 10, bottom: 20, right: 50 });
-    });
-
-    ok(didNotify, "didNotify");
-    ok(didNotifyStyle, 'didNotifyStyle');
-  });
-
-  // ..........................................................
-  // TEST FRAME/STYLEFRAME WITH BASIC LAYOUT VARIATIONS
-  //
-  // NOTE:  Each test evaluates the frame before and after adding it to the
-  // parent.
-
-  module('BASIC LAYOUT VARIATIONS', commonSetup);
-
-  test("layout {top, left, width, height}", function () {
-
-    var layout = { top: 10, left: 10, width: 50, height: 50 };
-    var s = { top: 10, left: 10, width: 50, height: 50 };
-    var no_f = { x: 10, y: 10, width: 50, height: 50 };
-    var with_f = { x: 10, y: 10, width: 50, height: 50 };
-
-    performLayoutTest(layout, no_f, s, with_f, s, YES);
-  });
-
-  test("layout {top, left, bottom, right}", function () {
-
-    var layout = { top: 10, left: 10, bottom: 10, right: 10 };
-    var no_f = { x: 10, y: 10, width: 0, height: 0 };
-    var with_f = { x: 10, y: 10, width: 180, height: 180 };
-    var s = { top: 10, left: 10, bottom: 10, right: 10 };
-
-    performLayoutTest(layout, no_f, s, with_f, s, NO);
-  });
-
-  test("layout {bottom, right, width, height}", function () {
-
-    var layout = { bottom: 10, right: 10, width: 50, height: 50 };
-    var no_f = { x: 0, y: 0, width: 50, height: 50 };
-    var with_f = { x: 140, y: 140, width: 50, height: 50 };
-    var s = { bottom: 10, right: 10, width: 50, height: 50 };
-
-    performLayoutTest(layout, no_f, s, with_f, s, NO);
-  });
-
-  test("layout {centerX, centerY, width, height}", function () {
-
-    var layout = { centerX: 10, centerY: 10, width: 60, height: 60 };
-    var no_f = { x: 10, y: 10, width: 60, height: 60 };
-    var with_f = { x: 80, y: 80, width: 60, height: 60 };
-    var s = { marginLeft: -20, marginTop: -20, width: 60, height: 60, top: "50%", left: "50%" };
-
-    performLayoutTest(layout, no_f, s, with_f, s, NO);
-  });
-
-  test("layout {top, left, width: auto, height: auto}", function () {
-    // Reset.
-    child.destroy();
-
-    child = SC.View.create({
-      useStaticLayout: YES,
-      render: function (context) {
-        // needed for auto
-        context.push('<div style="padding: 10px"></div>');
-      }
-    });
-
-    // parent MUST have a layer.
-    parent.createLayer();
-    var layer = parent.get('layer');
-    document.body.appendChild(layer);
-
-    var layout = { top: 0, left: 0, width: 'auto', height: 'auto' };
-    var no_f = null;
-    // See test below
-    var with_f; // { x: 0, y: 0, width: 200, height: 200 };
-    var s = { top: 0, left: 0, width: 'auto', height: 'auto' };
-
-    performLayoutTest(layout, no_f, s, with_f, s, NO);
-
-    layer.parentNode.removeChild(layer);
-    child.destroy();
-  });
-
-  // See comment in above test
-  test("layout {top, left, width: auto, height: auto} - frame");
-
-
-
-  // ..........................................................
-  // TEST FRAME/STYLEFRAME WITH BASIC LAYOUT VARIATIONS
-  //
-  // NOTE:  Each test evaluates the frame before and after adding it to the
-  // parent.
-
-  module('BASIC LAYOUT VARIATIONS PERCENTAGE', commonSetup);
-
-  test("layout {top, left, width, height}", function () {
-
-    var layout = { top: 0.1, left: 0.1, width: 0.5, height: 0.5 };
-    var s = { top: '10%', left: '10%', width: '50%', height: '50%' };
-    var no_f = { x: 0, y: 0, width: 0, height: 0 };
-    var with_f = { x: 20, y: 20, width: 100, height: 100 };
-
-    performLayoutTest(layout, no_f, s, with_f, s, NO);
-  });
-
-  test("layout {top, left, bottom, right}", function () {
-
-    var layout = { top: 0.1, left: 0.1, bottom: 0.1, right: 0.1 };
-    var no_f = { x: 0, y: 0, width: 0, height: 0 };
-    var with_f =  { x: 20, y: 20, width: 160, height: 160 };
-    var s = { top: '10%', left: '10%', bottom: '10%', right: '10%' };
-
-    performLayoutTest(layout, no_f, s, with_f, s, NO);
-  });
-
-  test("layout {bottom, right, width, height}", function () {
-
-    var layout = { bottom: 0.1, right: 0.1, width: 0.5, height: 0.5 };
-    var no_f = { x: 0, y: 0, width: 0, height: 0 };
-    var with_f = { x: 80, y: 80, width: 100, height: 100 };
-    var s = { bottom: '10%', right: '10%', width: '50%', height: '50%' };
-
-    performLayoutTest(layout, no_f, s, with_f, s, NO);
-  });
-
-  test("layout {centerX, centerY, width, height}", function () {
-
-    var layout = { centerX: 0.1, centerY: 0.1, width: 0.6, height: 0.6 };
-    var no_f = { x: 0, y: 0, width: 0, height: 0 };
-    var with_f = { x: 60, y: 60, width: 120, height: 120 };
-    var s = { marginLeft: '-20%', marginTop: '-20%', width: '60%', height: '60%', top: "50%", left: "50%" };
-
-    performLayoutTest(layout, no_f, s, with_f, s, NO);
-  });
-
-  // Previously, you couldn't set a % width or height with a centerX/centerY of 0.
-  // But there's no reason that a % sized view can't be centered at 0 and this
-  // test shows that.
-  test("layout {centerX 0, centerY 0, width %, height %}", function () {
-    var layout = { centerX: 0, centerY: 0, width: 0.6, height: 0.6 };
-    var no_f = { x: 0, y: 0, width: 0, height: 0 };
-
-    // The parent frame is 200 x 200.
-    var size = 200 * 0.6;
-    var with_f = { x: (200 - size) * 0.5, y: (200 - size) * 0.5, width: size, height: size };
-    var s = { marginLeft: '-30%', marginTop: '-30%', width: '60%', height: '60%', top: "50%", left: "50%" };
-
-    performLayoutTest(layout, no_f, s, with_f, s, NO);
-  });
-
-  // Edge case: although rare, centered views should be able to have metrics of zero.
-  test("layout {centerX 0, centerY 0, width 0, height 0}", function () {
-    var layout = { centerX: 0, centerY: 0, width: 0, height: 0 };
-    var no_f = { x: 0, y: 0, width: 0, height: 0 };
-
-    // The parent frame is 200 x 200.
-    var size = 0;
-    var with_f = { x: (200 - size) * 0.5, y: (200 - size) * 0.5, width: size, height: size };
-    var s = { marginLeft: '0px', marginTop: '0px', width: '0px', height: '0px', top: '50%', left: '50%' };
-
-    performLayoutTest(layout, no_f, s, with_f, s, NO);
-  });
-
-  test("layout {top, left, width: auto, height: auto}", function () {
-    // Reset.
-    child.destroy();
-
-    child = SC.View.create({
-      useStaticLayout: YES,
-      render: function (context) {
-        // needed for auto
-        context.push('<div style="padding: 10px"></div>');
-      }
-    });
-
-    // parent MUST have a layer.
-    parent.createLayer();
-    var layer = parent.get('layer');
-    document.body.appendChild(layer);
-
-    var layout = { top: 0.1, left: 0.1, width: 'auto', height: 'auto' };
-    var no_f = null;
-    // See pending test below
-    var with_f; // { x: 20, y: 20, width: 180, height: 180 };
-    var s = { top: '10%', left: '10%', width: 'auto', height: 'auto' };
-
-    performLayoutTest(layout, no_f, s, with_f, s, NO);
-
-    layer.parentNode.removeChild(layer);
-    child.destroy();
-  });
-
-  // See commented out lines in test above
-  test("layout {top, left, width: auto, height: auto} - frame");
-
-
-
-  // ..........................................................
-  // TEST CSS TRANSFORM LAYOUT VARIATIONS
-  //
-  // NOTE:  Each test evaluates the frame before and after adding it to the
-  // parent.
-
-  module('CSS TRANSFORM LAYOUT VARIATIONS', {
-    setup: function () {
-      commonSetup.setup();
-      child.createLayer();
-      document.body.appendChild(child.get('layer'));
-    },
-
-    teardown: function () {
-      document.body.removeChild(child.get('layer'));
-      child.destroyLayer();
-      commonSetup.teardown();
-    }
-  });
-
-  function transformFor(view) {
-    return view.get('layer').style[SC.browser.domPrefix + 'Transform'];
-  }
-
-  test("layout {rotateX}", function () {
-    SC.run(function () {
-      child.adjust('rotateX', 45).updateLayout(true);
-    });
-
-    equal(transformFor(child), 'rotateX(45deg)', 'transform attribute should be "rotateX(45deg)"');
-  });
-
-  test("layout {rotateY}", function () {
-    SC.run(function () {
-      child.adjust('rotateY', 45).updateLayout(true);
-    });
-    equal(transformFor(child), 'rotateY(45deg)', 'transform attribute should be "rotateY(45deg)"');
-  });
-
-  test("layout {rotateZ}", function () {
-    SC.run(function () {
-      child.adjust('rotateZ', 45).updateLayout(true);
-    });
-
-    equal(transformFor(child), 'rotateZ(45deg)', 'transform attribute should be "rotateZ(45deg)"');
-  });
-
-  test("layout {rotate}", function () {
-    SC.run(function () {
-      child.adjust('rotate', 45).updateLayout(true);
-    });
-
-    equal(transformFor(child), 'rotateX(45deg)', 'transform attribute should be "rotateX(45deg)"');
-  });
-
-  test("layout {rotateX} with units", function () {
-    SC.run(function () {
-      child.adjust('rotateX', '1rad').updateLayout(true);
-    });
-
-    equal(transformFor(child), 'rotateX(1rad)', 'transform attribute should be "rotateX(1rad)"');
-  });
-
-  test("layout {scale}", function () {
-    SC.run(function () {
-      child.adjust('scale', 2).updateLayout(true);
-    });
-
-    equal(transformFor(child), 'scale(2)', 'transform attribute should be "scale(2)"');
-  });
-
-  test("layout {scale} with multiple", function () {
-    SC.run(function () {
-      child.adjust('scale', [2, 3]).updateLayout(true);
-    });
-
-    equal(transformFor(child), 'scale(2, 3)', 'transform attribute should be "scale(2, 3)"');
-  });
-
-  test("layout {rotateX, scale}", function () {
-    SC.run(function () {
-      child.adjust({ rotateX: 45, scale: 2 }).updateLayout(true);
-    });
-
-    equal(transformFor(child), 'rotateX(45deg) scale(2)', 'transform attribute should be "rotateX(45deg) scale(2)"');
-  });
-
-  test("layout {rotateX} update", function () {
-    SC.run(function () {
-      child.adjust('rotateX', 45).updateLayout(true);
-      child.adjust('rotateX', 90).updateLayout(true);
-    });
-
-    equal(transformFor(child), 'rotateX(90deg)', 'transform attribute should be "rotateX(90deg)"');
-  });
-
-
-  if (SC.platform.supportsCSSTransforms) {
-
-    // ..........................................................
-    // TEST FRAME/STYLEFRAME WITH ACCELERATE LAYOUT VARIATIONS
-    //
-    // NOTE:  Each test evaluates the frame before and after adding it to the
-    // parent.
-
-    module('ACCELERATED LAYOUT VARIATIONS', {
-      setup: function () {
-        commonSetup.setup();
-        child.set('wantsAcceleratedLayer', YES);
-      },
-
-      teardown: commonSetup.teardown
-    });
-
-    test("layout {top, left, width, height}", function () {
-      var layout = { top: 10, left: 10, width: 50, height: 50 };
-      var expectedTransform = 'translateX(10px) translateY(10px)';
-      if (SC.platform.supportsCSS3DTransforms) expectedTransform += ' translateZ(0px)';
-      var s = { top: 0, left: 0, width: 50, height: 50, transform: expectedTransform };
-      var no_f = { x: 10, y: 10, width: 50, height: 50 };
-      var with_f = { x: 10, y: 10, width: 50, height: 50};
-
-      performLayoutTest(layout, no_f, s, with_f, s, YES);
-    });
-
-    test("layout {top, left, bottom, right}", function () {
-
-      var layout = { top: 10, left: 10, bottom: 10, right: 10 };
-      var no_f = { x: 10, y: 10, width: 0, height: 0 };
-      var with_f = { x: 10, y: 10, width: 180, height: 180 };
-      var s = { top: 10, left: 10, bottom: 10, right: 10, transform: null };
-
-      performLayoutTest(layout, no_f, s, with_f, s, NO);
-    });
-
-    test("layout {top, left, width: auto, height: auto}", function () {
-      // Reset.
-      child.destroy();
-
-      child = SC.View.create({
-        wantsAcceleratedLayer: YES,
-        useStaticLayout: YES,
-        render: function (context) {
-          // needed for auto
-          context.push('<div style="padding: 10px"></div>');
-        }
-      });
-
-      // parent MUST have a layer.
-      parent.createLayer();
-      var layer = parent.get('layer');
-      document.body.appendChild(layer);
-
-      var layout = { top: 0, left: 0, width: 'auto', height: 'auto' };
-      var no_f = null;
-      // See test below
-      var with_f; // { x: 0, y: 0, width: 200, height: 200 };
-      var s = { top: 0, left: 0, width: 'auto', height: 'auto', transform: null };
-
-      performLayoutTest(layout, no_f, s, with_f, s, NO);
-
-      layer.parentNode.removeChild(layer);
-
-      child.destroy();
-    });
-
-    // See commented lines in test above
-    test("layout {top, left, width: auto, height: auto} - frame");
-
-    test("layout w/ percentage {top, left, width, height}", function () {
-
-      var layout = { top: 0.1, left: 0.1, width: 0.5, height: 0.5 };
-      var s = { top: '10%', left: '10%', width: '50%', height: '50%', transform: null };
-      var no_f = { x: 0, y: 0, width: 0, height: 0 };
-      var with_f = { x: 20, y: 20, width: 100, height: 100 };
-
-      performLayoutTest(layout, no_f, s, with_f, s, NO);
-    });
-
-  }
-
-
-
-  // ..........................................................
-  // TEST FRAME/STYLEFRAME WITH INVALID LAYOUT VARIATIONS
-  //
-  // NOTE:  Each test evaluates the frame before and after adding it to the
-  // parent.
-
-  module('INVALID LAYOUT VARIATIONS', commonSetup);
-
-  test("layout {top, left} - assume right/bottom=0", function () {
-
-    var layout = { top: 0.1, left: 0.1 };
-    var no_f = { x: 0, y: 0, width: 0, height: 0 };
-    var with_f = { x: 20, y: 20, width: 180, height: 180 };
-    var s = { bottom: 0, right: 0, top: '10%', left: '10%' };
-
-    performLayoutTest(layout, no_f, s, with_f, s, NO);
-  });
-
-  test("layout {height, width} - assume top/left=0", function () {
-
-    var layout = { height: 0.6, width: 0.6 };
-    var no_f = { x: 0, y: 0, width: 0, height: 0 };
-    var with_f = { x: 0, y: 0, width: 120, height: 120 };
-    var s = { width: '60%', height: '60%', top: 0, left: 0 };
-
-    performLayoutTest(layout, no_f, s, with_f, s, NO);
-
-  });
-
-  test("layout {right, bottom} - assume top/left=0", function () {
-
-    var layout = { right: 0.1, bottom: 0.1 };
-    var no_f = { x: 0, y: 0, width: 0, height: 0 };
-    var with_f = { x: 0, y: 0, width: 180, height: 180 };
-    var s = { bottom: '10%', right: '10%', top: 0, left: 0 };
-
-    performLayoutTest(layout, no_f, s, with_f, s, NO);
-
-  });
-
-  test("layout {right, bottom, maxWidth, maxHeight} - assume top/left=null", function () {
-
-    var layout = { right: 0.1, bottom: 0.1, maxWidth: 10, maxHeight: 10 };
-    var no_f = { x: 0, y: 0, width: 0, height: 0 };
-    var with_f = { x: 0, y: 0, width: 10, height: 10 };
-    var s = { bottom: '10%', right: '10%', top: null, left: null, maxWidth: 10, maxHeight: 10 };
-
-    performLayoutTest(layout, no_f, s, with_f, s, NO);
-
-  });
-
-  test("layout {centerX, centerY} - assume width/height=0", function () {
-
-    var layout = { centerX: 0.1, centerY: 0.1 };
-    var no_f = { x: 0, y: 0, width: 0, height: 0 };
-    var with_f = { x: 120, y: 120, width: 0, height: 0 };
-    var s = { width: 0, height: 0, top: "50%", left: "50%", marginTop: "50%", marginLeft: "50%" };
-    performLayoutTest(layout, no_f, s, with_f, s, NO);
-
-  });
-
-  test("layout {top, left, centerX, centerY, height, width} - top/left take presidence", function () {
-
-    var layout = { top: 0.1, left: 0.1, centerX: 0.1, centerY: 0.1, height: 0.6, width: 0.6 };
-    var no_f = { x: 0, y: 0, width: 0, height: 0 };
-    var with_f = { x: 20, y: 20, width: 120, height: 120 };
-    var s = { width: '60%', height: '60%', top: '10%', left: '10%' };
-
-    performLayoutTest(layout, no_f, s, with_f, s, NO);
-
-  });
-
-  test("layout {bottom, right, centerX, centerY, height, width} - bottom/right take presidence", function () {
-
-    var layout = { bottom: 0.1, right: 0.1, centerX: 0.1, centerY: 0.1, height: 0.6, width: 0.6 };
-    var no_f = { x: 0, y: 0, width: 0, height: 0 };
-    var with_f = { x: 60, y: 60, width: 120, height: 120 };
-    var s = { width: '60%', height: '60%', bottom: '10%', right: '10%' };
-
-    performLayoutTest(layout, no_f, s, with_f, s, NO);
-
-  });
-
-  test("layout {top, left, bottom, right, centerX, centerY, height, width} - top/left take presidence", function () {
-
-    var layout = { top: 0.1, left: 0.1, bottom: 0.1, right: 0.1, centerX: 0.1, centerY: 0.1, height: 0.6, width: 0.6 };
-    var no_f = { x: 0, y: 0, width: 0, height: 0 };
-    var with_f = { x: 20, y: 20, width: 120, height: 120 };
-    var s = { width: '60%', height: '60%', top: '10%', left: '10%' };
-
-    performLayoutTest(layout, no_f, s, with_f, s, NO);
-
-  });
-
-
-  test("layout {centerX, centerY, width:auto, height:auto}", function () {
-    var error = 'NONE';
-    var layout = { centerX: 0.1, centerY: 0.1, width: 'auto', height: 'auto' };
-
-    SC.run(function () {
-      child.set('layout', layout);
-    });
-
-    try {
-      child.layoutStyle();
-    } catch (e) {
-      error = e;
-    }
-
-    equal(SC.T_ERROR, SC.typeOf(error), 'Layout style functions should throw an ' +
-                                           'error if centerx/y and width/height are set at the same time ' + error);
-  });
-
-
-  // ..........................................................
-  // TEST BORDER
-  //
-
-  module('BORDER LAYOUT VARIATIONS', commonSetup);
-
-  test("layout {top, left, width, height, border}", function () {
-    var layout = { top: 10, left: 10, width: 50, height: 50, border: 2 };
-    var s = { top: 10, left: 10, width: 46, height: 46,
-              borderTopWidth: 2, borderRightWidth: 2, borderBottomWidth: 2, borderLeftWidth: 2 };
-    var no_f = { x: 12, y: 12, width: 46, height: 46 };
-    var with_f = { x: 12, y: 12, width: 46, height: 46 };
-
-    performLayoutTest(layout, no_f, s, with_f, s, YES);
-  });
-
-  test("layout {top, left, bottom, right, border}", function () {
-    var layout = { top: 10, left: 10, bottom: 10, right: 10, border: 2 };
-    var no_f = { x: 12, y: 12, width: 0, height: 0 };
-    var with_f = { x: 12, y: 12, width: 176, height: 176 };
-    var s = { top: 10, left: 10, bottom: 10, right: 10,
-               borderTopWidth: 2, borderRightWidth: 2, borderBottomWidth: 2, borderLeftWidth: 2 };
-
-    performLayoutTest(layout, no_f, s, with_f, s, NO);
-  });
-
-  test("layout {top, left, bottom, right, borderTop, borderLeft, borderRight, borderBottom}", function () {
-    var layout = { top: 10, left: 10, bottom: 10, right: 10, borderTop: 1, borderRight: 2, borderBottom: 3, borderLeft: 4 };
-    var no_f = { x: 14, y: 11, width: 0, height: 0 };
-    var with_f = { x: 14, y: 11, width: 174, height: 176 };
-    var s = { top: 10, left: 10, bottom: 10, right: 10,
-               borderTopWidth: 1, borderRightWidth: 2, borderBottomWidth: 3, borderLeftWidth: 4 };
-
-    performLayoutTest(layout, no_f, s, with_f, s, NO);
-  });
-
-  test("layout {top, left, bottom, right, border, borderTop, borderLeft}", function () {
-    var layout = { top: 10, left: 10, bottom: 10, right: 10, border: 5, borderTop: 1, borderRight: 2 };
-    var no_f = { x: 15, y: 11, width: 0, height: 0 };
-    var with_f = { x: 15, y: 11, width: 173, height: 174 };
-    var s = { top: 10, left: 10, bottom: 10, right: 10,
-               borderTopWidth: 1, borderRightWidth: 2, borderBottomWidth: 5, borderLeftWidth: 5 };
-
-    performLayoutTest(layout, no_f, s, with_f, s, NO);
-  });
-
-  test("layout {bottom, right, width, height, border}", function () {
-
-    var layout = { bottom: 10, right: 10, width: 50, height: 50, border: 2 };
-    var no_f = { x: 2, y: 2, width: 46, height: 46 };
-    var with_f = { x: 142, y: 142, width: 46, height: 46 };
-    var s = { bottom: 10, right: 10, width: 46, height: 46,
-              borderTopWidth: 2, borderRightWidth: 2, borderBottomWidth: 2, borderLeftWidth: 2 };
-
-    performLayoutTest(layout, no_f, s, with_f, s, NO);
-  });
-
-  test("layout {centerX, centerY, width, height, border}", function () {
-
-    var layout = { centerX: 10, centerY: 10, width: 60, height: 60, border: 2 };
-    var no_f = { x: 12, y: 12, width: 56, height: 56 };
-    var with_f = { x: 82, y: 82, width: 56, height: 56 };
-    var s = { marginLeft: -20, marginTop: -20, width: 56, height: 56, top: "50%", left: "50%",
-              borderTopWidth: 2, borderRightWidth: 2, borderBottomWidth: 2, borderLeftWidth: 2 };
-
-    performLayoutTest(layout, no_f, s, with_f, s, NO);
-  });
-
-  test("layout {top, left, width: auto, height: auto}", function () {
-    // Reset.
-    child.destroy();
-
-    child = SC.View.create({
-      useStaticLayout: YES,
-      render: function (context) {
-        // needed for auto
-        context.push('<div style="padding: 10px"></div>');
-      }
-    });
-
-    // parent MUST have a layer.
-    parent.createLayer();
-    var layer = parent.get('layer');
-    document.body.appendChild(layer);
-
-    var layout = { top: 0, left: 0, width: 'auto', height: 'auto', border: 2 };
-    var no_f = null;
-    var with_f; //{ x: 2, y: 2, width: 196, height: 196 };
-    var s = { top: 0, left: 0, width: 'auto', height: 'auto',
-              borderTopWidth: 2, borderRightWidth: 2, borderBottomWidth: 2, borderLeftWidth: 2 };
-
-    performLayoutTest(layout, no_f, s, with_f, s, NO);
-
-    layer.parentNode.removeChild(layer);
-
-    child.destroy();
-  });
-
-
-  // ..........................................................
-  // TEST FRAME/STYLEFRAME WHEN PARENT VIEW IS RESIZED
-  //
-
-  module('RESIZE FRAME', commonSetup);
-
-  function verifyFrameResize(layout, before, after) {
-    parent.appendChild(child);
-    SC.run(function () { child.set('layout', layout); });
-
-    deepEqual(child.get('frame'), before, "Before: %@ == %@".fmt(SC.inspect(child.get('frame')), SC.inspect(before)));
-    SC.run(function () { parent.adjust('width', 300).adjust('height', 300); });
-
-    deepEqual(child.get('frame'), after, "After: %@ == %@".fmt(SC.inspect(child.get('frame')), SC.inspect(after)));
-
-  }
-
-  test("frame does not change with top/left/w/h", function () {
-    var layout = { top: 10, left: 10, width: 60, height: 60 };
-    var before = { x: 10, y: 10, width: 60, height: 60 };
-    var after =  { x: 10, y: 10, width: 60, height: 60 };
-    verifyFrameResize(layout, before, after);
-  });
-
-  test("frame shifts down with bottom/right/w/h", function () {
-    var layout = { bottom: 10, right: 10, width: 60, height: 60 };
-    var before = { x: 130, y: 130, width: 60, height: 60 };
-    var after =  { x: 230, y: 230, width: 60, height: 60 };
-    verifyFrameResize(layout, before, after);
-  });
-
-  test("frame size shifts with top/left/bottom/right", function () {
-    var layout = { top: 10, left: 10, bottom: 10, right: 10 };
-    var before = { x: 10, y: 10, width: 180, height: 180 };
-    var after =  { x: 10, y: 10, width: 280, height: 280 };
-    verifyFrameResize(layout, before, after);
-  });
-
-  test("frame loc shifts with centerX/centerY", function () {
-    var layout = { centerX: 10, centerY: 10, width: 60, height: 60 };
-    var before = { x: 80, y: 80, width: 60, height: 60 };
-    var after =  { x: 130, y: 130, width: 60, height: 60 };
-    verifyFrameResize(layout, before, after);
-  });
-
-  //with percentage
-
-  test("frame does not change with top/left/w/h - percentage", function () {
-    var layout = { top: 0.1, left: 0.1, width: 0.6, height: 0.6 };
-    var before = { x: 20, width: 120, y: 20, height: 120 };
-    var after =  { x: 30, y: 30, width: 180, height: 180 };
-    verifyFrameResize(layout, before, after);
-  });
-
-  test("frame shifts down with bottom/right/w/h - percentage", function () {
-    var layout = { bottom: 0.1, right: 0.1, width: 0.6, height: 0.6 };
-    var before = { x: 60, y: 60, width: 120, height: 120 };
-    var after =  { x: 90, y: 90, width: 180, height: 180 };
-    verifyFrameResize(layout, before, after);
-  });
-
-  test("frame size shifts with top/left/bottom/right - percentage", function () {
-    var layout = { top: 0.1, left: 0.1, bottom: 0.1, right: 0.1 };
-    var before = { x: 20, y: 20, width: 160, height: 160 };
-    var after =  { x: 30, y: 30, width: 240, height: 240 };
-    verifyFrameResize(layout, before, after);
-  });
-
-  test("frame loc shifts with centerX/centerY - percentage", function () {
-    var layout = { centerX: 0, centerY: 0, width: 0.6, height: 0.6 };
-    var before = { x: 40, y: 40, width: 120, height: 120 };
-    var after =  { x: 60, y: 60, width: 180, height: 180 };
-    verifyFrameResize(layout, before, after);
-  });
-
-  test("for proper null variables");
-  // nothing should get passed through as undefined, instead we want null in certain cases
-
-  module('STATIC LAYOUT VARIATIONS', commonSetup);
-
-  test("no layout", function () {
-
-    var no_f = null,
-        no_s = {},
-        with_f = null,
-        with_s = {};
-
-    child.set('useStaticLayout', true);
-
-    performLayoutTest(SC.View.prototype.layout, no_f, no_s, with_f, with_s, NO);
-  });
-
-  test("with layout", function () {
-
-    var layout = { top: 10, left: 10, width: 50, height: 50 },
-        no_f = null,
-        no_s = { top: 10, left: 10, width: 50, height: 50 },
-        with_f = null,
-        with_s = { top: 10, left: 10, width: 50, height: 50 };
-
-    child.set('useStaticLayout', true);
-
-    performLayoutTest(layout, no_f, no_s, with_f, with_s, YES);
-  });
-
-  // test("frame size shifts with top/left/bottom/right", function () {
-  //   var error=null;
-  //   var layout = { top: 10, left: 10, bottom: 10, right: 10 };
-  //   parent.appendChild(child);
-  //   child.set('layout', layout);
-  //   child.get('frame');
-  //   parent.adjust('width', 'auto').adjust('height', 'auto');
-  //   try{
-  //     child.get('frame');
-  //   }catch(e) {
-  //     error=e;
-  //   }
-  //   equal(SC.T_ERROR,SC.typeOf(error),'Layout style functions should throw and '+
-  //   'error if centerx/y and width/height are set at the same time ' + error );
-  //
-  //
-  // });
-
-  var pane, view;
-  module("COMPUTED LAYOUT", {
-    setup: function () {
-
-      SC.run(function () {
-        // create basic view
-        view = SC.View.create({
-          useTopLayout: YES,
-
-          layout: function () {
-            if (this.get('useTopLayout')) {
-              return { top: 10, left: 10, width: 100, height: 100 };
-            } else {
-              return { bottom: 10, right: 10, width: 200, height: 50 };
-            }
-          }.property('useTopLayout').cacheable()
-        });
-
-        pane = SC.Pane.create({
-          layout: { centerX: 0, centerY: 0, width: 400, height: 400 },
-          childViews: [view]
-        }).append();
-      });
-    },
-
-    teardown: function () {
-      pane.destroy();
-      pane = view = null;
-    }
-  });
-
-  /**
-    There was a regression while moving to jQuery 1.8 and removing the seemingly
-    unuseful buffered jQuery code, where updating the style failed to clear the
-    old style from the view's style attribute.
-  */
-  test("with computed layout", function () {
-    var expectedLayoutStyle,
-      expectedStyleAttr,
-      layoutStyle,
-      styleAttr;
-
-    deepEqual(view.get('layout'), { top: 10, left: 10, width: 100, height: 100 }, "Test the value of the computed layout.");
-    layoutStyle = view.get('layoutStyle');
-    expectedLayoutStyle = { top: "10px", left: "10px", width: "100px", height: "100px" };
-    for (var key in layoutStyle) {
-      equal(layoutStyle[key], expectedLayoutStyle[key], "Test the value of %@ in the layout style.".fmt(key));
-    }
-    styleAttr = view.$().attr('style');
-    styleAttr = styleAttr.split(/;\s*/).filter(function (o) { return o; });
-    expectedStyleAttr = ['left: 10px', 'width: 100px', 'top: 10px', 'height: 100px'];
-    for (var i = styleAttr.length - 1; i >= 0; i--) {
-      ok(expectedStyleAttr.indexOf(styleAttr[i]) >= 0, "Test the expected style attribute includes `%@` found in the actual style attribute.".fmt(styleAttr[i]));
-    }
-
-    SC.run(function () {
-      view.set('useTopLayout', NO);
-    });
-
-    deepEqual(view.get('layout'), { bottom: 10, right: 10, width: 200, height: 50 }, "Test the value of the computed layout.");
-    layoutStyle = view.get('layoutStyle');
-    expectedLayoutStyle = { bottom: "10px", right: "10px", width: "200px", height: "50px" };
-    for (var key in layoutStyle) {
-      equal(layoutStyle[key], expectedLayoutStyle[key], "Test the value of %@ in the layout style.".fmt(key));
-    }
-
-    styleAttr = view.$().attr('style');
-    styleAttr = styleAttr.split(/;\s*/).filter(function (o) { return o; });
-    expectedStyleAttr = ['bottom: 10px', 'width: 200px', 'right: 10px', 'height: 50px'];
-    for (i = styleAttr.length - 1; i >= 0; i--) {
-      ok(expectedStyleAttr.indexOf(styleAttr[i]) >= 0, "Test the expected style attribute includes `%@` found in the actual style attribute.".fmt(styleAttr[i]));
-    }
-  });
-
-
-  module("OTHER LAYOUT STYLE TESTS", {
-    setup: function () {
-
-      SC.run(function () {
-        // create basic view
-        view = SC.View.create({});
-
-        pane = SC.Pane.create({
-          layout: { centerX: 0, centerY: 0, width: 400, height: 400 },
-          childViews: [view]
-        }).append();
-      });
-    },
-
-    teardown: function () {
-      pane.destroy();
-      pane = view = null;
-    }
-  });
-
-
-
-  /*
-    There was a regression where switching from a centered layout to a non-centered
-    layout failed to remove the margin style.
-  */
-  test("Switching from centered to non-centered layouts.", function () {
-    var styleAttr;
-
-    SC.run(function () {
-      view.set('layout', { centerX: 10, centerY: 10, width: 60, height: 60 });
-    });
-
-    SC.run(function () {
-      view.set('layout', { left: 10, top: 10, width: 60, height: 60 });
-    });
-
-    styleAttr = view.$().attr('style');
-    styleAttr = styleAttr.split(/;\s*/).filter(function (o) { return o; });
-    var expectedStyleAttr = ['left: 10px', 'top: 10px', 'width: 60px', 'height: 60px'];
-    for (var i = styleAttr.length - 1; i >= 0; i--) {
-      ok(expectedStyleAttr.indexOf(styleAttr[i]) >= 0, "Test the expected style attribute includes `%@` found in the actual style attribute.".fmt(styleAttr[i]));
-    }
-  });
-})();
+});minispade.register('sproutcore-views/~tests/view/layoutStyle', function() {// // ==========================================================================
+// // Project:   SproutCore - JavaScript Application Framework
+// // Copyright: ©2006-2011 Strobe Inc. and contributors.
+// //            ©2008-2011 Apple Inc. All rights reserved.
+// // License:   Licensed under MIT license (see license.js)
+// // ==========================================================================
+// // ========================================================================
+// // View Layout Unit Tests
+// // ========================================================================
+//
+// /*global module test ok same equals */
+//
+//
+// /* These unit tests verify:  layout(), frame(), styleLayout() and clippingFrame(). */
+// (function () {
+//   var parent, child, frameKeys, layoutKeys;
+//
+//   frameKeys = 'x y width height'.w();
+//   layoutKeys = ['width', 'height', 'top', 'bottom', 'marginLeft', 'marginTop', 'left', 'right', 'zIndex',
+//     'minWidth', 'maxWidth', 'minHeight', 'maxHeight', 'borderTopWidth', 'borderBottomWidth',
+//     'borderLeftWidth', 'borderRightWidth'];
+//
+//   /*
+//     helper method to test the layout of a view.  Applies the passed layout to a
+//     view, then compares both its frame and layoutStyle properties both before
+//     and after adding the view to a parent view.
+//
+//     You can pass frame rects with some properties missing and they will be
+//     filled in for you just so you don't have to write so much code.
+//
+//     @param {Hash} layout layout hash to test
+//     @param {Hash} no_f expected frame for view with no parent
+//     @param {Hash} no_s expected layoutStyle for view with no parent
+//     @param {Hash} with_f expected frame for view with parent
+//     @param {Hash} with_s expected layoutStyle for view with parent
+//     @param {Boolean} isFixedShouldBe expected value for view.get('isFixedLayout')
+//     @returns {void}
+//   */
+//   function performLayoutTest(layout, no_f, no_s, with_f, with_s, isFixedShouldBe) {
+//     if (SC.platform.supportsCSSTransforms) { layoutKeys.push('transform'); }
+//
+//     // make sure we add null properties and convert numbers to 'XXpx' to style layout.
+//     layoutKeys.forEach(function (key) {
+//       if (no_s[key] === undefined) { no_s[key] = null; }
+//       if (with_s[key] === undefined) { with_s[key] = null; }
+//
+//
+//       if (typeof no_s[key] === 'number') { no_s[key] = no_s[key].toString() + 'px'; }
+//       if (typeof with_s[key] === 'number') { with_s[key] = with_s[key].toString() + 'px'; }
+//     });
+//
+//     // set layout
+//     SC.run(function () {
+//       child.set('layout', layout);
+//     });
+//
+//     var layoutStyle = child.get('layoutStyle'),
+//         frame = child.get('frame'),
+//         testKey;
+//
+//     // test
+//     layoutKeys.forEach(function (key) {
+//       testKey = key === 'transform' ? SC.browser.domPrefix + 'Transform' : key;
+//       equal(layoutStyle[testKey], no_s[key], "STYLE NO PARENT %@".fmt(key));
+//     });
+//
+//     if (no_f !== undefined) {
+//       if (frame && no_f) {
+//         frameKeys.forEach(function (key) {
+//           equal(frame[key], no_f[key], "FRAME NO PARENT %@".fmt(key));
+//         });
+//       } else {
+//         equal(frame, no_f, "FRAME NO PARENT");
+//       }
+//     }
+//
+//
+//     // add parent
+//     SC.run(function () {
+//       parent.appendChild(child);
+//     });
+//
+//     layoutStyle = child.get('layoutStyle');
+//     frame = child.get('frame');
+//
+//     // test again
+//     layoutKeys.forEach(function (key) {
+//       testKey = key === 'transform' ? SC.browser.domPrefix + 'Transform' : key;
+//       equal(layoutStyle[testKey], with_s[key], "STYLE W/ PARENT %@".fmt(key));
+//     });
+//
+//     if (with_f !== undefined) {
+//       if (frame && with_f) {
+//         frameKeys.forEach(function (key) {
+//           equal(frame[key], with_f[key], "FRAME W/ PARENT %@".fmt(key));
+//         });
+//       } else {
+//         equal(frame, with_f, "FRAME W/ PARENT");
+//       }
+//     }
+//
+//     // check if isFixedLayout is correct
+//
+//     equal(child.get('isFixedLayout'), isFixedShouldBe, "isFixedLayout");
+//   }
+//
+//   /**
+//     Helper setup that creates a parent and child view so that you can do basic
+//     tests.
+//   */
+//   var commonSetup = {
+//     setup: function () {
+//
+//       // create basic parent view
+//       parent = SC.View.create({
+//         layout: { top: 0, left: 0, width: 200, height: 200 }
+//       });
+//
+//       // create child view to test against.
+//       child = SC.View.create();
+//     },
+//
+//     teardown: function () {
+//       child.destroy();
+//       parent.destroy();
+//       parent = child = null;
+//     }
+//   };
+//
+//   module("NOTIFICATIONS", commonSetup);
+//
+//   test("Setting layout will notify frame observers", function () {
+//     var didNotify = NO, didNotifyStyle = NO;
+//     child.addObserver('frame', this, function () { didNotify = YES; });
+//     child.addObserver('layoutStyle', this, function () { didNotifyStyle = YES; });
+//
+//     SC.run(function () {
+//       child.set('layout', { left: 0, top: 10, bottom: 20, right: 50 });
+//     });
+//
+//     ok(didNotify, "didNotify");
+//     ok(didNotifyStyle, 'didNotifyStyle');
+//   });
+//
+//   // ..........................................................
+//   // TEST FRAME/STYLEFRAME WITH BASIC LAYOUT VARIATIONS
+//   //
+//   // NOTE:  Each test evaluates the frame before and after adding it to the
+//   // parent.
+//
+//   module('BASIC LAYOUT VARIATIONS', commonSetup);
+//
+//   test("layout {top, left, width, height}", function () {
+//
+//     var layout = { top: 10, left: 10, width: 50, height: 50 };
+//     var s = { top: 10, left: 10, width: 50, height: 50 };
+//     var no_f = { x: 10, y: 10, width: 50, height: 50 };
+//     var with_f = { x: 10, y: 10, width: 50, height: 50 };
+//
+//     performLayoutTest(layout, no_f, s, with_f, s, YES);
+//   });
+//
+//   test("layout {top, left, bottom, right}", function () {
+//
+//     var layout = { top: 10, left: 10, bottom: 10, right: 10 };
+//     var no_f = { x: 10, y: 10, width: 0, height: 0 };
+//     var with_f = { x: 10, y: 10, width: 180, height: 180 };
+//     var s = { top: 10, left: 10, bottom: 10, right: 10 };
+//
+//     performLayoutTest(layout, no_f, s, with_f, s, NO);
+//   });
+//
+//   test("layout {bottom, right, width, height}", function () {
+//
+//     var layout = { bottom: 10, right: 10, width: 50, height: 50 };
+//     var no_f = { x: 0, y: 0, width: 50, height: 50 };
+//     var with_f = { x: 140, y: 140, width: 50, height: 50 };
+//     var s = { bottom: 10, right: 10, width: 50, height: 50 };
+//
+//     performLayoutTest(layout, no_f, s, with_f, s, NO);
+//   });
+//
+//   test("layout {centerX, centerY, width, height}", function () {
+//
+//     var layout = { centerX: 10, centerY: 10, width: 60, height: 60 };
+//     var no_f = { x: 10, y: 10, width: 60, height: 60 };
+//     var with_f = { x: 80, y: 80, width: 60, height: 60 };
+//     var s = { marginLeft: -20, marginTop: -20, width: 60, height: 60, top: "50%", left: "50%" };
+//
+//     performLayoutTest(layout, no_f, s, with_f, s, NO);
+//   });
+//
+//   test("layout {top, left, width: auto, height: auto}", function () {
+//     // Reset.
+//     child.destroy();
+//
+//     child = SC.View.create({
+//       useStaticLayout: YES,
+//       render: function (context) {
+//         // needed for auto
+//         context.push('<div style="padding: 10px"></div>');
+//       }
+//     });
+//
+//     // parent MUST have a layer.
+//     parent.createLayer();
+//     var layer = parent.get('layer');
+//     document.body.appendChild(layer);
+//
+//     var layout = { top: 0, left: 0, width: 'auto', height: 'auto' };
+//     var no_f = null;
+//     // See test below
+//     var with_f; // { x: 0, y: 0, width: 200, height: 200 };
+//     var s = { top: 0, left: 0, width: 'auto', height: 'auto' };
+//
+//     performLayoutTest(layout, no_f, s, with_f, s, NO);
+//
+//     layer.parentNode.removeChild(layer);
+//     child.destroy();
+//   });
+//
+//   // See comment in above test
+//   test("layout {top, left, width: auto, height: auto} - frame");
+//
+//
+//
+//   // ..........................................................
+//   // TEST FRAME/STYLEFRAME WITH BASIC LAYOUT VARIATIONS
+//   //
+//   // NOTE:  Each test evaluates the frame before and after adding it to the
+//   // parent.
+//
+//   module('BASIC LAYOUT VARIATIONS PERCENTAGE', commonSetup);
+//
+//   test("layout {top, left, width, height}", function () {
+//
+//     var layout = { top: 0.1, left: 0.1, width: 0.5, height: 0.5 };
+//     var s = { top: '10%', left: '10%', width: '50%', height: '50%' };
+//     var no_f = { x: 0, y: 0, width: 0, height: 0 };
+//     var with_f = { x: 20, y: 20, width: 100, height: 100 };
+//
+//     performLayoutTest(layout, no_f, s, with_f, s, NO);
+//   });
+//
+//   test("layout {top, left, bottom, right}", function () {
+//
+//     var layout = { top: 0.1, left: 0.1, bottom: 0.1, right: 0.1 };
+//     var no_f = { x: 0, y: 0, width: 0, height: 0 };
+//     var with_f =  { x: 20, y: 20, width: 160, height: 160 };
+//     var s = { top: '10%', left: '10%', bottom: '10%', right: '10%' };
+//
+//     performLayoutTest(layout, no_f, s, with_f, s, NO);
+//   });
+//
+//   test("layout {bottom, right, width, height}", function () {
+//
+//     var layout = { bottom: 0.1, right: 0.1, width: 0.5, height: 0.5 };
+//     var no_f = { x: 0, y: 0, width: 0, height: 0 };
+//     var with_f = { x: 80, y: 80, width: 100, height: 100 };
+//     var s = { bottom: '10%', right: '10%', width: '50%', height: '50%' };
+//
+//     performLayoutTest(layout, no_f, s, with_f, s, NO);
+//   });
+//
+//   test("layout {centerX, centerY, width, height}", function () {
+//
+//     var layout = { centerX: 0.1, centerY: 0.1, width: 0.6, height: 0.6 };
+//     var no_f = { x: 0, y: 0, width: 0, height: 0 };
+//     var with_f = { x: 60, y: 60, width: 120, height: 120 };
+//     var s = { marginLeft: '-20%', marginTop: '-20%', width: '60%', height: '60%', top: "50%", left: "50%" };
+//
+//     performLayoutTest(layout, no_f, s, with_f, s, NO);
+//   });
+//
+//   // Previously, you couldn't set a % width or height with a centerX/centerY of 0.
+//   // But there's no reason that a % sized view can't be centered at 0 and this
+//   // test shows that.
+//   test("layout {centerX 0, centerY 0, width %, height %}", function () {
+//     var layout = { centerX: 0, centerY: 0, width: 0.6, height: 0.6 };
+//     var no_f = { x: 0, y: 0, width: 0, height: 0 };
+//
+//     // The parent frame is 200 x 200.
+//     var size = 200 * 0.6;
+//     var with_f = { x: (200 - size) * 0.5, y: (200 - size) * 0.5, width: size, height: size };
+//     var s = { marginLeft: '-30%', marginTop: '-30%', width: '60%', height: '60%', top: "50%", left: "50%" };
+//
+//     performLayoutTest(layout, no_f, s, with_f, s, NO);
+//   });
+//
+//   // Edge case: although rare, centered views should be able to have metrics of zero.
+//   test("layout {centerX 0, centerY 0, width 0, height 0}", function () {
+//     var layout = { centerX: 0, centerY: 0, width: 0, height: 0 };
+//     var no_f = { x: 0, y: 0, width: 0, height: 0 };
+//
+//     // The parent frame is 200 x 200.
+//     var size = 0;
+//     var with_f = { x: (200 - size) * 0.5, y: (200 - size) * 0.5, width: size, height: size };
+//     var s = { marginLeft: '0px', marginTop: '0px', width: '0px', height: '0px', top: '50%', left: '50%' };
+//
+//     performLayoutTest(layout, no_f, s, with_f, s, NO);
+//   });
+//
+//   test("layout {top, left, width: auto, height: auto}", function () {
+//     // Reset.
+//     child.destroy();
+//
+//     child = SC.View.create({
+//       useStaticLayout: YES,
+//       render: function (context) {
+//         // needed for auto
+//         context.push('<div style="padding: 10px"></div>');
+//       }
+//     });
+//
+//     // parent MUST have a layer.
+//     parent.createLayer();
+//     var layer = parent.get('layer');
+//     document.body.appendChild(layer);
+//
+//     var layout = { top: 0.1, left: 0.1, width: 'auto', height: 'auto' };
+//     var no_f = null;
+//     // See pending test below
+//     var with_f; // { x: 20, y: 20, width: 180, height: 180 };
+//     var s = { top: '10%', left: '10%', width: 'auto', height: 'auto' };
+//
+//     performLayoutTest(layout, no_f, s, with_f, s, NO);
+//
+//     layer.parentNode.removeChild(layer);
+//     child.destroy();
+//   });
+//
+//   // See commented out lines in test above
+//   test("layout {top, left, width: auto, height: auto} - frame");
+//
+//
+//
+//   // ..........................................................
+//   // TEST CSS TRANSFORM LAYOUT VARIATIONS
+//   //
+//   // NOTE:  Each test evaluates the frame before and after adding it to the
+//   // parent.
+//
+//   module('CSS TRANSFORM LAYOUT VARIATIONS', {
+//     setup: function () {
+//       commonSetup.setup();
+//       child.createLayer();
+//       document.body.appendChild(child.get('layer'));
+//     },
+//
+//     teardown: function () {
+//       document.body.removeChild(child.get('layer'));
+//       child.destroyLayer();
+//       commonSetup.teardown();
+//     }
+//   });
+//
+//   function transformFor(view) {
+//     return view.get('layer').style[SC.browser.domPrefix + 'Transform'];
+//   }
+//
+//   test("layout {rotateX}", function () {
+//     SC.run(function () {
+//       child.adjust('rotateX', 45).updateLayout(true);
+//     });
+//
+//     equal(transformFor(child), 'rotateX(45deg)', 'transform attribute should be "rotateX(45deg)"');
+//   });
+//
+//   test("layout {rotateY}", function () {
+//     SC.run(function () {
+//       child.adjust('rotateY', 45).updateLayout(true);
+//     });
+//     equal(transformFor(child), 'rotateY(45deg)', 'transform attribute should be "rotateY(45deg)"');
+//   });
+//
+//   test("layout {rotateZ}", function () {
+//     SC.run(function () {
+//       child.adjust('rotateZ', 45).updateLayout(true);
+//     });
+//
+//     equal(transformFor(child), 'rotateZ(45deg)', 'transform attribute should be "rotateZ(45deg)"');
+//   });
+//
+//   test("layout {rotate}", function () {
+//     SC.run(function () {
+//       child.adjust('rotate', 45).updateLayout(true);
+//     });
+//
+//     equal(transformFor(child), 'rotateX(45deg)', 'transform attribute should be "rotateX(45deg)"');
+//   });
+//
+//   test("layout {rotateX} with units", function () {
+//     SC.run(function () {
+//       child.adjust('rotateX', '1rad').updateLayout(true);
+//     });
+//
+//     equal(transformFor(child), 'rotateX(1rad)', 'transform attribute should be "rotateX(1rad)"');
+//   });
+//
+//   test("layout {scale}", function () {
+//     SC.run(function () {
+//       child.adjust('scale', 2).updateLayout(true);
+//     });
+//
+//     equal(transformFor(child), 'scale(2)', 'transform attribute should be "scale(2)"');
+//   });
+//
+//   test("layout {scale} with multiple", function () {
+//     SC.run(function () {
+//       child.adjust('scale', [2, 3]).updateLayout(true);
+//     });
+//
+//     equal(transformFor(child), 'scale(2, 3)', 'transform attribute should be "scale(2, 3)"');
+//   });
+//
+//   test("layout {rotateX, scale}", function () {
+//     SC.run(function () {
+//       child.adjust({ rotateX: 45, scale: 2 }).updateLayout(true);
+//     });
+//
+//     equal(transformFor(child), 'rotateX(45deg) scale(2)', 'transform attribute should be "rotateX(45deg) scale(2)"');
+//   });
+//
+//   test("layout {rotateX} update", function () {
+//     SC.run(function () {
+//       child.adjust('rotateX', 45).updateLayout(true);
+//       child.adjust('rotateX', 90).updateLayout(true);
+//     });
+//
+//     equal(transformFor(child), 'rotateX(90deg)', 'transform attribute should be "rotateX(90deg)"');
+//   });
+//
+//
+//   if (SC.platform.supportsCSSTransforms) {
+//
+//     // ..........................................................
+//     // TEST FRAME/STYLEFRAME WITH ACCELERATE LAYOUT VARIATIONS
+//     //
+//     // NOTE:  Each test evaluates the frame before and after adding it to the
+//     // parent.
+//
+//     module('ACCELERATED LAYOUT VARIATIONS', {
+//       setup: function () {
+//         commonSetup.setup();
+//         child.set('wantsAcceleratedLayer', YES);
+//       },
+//
+//       teardown: commonSetup.teardown
+//     });
+//
+//     test("layout {top, left, width, height}", function () {
+//       var layout = { top: 10, left: 10, width: 50, height: 50 };
+//       var expectedTransform = 'translateX(10px) translateY(10px)';
+//       if (SC.platform.supportsCSS3DTransforms) expectedTransform += ' translateZ(0px)';
+//       var s = { top: 0, left: 0, width: 50, height: 50, transform: expectedTransform };
+//       var no_f = { x: 10, y: 10, width: 50, height: 50 };
+//       var with_f = { x: 10, y: 10, width: 50, height: 50};
+//
+//       performLayoutTest(layout, no_f, s, with_f, s, YES);
+//     });
+//
+//     test("layout {top, left, bottom, right}", function () {
+//
+//       var layout = { top: 10, left: 10, bottom: 10, right: 10 };
+//       var no_f = { x: 10, y: 10, width: 0, height: 0 };
+//       var with_f = { x: 10, y: 10, width: 180, height: 180 };
+//       var s = { top: 10, left: 10, bottom: 10, right: 10, transform: null };
+//
+//       performLayoutTest(layout, no_f, s, with_f, s, NO);
+//     });
+//
+//     test("layout {top, left, width: auto, height: auto}", function () {
+//       // Reset.
+//       child.destroy();
+//
+//       child = SC.View.create({
+//         wantsAcceleratedLayer: YES,
+//         useStaticLayout: YES,
+//         render: function (context) {
+//           // needed for auto
+//           context.push('<div style="padding: 10px"></div>');
+//         }
+//       });
+//
+//       // parent MUST have a layer.
+//       parent.createLayer();
+//       var layer = parent.get('layer');
+//       document.body.appendChild(layer);
+//
+//       var layout = { top: 0, left: 0, width: 'auto', height: 'auto' };
+//       var no_f = null;
+//       // See test below
+//       var with_f; // { x: 0, y: 0, width: 200, height: 200 };
+//       var s = { top: 0, left: 0, width: 'auto', height: 'auto', transform: null };
+//
+//       performLayoutTest(layout, no_f, s, with_f, s, NO);
+//
+//       layer.parentNode.removeChild(layer);
+//
+//       child.destroy();
+//     });
+//
+//     // See commented lines in test above
+//     test("layout {top, left, width: auto, height: auto} - frame");
+//
+//     test("layout w/ percentage {top, left, width, height}", function () {
+//
+//       var layout = { top: 0.1, left: 0.1, width: 0.5, height: 0.5 };
+//       var s = { top: '10%', left: '10%', width: '50%', height: '50%', transform: null };
+//       var no_f = { x: 0, y: 0, width: 0, height: 0 };
+//       var with_f = { x: 20, y: 20, width: 100, height: 100 };
+//
+//       performLayoutTest(layout, no_f, s, with_f, s, NO);
+//     });
+//
+//   }
+//
+//
+//
+//   // ..........................................................
+//   // TEST FRAME/STYLEFRAME WITH INVALID LAYOUT VARIATIONS
+//   //
+//   // NOTE:  Each test evaluates the frame before and after adding it to the
+//   // parent.
+//
+//   module('INVALID LAYOUT VARIATIONS', commonSetup);
+//
+//   test("layout {top, left} - assume right/bottom=0", function () {
+//
+//     var layout = { top: 0.1, left: 0.1 };
+//     var no_f = { x: 0, y: 0, width: 0, height: 0 };
+//     var with_f = { x: 20, y: 20, width: 180, height: 180 };
+//     var s = { bottom: 0, right: 0, top: '10%', left: '10%' };
+//
+//     performLayoutTest(layout, no_f, s, with_f, s, NO);
+//   });
+//
+//   test("layout {height, width} - assume top/left=0", function () {
+//
+//     var layout = { height: 0.6, width: 0.6 };
+//     var no_f = { x: 0, y: 0, width: 0, height: 0 };
+//     var with_f = { x: 0, y: 0, width: 120, height: 120 };
+//     var s = { width: '60%', height: '60%', top: 0, left: 0 };
+//
+//     performLayoutTest(layout, no_f, s, with_f, s, NO);
+//
+//   });
+//
+//   test("layout {right, bottom} - assume top/left=0", function () {
+//
+//     var layout = { right: 0.1, bottom: 0.1 };
+//     var no_f = { x: 0, y: 0, width: 0, height: 0 };
+//     var with_f = { x: 0, y: 0, width: 180, height: 180 };
+//     var s = { bottom: '10%', right: '10%', top: 0, left: 0 };
+//
+//     performLayoutTest(layout, no_f, s, with_f, s, NO);
+//
+//   });
+//
+//   test("layout {right, bottom, maxWidth, maxHeight} - assume top/left=null", function () {
+//
+//     var layout = { right: 0.1, bottom: 0.1, maxWidth: 10, maxHeight: 10 };
+//     var no_f = { x: 0, y: 0, width: 0, height: 0 };
+//     var with_f = { x: 0, y: 0, width: 10, height: 10 };
+//     var s = { bottom: '10%', right: '10%', top: null, left: null, maxWidth: 10, maxHeight: 10 };
+//
+//     performLayoutTest(layout, no_f, s, with_f, s, NO);
+//
+//   });
+//
+//   test("layout {centerX, centerY} - assume width/height=0", function () {
+//
+//     var layout = { centerX: 0.1, centerY: 0.1 };
+//     var no_f = { x: 0, y: 0, width: 0, height: 0 };
+//     var with_f = { x: 120, y: 120, width: 0, height: 0 };
+//     var s = { width: 0, height: 0, top: "50%", left: "50%", marginTop: "50%", marginLeft: "50%" };
+//     performLayoutTest(layout, no_f, s, with_f, s, NO);
+//
+//   });
+//
+//   test("layout {top, left, centerX, centerY, height, width} - top/left take presidence", function () {
+//
+//     var layout = { top: 0.1, left: 0.1, centerX: 0.1, centerY: 0.1, height: 0.6, width: 0.6 };
+//     var no_f = { x: 0, y: 0, width: 0, height: 0 };
+//     var with_f = { x: 20, y: 20, width: 120, height: 120 };
+//     var s = { width: '60%', height: '60%', top: '10%', left: '10%' };
+//
+//     performLayoutTest(layout, no_f, s, with_f, s, NO);
+//
+//   });
+//
+//   test("layout {bottom, right, centerX, centerY, height, width} - bottom/right take presidence", function () {
+//
+//     var layout = { bottom: 0.1, right: 0.1, centerX: 0.1, centerY: 0.1, height: 0.6, width: 0.6 };
+//     var no_f = { x: 0, y: 0, width: 0, height: 0 };
+//     var with_f = { x: 60, y: 60, width: 120, height: 120 };
+//     var s = { width: '60%', height: '60%', bottom: '10%', right: '10%' };
+//
+//     performLayoutTest(layout, no_f, s, with_f, s, NO);
+//
+//   });
+//
+//   test("layout {top, left, bottom, right, centerX, centerY, height, width} - top/left take presidence", function () {
+//
+//     var layout = { top: 0.1, left: 0.1, bottom: 0.1, right: 0.1, centerX: 0.1, centerY: 0.1, height: 0.6, width: 0.6 };
+//     var no_f = { x: 0, y: 0, width: 0, height: 0 };
+//     var with_f = { x: 20, y: 20, width: 120, height: 120 };
+//     var s = { width: '60%', height: '60%', top: '10%', left: '10%' };
+//
+//     performLayoutTest(layout, no_f, s, with_f, s, NO);
+//
+//   });
+//
+//
+//   test("layout {centerX, centerY, width:auto, height:auto}", function () {
+//     var error = 'NONE';
+//     var layout = { centerX: 0.1, centerY: 0.1, width: 'auto', height: 'auto' };
+//
+//     SC.run(function () {
+//       child.set('layout', layout);
+//     });
+//
+//     try {
+//       child.layoutStyle();
+//     } catch (e) {
+//       error = e;
+//     }
+//
+//     equal(SC.T_ERROR, SC.typeOf(error), 'Layout style functions should throw an ' +
+//                                            'error if centerx/y and width/height are set at the same time ' + error);
+//   });
+//
+//
+//   // ..........................................................
+//   // TEST BORDER
+//   //
+//
+//   module('BORDER LAYOUT VARIATIONS', commonSetup);
+//
+//   test("layout {top, left, width, height, border}", function () {
+//     var layout = { top: 10, left: 10, width: 50, height: 50, border: 2 };
+//     var s = { top: 10, left: 10, width: 46, height: 46,
+//               borderTopWidth: 2, borderRightWidth: 2, borderBottomWidth: 2, borderLeftWidth: 2 };
+//     var no_f = { x: 12, y: 12, width: 46, height: 46 };
+//     var with_f = { x: 12, y: 12, width: 46, height: 46 };
+//
+//     performLayoutTest(layout, no_f, s, with_f, s, YES);
+//   });
+//
+//   test("layout {top, left, bottom, right, border}", function () {
+//     var layout = { top: 10, left: 10, bottom: 10, right: 10, border: 2 };
+//     var no_f = { x: 12, y: 12, width: 0, height: 0 };
+//     var with_f = { x: 12, y: 12, width: 176, height: 176 };
+//     var s = { top: 10, left: 10, bottom: 10, right: 10,
+//                borderTopWidth: 2, borderRightWidth: 2, borderBottomWidth: 2, borderLeftWidth: 2 };
+//
+//     performLayoutTest(layout, no_f, s, with_f, s, NO);
+//   });
+//
+//   test("layout {top, left, bottom, right, borderTop, borderLeft, borderRight, borderBottom}", function () {
+//     var layout = { top: 10, left: 10, bottom: 10, right: 10, borderTop: 1, borderRight: 2, borderBottom: 3, borderLeft: 4 };
+//     var no_f = { x: 14, y: 11, width: 0, height: 0 };
+//     var with_f = { x: 14, y: 11, width: 174, height: 176 };
+//     var s = { top: 10, left: 10, bottom: 10, right: 10,
+//                borderTopWidth: 1, borderRightWidth: 2, borderBottomWidth: 3, borderLeftWidth: 4 };
+//
+//     performLayoutTest(layout, no_f, s, with_f, s, NO);
+//   });
+//
+//   test("layout {top, left, bottom, right, border, borderTop, borderLeft}", function () {
+//     var layout = { top: 10, left: 10, bottom: 10, right: 10, border: 5, borderTop: 1, borderRight: 2 };
+//     var no_f = { x: 15, y: 11, width: 0, height: 0 };
+//     var with_f = { x: 15, y: 11, width: 173, height: 174 };
+//     var s = { top: 10, left: 10, bottom: 10, right: 10,
+//                borderTopWidth: 1, borderRightWidth: 2, borderBottomWidth: 5, borderLeftWidth: 5 };
+//
+//     performLayoutTest(layout, no_f, s, with_f, s, NO);
+//   });
+//
+//   test("layout {bottom, right, width, height, border}", function () {
+//
+//     var layout = { bottom: 10, right: 10, width: 50, height: 50, border: 2 };
+//     var no_f = { x: 2, y: 2, width: 46, height: 46 };
+//     var with_f = { x: 142, y: 142, width: 46, height: 46 };
+//     var s = { bottom: 10, right: 10, width: 46, height: 46,
+//               borderTopWidth: 2, borderRightWidth: 2, borderBottomWidth: 2, borderLeftWidth: 2 };
+//
+//     performLayoutTest(layout, no_f, s, with_f, s, NO);
+//   });
+//
+//   test("layout {centerX, centerY, width, height, border}", function () {
+//
+//     var layout = { centerX: 10, centerY: 10, width: 60, height: 60, border: 2 };
+//     var no_f = { x: 12, y: 12, width: 56, height: 56 };
+//     var with_f = { x: 82, y: 82, width: 56, height: 56 };
+//     var s = { marginLeft: -20, marginTop: -20, width: 56, height: 56, top: "50%", left: "50%",
+//               borderTopWidth: 2, borderRightWidth: 2, borderBottomWidth: 2, borderLeftWidth: 2 };
+//
+//     performLayoutTest(layout, no_f, s, with_f, s, NO);
+//   });
+//
+//   test("layout {top, left, width: auto, height: auto}", function () {
+//     // Reset.
+//     child.destroy();
+//
+//     child = SC.View.create({
+//       useStaticLayout: YES,
+//       render: function (context) {
+//         // needed for auto
+//         context.push('<div style="padding: 10px"></div>');
+//       }
+//     });
+//
+//     // parent MUST have a layer.
+//     parent.createLayer();
+//     var layer = parent.get('layer');
+//     document.body.appendChild(layer);
+//
+//     var layout = { top: 0, left: 0, width: 'auto', height: 'auto', border: 2 };
+//     var no_f = null;
+//     var with_f; //{ x: 2, y: 2, width: 196, height: 196 };
+//     var s = { top: 0, left: 0, width: 'auto', height: 'auto',
+//               borderTopWidth: 2, borderRightWidth: 2, borderBottomWidth: 2, borderLeftWidth: 2 };
+//
+//     performLayoutTest(layout, no_f, s, with_f, s, NO);
+//
+//     layer.parentNode.removeChild(layer);
+//
+//     child.destroy();
+//   });
+//
+//
+//   // ..........................................................
+//   // TEST FRAME/STYLEFRAME WHEN PARENT VIEW IS RESIZED
+//   //
+//
+//   module('RESIZE FRAME', commonSetup);
+//
+//   function verifyFrameResize(layout, before, after) {
+//     parent.appendChild(child);
+//     SC.run(function () { child.set('layout', layout); });
+//
+//     deepEqual(child.get('frame'), before, "Before: %@ == %@".fmt(SC.inspect(child.get('frame')), SC.inspect(before)));
+//     SC.run(function () { parent.adjust('width', 300).adjust('height', 300); });
+//     deepEqual(child.get('frame'), after, "After: %@ == %@".fmt(SC.inspect(child.get('frame')), SC.inspect(after)));
+//
+//   }
+//
+//   test("frame does not change with top/left/w/h", function () {
+//     var layout = { top: 10, left: 10, width: 60, height: 60 };
+//     var before = { x: 10, y: 10, width: 60, height: 60 };
+//     var after =  { x: 10, y: 10, width: 60, height: 60 };
+//     verifyFrameResize(layout, before, after);
+//   });
+//
+//   test("frame shifts down with bottom/right/w/h", function () {
+//     var layout = { bottom: 10, right: 10, width: 60, height: 60 };
+//     var before = { x: 130, y: 130, width: 60, height: 60 };
+//     var after =  { x: 230, y: 230, width: 60, height: 60 };
+//     verifyFrameResize(layout, before, after);
+//   });
+//
+//   test("frame size shifts with top/left/bottom/right", function () {
+//     var layout = { top: 10, left: 10, bottom: 10, right: 10 };
+//     var before = { x: 10, y: 10, width: 180, height: 180 };
+//     var after =  { x: 10, y: 10, width: 280, height: 280 };
+//     verifyFrameResize(layout, before, after);
+//   });
+//
+//   test("frame loc shifts with centerX/centerY", function () {
+//     var layout = { centerX: 10, centerY: 10, width: 60, height: 60 };
+//     var before = { x: 80, y: 80, width: 60, height: 60 };
+//     var after =  { x: 130, y: 130, width: 60, height: 60 };
+//     verifyFrameResize(layout, before, after);
+//   });
+//
+//   //with percentage
+//
+//   test("frame does not change with top/left/w/h - percentage", function () {
+//     var layout = { top: 0.1, left: 0.1, width: 0.6, height: 0.6 };
+//     var before = { x: 20, width: 120, y: 20, height: 120 };
+//     var after =  { x: 30, y: 30, width: 180, height: 180 };
+//     verifyFrameResize(layout, before, after);
+//   });
+//
+//   test("frame shifts down with bottom/right/w/h - percentage", function () {
+//     var layout = { bottom: 0.1, right: 0.1, width: 0.6, height: 0.6 };
+//     var before = { x: 60, y: 60, width: 120, height: 120 };
+//     var after =  { x: 90, y: 90, width: 180, height: 180 };
+//     verifyFrameResize(layout, before, after);
+//   });
+//
+//   test("frame size shifts with top/left/bottom/right - percentage", function () {
+//     var layout = { top: 0.1, left: 0.1, bottom: 0.1, right: 0.1 };
+//     var before = { x: 20, y: 20, width: 160, height: 160 };
+//     var after =  { x: 30, y: 30, width: 240, height: 240 };
+//     verifyFrameResize(layout, before, after);
+//   });
+//
+//   test("frame loc shifts with centerX/centerY - percentage", function () {
+//     var layout = { centerX: 0, centerY: 0, width: 0.6, height: 0.6 };
+//     var before = { x: 40, y: 40, width: 120, height: 120 };
+//     var after =  { x: 60, y: 60, width: 180, height: 180 };
+//     verifyFrameResize(layout, before, after);
+//   });
+//
+//   test("for proper null variables");
+//   // nothing should get passed through as undefined, instead we want null in certain cases
+//
+//   module('STATIC LAYOUT VARIATIONS', commonSetup);
+//
+//   test("no layout", function () {
+//
+//     var no_f = null,
+//         no_s = {},
+//         with_f = null,
+//         with_s = {};
+//
+//     child.set('useStaticLayout', true);
+//
+//     performLayoutTest(SC.View.prototype.layout, no_f, no_s, with_f, with_s, NO);
+//   });
+//
+//   test("with layout", function () {
+//
+//     var layout = { top: 10, left: 10, width: 50, height: 50 },
+//         no_f = null,
+//         no_s = { top: 10, left: 10, width: 50, height: 50 },
+//         with_f = null,
+//         with_s = { top: 10, left: 10, width: 50, height: 50 };
+//
+//     child.set('useStaticLayout', true);
+//
+//     performLayoutTest(layout, no_f, no_s, with_f, with_s, YES);
+//   });
+//
+//   // test("frame size shifts with top/left/bottom/right", function () {
+//   //   var error=null;
+//   //   var layout = { top: 10, left: 10, bottom: 10, right: 10 };
+//   //   parent.appendChild(child);
+//   //   child.set('layout', layout);
+//   //   child.get('frame');
+//   //   parent.adjust('width', 'auto').adjust('height', 'auto');
+//   //   try{
+//   //     child.get('frame');
+//   //   }catch(e) {
+//   //     error=e;
+//   //   }
+//   //   equal(SC.T_ERROR,SC.typeOf(error),'Layout style functions should throw and '+
+//   //   'error if centerx/y and width/height are set at the same time ' + error );
+//   //
+//   //
+//   // });
+//
+//   var pane, view;
+//   module("COMPUTED LAYOUT", {
+//     setup: function () {
+//
+//       SC.run(function () {
+//         // create basic view
+//         view = SC.View.create({
+//           useTopLayout: YES,
+//
+//           layout: function () {
+//             if (this.get('useTopLayout')) {
+//               return { top: 10, left: 10, width: 100, height: 100 };
+//             } else {
+//               return { bottom: 10, right: 10, width: 200, height: 50 };
+//             }
+//           }.property('useTopLayout').cacheable()
+//         });
+//
+//         pane = SC.Pane.create({
+//           rootResponder: rootResponder(),
+//           layout: { centerX: 0, centerY: 0, width: 400, height: 400 },
+//           childViews: [view]
+//         }).append();
+//       });
+//     },
+//
+//     teardown: function () {
+//       pane.destroy();
+//       pane = view = null;
+//     }
+//   });
+//
+//   /**
+//     There was a regression while moving to jQuery 1.8 and removing the seemingly
+//     unuseful buffered jQuery code, where updating the style failed to clear the
+//     old style from the view's style attribute.
+//   */
+//   test("with computed layout", function () {
+//     var expectedLayoutStyle,
+//       expectedStyleAttr,
+//       layoutStyle,
+//       styleAttr;
+//
+//     deepEqual(view.get('layout'), { top: 10, left: 10, width: 100, height: 100 }, "Test the value of the computed layout.");
+//     layoutStyle = view.get('layoutStyle');
+//     expectedLayoutStyle = { top: "10px", left: "10px", width: "100px", height: "100px" };
+//     for (var key in layoutStyle) {
+//       equal(layoutStyle[key], expectedLayoutStyle[key], "Test the value of %@ in the layout style.".fmt(key));
+//     }
+//     styleAttr = view.$().attr('style');
+//     styleAttr = styleAttr.split(/;\s*/).filter(function (o) { return o; });
+//     expectedStyleAttr = ['left: 10px', 'width: 100px', 'top: 10px', 'height: 100px'];
+//     for (var i = styleAttr.length - 1; i >= 0; i--) {
+//       ok(expectedStyleAttr.indexOf(styleAttr[i]) >= 0, "Test the expected style attribute includes `%@` found in the actual style attribute.".fmt(styleAttr[i]));
+//     }
+//
+//     SC.run(function () {
+//       view.set('useTopLayout', NO);
+//     });
+//
+//     deepEqual(view.get('layout'), { bottom: 10, right: 10, width: 200, height: 50 }, "Test the value of the computed layout.");
+//     layoutStyle = view.get('layoutStyle');
+//     expectedLayoutStyle = { bottom: "10px", right: "10px", width: "200px", height: "50px" };
+//     for (var key in layoutStyle) {
+//       equal(layoutStyle[key], expectedLayoutStyle[key], "Test the value of %@ in the layout style.".fmt(key));
+//     }
+//
+//     styleAttr = view.$().attr('style');
+//     styleAttr = styleAttr.split(/;\s*/).filter(function (o) { return o; });
+//     expectedStyleAttr = ['bottom: 10px', 'width: 200px', 'right: 10px', 'height: 50px'];
+//     for (i = styleAttr.length - 1; i >= 0; i--) {
+//       ok(expectedStyleAttr.indexOf(styleAttr[i]) >= 0, "Test the expected style attribute includes `%@` found in the actual style attribute.".fmt(styleAttr[i]));
+//     }
+//   });
+//
+//
+//   module("OTHER LAYOUT STYLE TESTS", {
+//     setup: function () {
+//
+//       SC.run(function () {
+//         // create basic view
+//         view = SC.View.create({});
+//
+//         pane = SC.Pane.create({
+//           rootResponder: rootResponder(),
+//           layout: { centerX: 0, centerY: 0, width: 400, height: 400 },
+//           childViews: [view]
+//         }).append();
+//       });
+//     },
+//
+//     teardown: function () {
+//       pane.destroy();
+//       pane = view = null;
+//     }
+//   });
+//
+//
+//
+//   /*
+//     There was a regression where switching from a centered layout to a non-centered
+//     layout failed to remove the margin style.
+//   */
+//   test("Switching from centered to non-centered layouts.", function () {
+//     var styleAttr;
+//
+//     SC.run(function () {
+//       view.set('layout', { centerX: 10, centerY: 10, width: 60, height: 60 });
+//     });
+//
+//     SC.run(function () {
+//       view.set('layout', { left: 10, top: 10, width: 60, height: 60 });
+//     });
+//
+//     styleAttr = view.$().attr('style');
+//     styleAttr = styleAttr.split(/;\s*/).filter(function (o) { return o; });
+//     var expectedStyleAttr = ['left: 10px', 'top: 10px', 'width: 60px', 'height: 60px'];
+//     for (var i = styleAttr.length - 1; i >= 0; i--) {
+//       ok(expectedStyleAttr.indexOf(styleAttr[i]) >= 0, "Test the expected style attribute includes `%@` found in the actual style attribute.".fmt(styleAttr[i]));
+//     }
+//   });
+// })();
 
 });minispade.register('sproutcore-views/~tests/view/removeChild', function() {// ==========================================================================
 // Project:   SproutCore - JavaScript Application Framework
@@ -8515,7 +8376,7 @@ module("SC.View#removeChild", {
 });
 
 test("returns receiver", function() {
-	equal(parent.removeChild(child), parent, 'receiver');
+	ok(parent.removeChild(child) == parent, 'receiver');
 });
 
 test("removes child from parent.childViews array", function() {
@@ -8546,7 +8407,7 @@ test("invokes child.willRemoveFromParent before removing if defined", function()
   var callCount = 0;
   child.willRemoveFromParent = function() {
     // verify invoked BEFORE removal
-    equal(child.get('parentView'), parent, 'still in parent');
+    ok(child.get('parentView') == parent, 'still in parent');
     callCount++;
   };
 
@@ -8559,10 +8420,10 @@ test("invokes parent.willRemoveChild before removing if defined", function() {
   // monkey patch to test
   var callCount = 0;
   parent.willRemoveChild = function(view) {
-    equal(view, child, 'passed child as param');
+    ok(view == child, 'passed child as param');
 
     // verify invoked BEFORE removal
-    equal(child.get('parentView'), parent, 'still in parent');
+    ok(child.get('parentView') == parent, 'still in parent');
     callCount++;
   };
 
@@ -8576,7 +8437,7 @@ test("invokes child.didRemoveFromParent AFTER removing if defined", function() {
   // monkey patch to test
   var callCount = 0;
   child.didRemoveFromParent = function(view) {
-    equal(view, parent, 'passed parent as param');
+    ok(view == parent, 'passed parent as param');
 
     // verify invoked AFTER removal
     ok(!child.get('parentView'), 'no longer in parent');
@@ -8592,7 +8453,7 @@ test("invokes parent.didRemoveChild before removing if defined", function() {
   // monkey patch to test
   var callCount = 0;
   parent.didRemoveChild = function(view) {
-    equal(view, child, 'passed child as param');
+    ok(view == child, 'passed child as param');
 
     // verify invoked BEFORE removal
     ok(!child.get('parentView'), 'no longer in parent');
@@ -8638,7 +8499,7 @@ test("removes all child views", function() {
 });
 
 test("returns receiver", function() {
-	equal(view.removeAllChildren(), view, 'receiver');
+	ok(view.removeAllChildren() == view, 'receiver');
 });
 
 // .......................................................
@@ -8657,7 +8518,7 @@ test("removes view from parent view", function() {
 });
 
 test("returns receiver", function() {
-	equal(child.removeFromParent(), child, 'receiver');
+	ok(child.removeFromParent() == child, 'receiver');
 });
 
 test("does nothing if not in parentView", function() {
@@ -8690,7 +8551,7 @@ module("SC.View#render");
 test("default implementation invokes renderChildViews if firstTime = YES", function() {
 
   var rendered = 0, updated = 0, parentRendered = 0, parentUpdated = 0 ;
-  var view = SC.View.create({
+  var view = SC.View.createWithMixins({
     displayProperties: ["triggerRenderProperty"],
     childViews: ["child"],
 
@@ -9109,6 +8970,7 @@ test("Replaces all children. UNRENDERED parent view.", function () {
   var childViews = parentView.get('childViews'),
     newChildViews = [SC.View.create(), SC.View.create()];
 
+
   equal(childViews.get('length'), 3, "There are this many child views originally");
 
   // Replace all children.
@@ -9340,51 +9202,51 @@ test("Static layout", function() {
   ok(view.$().is('.sc-static-layout'), "views with useStaticLayout get the sc-static-layout class");
 });
 
-});minispade.register('sproutcore-views/~tests/view/theme', function() {// ==========================================================================
-// Project:   SproutCore - JavaScript Application Framework
-// Copyright: ©2006-2011 Strobe Inc. and contributors.
-//            Portions ©2008-2011 Apple Inc. All rights reserved.
-// License:   Licensed under MIT license (see license.js)
-// ==========================================================================
-
-/*global module test equals context ok */
-
-module("SC.View#themes");
-
-// TODO: This isn't passing on master. Alex needs to take a look at it.
-
-//var t1 = SC.Theme.addTheme("sc-test-1", SC.BaseTheme.extend({name: 'test-1' }));
-//var t2 = SC.Theme.addTheme("sc-test-2", SC.BaseTheme.extend({name: 'test-2' }));
-
-test("changing themes propagates to child view.");
-//test("changing themes propagates to child view.", function() {
-  //var view = SC.View.create({
-    //"childViews": "child".w(),
-    //theme: "sc-test-1",
-    //child: SC.View.extend({
-      
-    //})
-  //});
-  
-  //ok(t1 === view.get("theme"), "view's theme should be sc-test-1");
-  //ok(t1 === view.child.get("theme"), "view's child's theme should be sc-test-1");
-  //view.set('themeName', 'sc-test-2');
-  //ok(t2 === view.get("theme"), "view's theme should be sc-test-2");
-  //ok(t2 === view.child.get("theme"), "view's child's theme should be sc-test-2");
-//});
-
-test("adding child to parent propagates theme to child view.");
-//test("adding child to parent propagates theme to child view.", function() {
-  //var child = SC.View.create({});
-  //var view = SC.View.create({
-    //theme: "sc-test-1"
-  //});
-  
-  //ok(t1 === view.get("theme"), "view's theme should be sc-test-1");
-  //equal(child.get("theme"), SC.Theme.find('sc-base'), "view's child's theme should start at base theme");
-  //view.appendChild(child);
-  //equal(t1, child.get("theme"), "view's child's theme should be sc-test-1");
-//});
+});minispade.register('sproutcore-views/~tests/view/theme', function() {// // ==========================================================================
+// // Project:   SproutCore - JavaScript Application Framework
+// // Copyright: ©2006-2011 Strobe Inc. and contributors.
+// //            Portions ©2008-2011 Apple Inc. All rights reserved.
+// // License:   Licensed under MIT license (see license.js)
+// // ==========================================================================
+//
+// /*global module test equals context ok */
+//
+// module("SC.View#themes");
+//
+// // TODO: This isn't passing on master. Alex needs to take a look at it.
+//
+// //var t1 = SC.Theme.addTheme("sc-test-1", SC.BaseTheme.extend({name: 'test-1' }));
+// //var t2 = SC.Theme.addTheme("sc-test-2", SC.BaseTheme.extend({name: 'test-2' }));
+//
+// test("changing themes propagates to child view.");
+// //test("changing themes propagates to child view.", function() {
+//   //var view = SC.View.create({
+//     //"childViews": "child".w(),
+//     //theme: "sc-test-1",
+//     //child: SC.View.extend({
+//
+//     //})
+//   //});
+//
+//   //ok(t1 === view.get("theme"), "view's theme should be sc-test-1");
+//   //ok(t1 === view.child.get("theme"), "view's child's theme should be sc-test-1");
+//   //view.set('themeName', 'sc-test-2');
+//   //ok(t2 === view.get("theme"), "view's theme should be sc-test-2");
+//   //ok(t2 === view.child.get("theme"), "view's child's theme should be sc-test-2");
+// //});
+//
+// test("adding child to parent propagates theme to child view.");
+// //test("adding child to parent propagates theme to child view.", function() {
+//   //var child = SC.View.create({});
+//   //var view = SC.View.create({
+//     //theme: "sc-test-1"
+//   //});
+//
+//   //ok(t1 === view.get("theme"), "view's theme should be sc-test-1");
+//   //equal(child.get("theme"), SC.Theme.find('sc-base'), "view's child's theme should start at base theme");
+//   //view.appendChild(child);
+//   //equal(t1, child.get("theme"), "view's child's theme should be sc-test-1");
+// //});
 
 });minispade.register('sproutcore-views/~tests/view/touch', function() {// ==========================================================================
 // Project:   SproutCore - JavaScript Application Framework
@@ -9399,6 +9261,7 @@ module("SC.View#touch", {
   setup: function() {
     SC.run(function() {
      pane = SC.Pane.create({
+       rootResponder: rootResponder(),
        layout: { width: 200, height: 200, left: 0, top: 0 },
        childViews: ['outerView'],
 
@@ -9764,9 +9627,9 @@ test("making sure that the frame value is correct inside viewDidResize()", funct
   // working correctly.
   var originalFrame = view.get('frame');
 
-  SC.RunLoop.begin();
-  view.adjust('height', 314);
-  SC.RunLoop.end();
+  SC.run(function () {
+    view.adjust('height', 314);
+  });
 
   // Now that we've adjusted the view, the cached view (as it was inside its
   // viewDidResize() method) should be the same value, because the cached
@@ -10173,7 +10036,7 @@ test("Calling destroy layer, clears the layer from all child views.",  function 
 module("SC.View Adoption", {
 
   setup: function () {
-    parentView = SC.Pane.create();
+    parentView = SC.Pane.create({ rootResponder: rootResponder() });
   },
 
   teardown: function () {

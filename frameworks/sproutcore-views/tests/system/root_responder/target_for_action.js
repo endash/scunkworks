@@ -35,6 +35,7 @@ var CommonSetup = {
 
     // explicit pane
     pane = SC.Pane.create({
+      rootResponder: rootResponder(),
       acceptsKeyPane: YES,
       defaultResponder: defaultResponder,
       childViews: [SC.View.extend({
@@ -49,6 +50,7 @@ var CommonSetup = {
     });
 
     pane2 = SC.Pane.create({
+      rootResponder: rootResponder(),
       acceptsKeyPane: YES,
       defaultResponder: defaultResponder,
       childViews: [SC.View.extend({
@@ -66,24 +68,28 @@ var CommonSetup = {
     });
 
     keyPane = SC.Pane.create({
+      rootResponder: rootResponder(),
       acceptsKeyPane: YES,
       keyAction: action
     });
     keyPane.firstResponder = keyPane ;
 
     mainPane = SC.Pane.create({
+      rootResponder: rootResponder(),
       acceptsKeyPane: YES,
       mainAction: action
     });
     mainPane.firstResponder = mainPane ;
 
     r = SC.RootResponder.create({
+      device: rootResponder().device,
       mainPane: mainPane,
       keyPane:  keyPane,
       defaultResponder: globalResponder
     });
 
     r2 = SC.RootResponder.create({
+      device: rootResponder().device,
       mainPane: mainPane,
       keyPane: keyPane,
       defaultResponder: globalResponderContext
@@ -104,6 +110,8 @@ var CommonSetup = {
   },
 
   teardown: function() {
+    r.destroy();
+    r2.destroy();
     r = r2 = sender = pane = window.Dummy = barView = fooView = null;
     defaultResponder = keyPane = mainPane = globalResponder = null;
     globalResponderContext = null;

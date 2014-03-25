@@ -273,7 +273,7 @@ test("Calling destroy layer, clears the layer from all child views.",  function 
 module("SC.View Adoption", {
 
   setup: function () {
-    parentView = SC.Pane.create();
+    parentView = SC.Pane.create({ rootResponder: rootResponder() });
   },
 
   teardown: function () {

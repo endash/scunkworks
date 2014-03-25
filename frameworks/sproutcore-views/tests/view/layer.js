@@ -92,7 +92,9 @@ test("returns null again if parent view's layer is destroyed");
 var pane, view ;
 module("SC.View#$", {
   setup: function() {
-    pane = SC.Pane.design()
+    pane = SC.Pane.design({
+      rootResponder: rootResponder()
+    })
       .childView(SC.View.design({
         render: function(context, firstTime) {
           context.push('<span></span>');
@@ -101,15 +103,15 @@ module("SC.View#$", {
 
     view = pane.childViews[0];
 
-    SC.RunLoop.begin();
-    pane.append(); // add to create layer...
-    SC.RunLoop.end();
+    SC.run(function () {
+      pane.append(); // add to create layer...
+    });
   },
 
   teardown: function() {
-    SC.RunLoop.begin();
-    pane.remove();
-    SC.RunLoop.end();
+    SC.run(function () {
+      pane.remove();
+    });
   }
 });
 

@@ -15,6 +15,7 @@ module("SC.View#didAppendToDocument", {
     counter = 0;
 
     pane = SC.MainPane.create({
+      rootResponder: rootResponder(),
       childViews: [
         SC.View.extend({
           render: function (context, firstTime) {
@@ -58,7 +59,7 @@ test("Check that didAppendToDocument gets called at the right moment", function 
 
   pane.appendChild(additionalView);
 
-  SC.RunLoop.begin().end();
+  SC.run(function () {});
   equal(counter, 2, "");
 });
 

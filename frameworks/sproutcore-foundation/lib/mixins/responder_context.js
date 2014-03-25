@@ -71,7 +71,7 @@ SC.ResponderContext = {
   nextResponderFor: function(responder) {
     var next = responder.get('nextResponder');
     if (typeof next === SC.T_STRING) {
-      next = SC.objectForPropertyPath(next, this);
+      next = this.get(next);
     } else if (!next && (responder !== this)) next = this ;
     return next ;
   },
@@ -160,16 +160,13 @@ SC.ResponderContext = {
     // Set new first responder.  If new firstResponder does not have its
     // responderContext property set, then set it.
 
-    // but, don't tell anyone until we have _also_ updated the hasFirstResponder state.
-    this.beginPropertyChanges();
+    Ember.changeProperties(function () {
+      this.set('firstResponder', responder) ;
+      if (responder) responder.set('isFirstResponder', YES);
 
-    this.set('firstResponder', responder) ;
-    if (responder) responder.set('isFirstResponder', YES);
+      this._notifyDidBecomeFirstResponder(responder, responder, common);
+    }, this);
 
-    this._notifyDidBecomeFirstResponder(responder, responder, common);
-
-    // now, tell everyone the good news!
-    this.endPropertyChanges();
 
     this._locked = NO ;
     if (this._pendingResponder) {

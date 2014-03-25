@@ -12,10 +12,11 @@ module("SC.RootResponder#makeMenuPane", {
   setup: function() {
     responder = SC.RootResponder.create();
     menu = SC.Pane.create({
+      rootResponder: rootResponder(),
       acceptsMenuPane: YES
     });
   },
-  
+
   teardown: function() {
     menu.remove();
     menu = responder = null;
@@ -33,7 +34,7 @@ test("Sets RootResponder's menuPane", function() {
 });
 
 test("menuPane does not affect keyPane", function() {
-  var p2 = SC.Pane.create();
+  var p2 = SC.Pane.create({ rootResponder: rootResponder() });
   responder.makeKeyPane(p2);
   equal(responder.get('keyPane'), p2, 'precond - pane should be key pane');
   responder.makeMenuPane(menu);

@@ -78,7 +78,7 @@ test("Destroying a view, should also destroy its binding objects", function () {
 });
 
 test('Resigns firstResponder when destroyed.', function() {
-  var pane = SC.Pane.create();
+  var pane = SC.Pane.create({ rootResponder: rootResponder() });
   var v = SC.View.create({ parentView: pane, acceptsFirstResponder: YES });
   v.becomeFirstResponder();
   ok(v.get('isFirstResponder'), 'view starts as firstResponder.');

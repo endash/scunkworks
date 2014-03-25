@@ -95,6 +95,7 @@ test("Tests that if the childView's layer was never cached and the childView is 
   });
 
   pane = SC.Pane.create({
+    rootResponder: rootResponder(),
     childViews: [view]
   }).append();
 

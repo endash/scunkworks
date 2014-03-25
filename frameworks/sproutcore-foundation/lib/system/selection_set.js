@@ -171,13 +171,13 @@ SC.SelectionSet = SC.Object.extend(SC.Enumerable, SC.Freezable, SC.Copyable,
         objects = source._objects;
         len  = sets ? sets.length : 0;
 
-        this.beginPropertyChanges();
-        for(idx=0;idx<len;idx++) {
-          set = sets[idx];
-          if (set && SC.get(set, 'length')>0) this.add(set.source, set);
-        }
-        if (objects) this.addObjects(objects);
-        this.endPropertyChanges();
+        Ember.changeProperties(function () {
+          for(idx=0;idx<len;idx++) {
+            set = sets[idx];
+            if (set && SC.get(set, 'length')>0) this.add(set.source, set);
+          }
+          if (objects) this.addObjects(objects);
+        }, this);
         return this ;
 
       }
@@ -231,13 +231,13 @@ SC.SelectionSet = SC.Object.extend(SC.Enumerable, SC.Freezable, SC.Copyable,
         objects = source._objects;
         len  = sets ? sets.length : 0;
 
-        this.beginPropertyChanges();
-        for(idx=0;idx<len;idx++) {
-          set = sets[idx];
-          if (set && SC.get(set, 'length')>0) this.remove(set.source, set);
-        }
-        if (objects) this.removeObjects(objects);
-        this.endPropertyChanges();
+        Ember.changeProperties(function () {
+          for(idx=0;idx<len;idx++) {
+            set = sets[idx];
+            if (set && SC.get(set, 'length')>0) this.remove(set.source, set);
+          }
+          if (objects) this.removeObjects(objects);
+        }, this);
         return this ;
       }
     }
@@ -460,31 +460,30 @@ SC.SelectionSet = SC.Object.extend(SC.Enumerable, SC.Freezable, SC.Copyable,
   constrain: function (source) {
     var set, len, max, objects;
 
-    this.beginPropertyChanges();
+    Ember.changeProperties(function () {
+      // remove sources other than this one
+      SC.get(this, 'sources').forEach(function(cur) {
+        if (cur === source) return; //skip
+        var set = this._indexSetForSource(source, NO);
+        if (set) this.remove(source, set);
+      },this);
 
-    // remove sources other than this one
-    SC.get(this, 'sources').forEach(function(cur) {
-      if (cur === source) return; //skip
-      var set = this._indexSetForSource(source, NO);
-      if (set) this.remove(source, set);
-    },this);
-
-    // remove indexes beyond end of source length
-    set = this._indexSetForSource(source, NO);
-    if (set && ((max=SC.get(set, 'max'))>(len=SC.get(source, 'length')))) {
-      this.remove(source, len, max-len);
-    }
-
-    // remove objects not in source
-    if (objects = this._objects) {
-      var i, cur;
-      for (i = objects.length - 1; i >= 0; i--) {
-        cur = objects[i];
-        if (source.indexOf(cur) < 0) this.removeObject(cur);
+      // remove indexes beyond end of source length
+      set = this._indexSetForSource(source, NO);
+      if (set && ((max=SC.get(set, 'max'))>(len=SC.get(source, 'length')))) {
+        this.remove(source, len, max-len);
       }
-    }
 
-    this.endPropertyChanges();
+      // remove objects not in source
+      if (objects = this._objects) {
+        var i, cur;
+        for (i = objects.length - 1; i >= 0; i--) {
+          cur = objects[i];
+          if (source.indexOf(cur) < 0) this.removeObject(cur);
+        }
+      }
+    }, this);
+
     return this ;
   },
 

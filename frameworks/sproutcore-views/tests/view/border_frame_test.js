@@ -105,6 +105,7 @@ test("The borderFrame property of the view should be correct for view with useSt
 
   SC.run(function () {
     pane = SC.Pane.create({
+      rootResponder: rootResponder(),
       childViews: [view]
     }).append();
   });

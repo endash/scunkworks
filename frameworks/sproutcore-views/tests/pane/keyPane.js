@@ -10,6 +10,7 @@ var pane, r, view ;
 CommonSetup = {
   setup: function() {
     pane = SC.Pane.create({
+      rootResponder: rootResponder(),
       childViews: [SC.View]
     });
     view = pane.childViews[0];

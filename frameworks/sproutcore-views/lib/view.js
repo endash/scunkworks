@@ -106,7 +106,7 @@ SC.CoreView.reopen(
     while (view && !view.isPane) { view = view.get('parentView'); }
 
     return view;
-  }.property('parentView').cacheable(),
+  }.property('parentView'),
 
   /**
     The page this view was instantiated from.  This is set by the page object
@@ -200,7 +200,7 @@ SC.CoreView.reopen(
       }
     }
     return value;
-  }.property('isVisibleInWindow').cacheable(),
+  }.property('isVisibleInWindow'),
 
   /**
     Get a CoreQuery object for this view's layer, or pass in a selector string
@@ -227,7 +227,7 @@ SC.CoreView.reopen(
   */
   containerLayer: function () {
     return this.get('layer');
-  }.property('layer').cacheable(),
+  }.property('layer'),
 
   /**
     The ID to use when trying to locate the layer in the DOM.  If you do not
@@ -241,7 +241,7 @@ SC.CoreView.reopen(
     if (value) { this._layerId = value; }
     if (this._layerId) { return this._layerId; }
     return SC.guidFor(this);
-  }.property().cacheable(),
+  }.property(),
 
   /**
     Attempts to discover the layer in the parent layer.  The default
@@ -296,7 +296,7 @@ SC.CoreView.reopen(
       // Legacy.
       this.set('layerNeedsUpdate', true);
 
-      this.invokeOnce(this._doUpdateContent);
+      SC.run.scheduleOnce('render', this, this._doUpdateContent);
     }
 
     return this;
@@ -363,7 +363,7 @@ SC.CoreView.reopen(
 
   /** @private */
   parentViewDidResize: function () {
-    if (!this.get('hasLayout')) { this.notifyPropertyChange('frame'); }
+    // if (!this.get('hasLayout')) { this.notifyPropertyChange('frame'); }
     this.viewDidResize();
   },
 
@@ -522,44 +522,42 @@ SC.CoreView.reopen(
   renderToContext: function (context) {
     var mixins, idx, len;
 
-    this.beginPropertyChanges();
+    Ember.changeProperties(function () {
+      context.id(this.get('layerId'));
+      context.setAttr('role', this.get('ariaRole'));
 
-    context.id(this.get('layerId'));
-    context.setAttr('role', this.get('ariaRole'));
+      // Set up the classNameBindings and attributeBindings observers.
+      // TODO: CLEAN UP!!
+      this._applyClassNameBindings();
+      this._applyAttributeBindings(context);
 
-    // Set up the classNameBindings and attributeBindings observers.
-    // TODO: CLEAN UP!!
-    this._applyClassNameBindings();
-    this._applyAttributeBindings(context);
+      context.addClass(this.get('classNames'));
 
-    context.addClass(this.get('classNames'));
+      if (this.get('isTextSelectable')) { context.addClass('allow-select'); }
 
-    if (this.get('isTextSelectable')) { context.addClass('allow-select'); }
+      if (!this.get('isVisible')) {
+        context.addClass('sc-hidden');
+        context.setAttr('aria-hidden', 'true');
+      }
 
-    if (!this.get('isVisible')) {
-      context.addClass('sc-hidden');
-      context.setAttr('aria-hidden', 'true');
-    }
+      // Call applyAttributesToContext so that subclasses that override it can
+      // insert further attributes.
+      this.applyAttributesToContext(context);
 
-    // Call applyAttributesToContext so that subclasses that override it can
-    // insert further attributes.
-    this.applyAttributesToContext(context);
+      // We pass true for the second argument to support the old style of render.
+      this.render(context, true);
 
-    // We pass true for the second argument to support the old style of render.
-    this.render(context, true);
+      // If we've made it this far and renderChildViews() was never called,
+      // render any child views now.
+      if (!this._didRenderChildViews) { this.renderChildViews(context); }
+      // Reset the flag so that if the layer is recreated we re-render the child views.
+      this._didRenderChildViews = false;
 
-    // If we've made it this far and renderChildViews() was never called,
-    // render any child views now.
-    if (!this._didRenderChildViews) { this.renderChildViews(context); }
-    // Reset the flag so that if the layer is recreated we re-render the child views.
-    this._didRenderChildViews = false;
-
-    if (mixins = this.renderMixin) {
-      len = mixins.length;
-      for (idx = 0; idx < len; ++idx) { mixins[idx].call(this, context, true); }
-    }
-
-    this.endPropertyChanges();
+      if (mixins = this.renderMixin) {
+        len = mixins.length;
+        for (idx = 0; idx < len; ++idx) { mixins[idx].call(this, context, true); }
+      }
+    }, this);
   },
 
   /** Apply the attributes to the context. */
@@ -850,7 +848,7 @@ SC.CoreView.reopen(
   displayToolTip: function () {
     var ret = this.get('toolTip');
     return (ret && this.get('localize')) ? SC.String.loc(ret) : (ret || '');
-  }.property('toolTip', 'localize').cacheable(),
+  }.property('toolTip', 'localize'),
 
   /**
     Determines if the user can select text within the view.  Normally this is
@@ -898,7 +896,7 @@ SC.CoreView.reopen(
   */
   nextResponder: function () {
     return this.get('parentView');
-  }.property('parentView').cacheable(),
+  }.property('parentView'),
 
 
   /** @property
@@ -973,7 +971,7 @@ SC.CoreView.reopen(
   */
   frame: function () {
     return this.computeFrameWithParentFrame(null);
-  }.property('useStaticLayout').cacheable(),    // We depend on the layout, but layoutDidChange will call viewDidResize to check the frame for us
+  }.property('useStaticLayout'),    // We depend on the layout, but layoutDidChange will call viewDidResize to check the frame for us
 
   /**
     Computes the frame of the view by examining the view's DOM representation.
@@ -1065,14 +1063,14 @@ SC.CoreView.reopen(
     ret.y -= f.y;
 
     return ret;
-  }.property('parentView', 'frame').cacheable(),
+  }.property('parentView', 'frame'),
 
   /** @private
     This method is invoked whenever the clippingFrame changes, notifying
     each child view that its clippingFrame has also changed.
   */
   _sc_view_clippingFrameDidChange: function () {
-    this.notifyPropertyChange('clippingFrame');
+    // this.notifyPropertyChange('clippingFrame');
   },
 
   /**
@@ -1312,42 +1310,41 @@ SC.CoreView.reopen(
         isNoLongerValid = false,
         idx, key, view;
 
-    this.beginPropertyChanges();
+    Ember.changeProperties(function () {
+      // swap the array
+      for (idx = 0; idx < len; ++idx) {
+        key = view = childViews[idx];
 
-    // swap the array
-    for (idx = 0; idx < len; ++idx) {
-      key = view = childViews[idx];
+        // is this is a key name, lookup view class
+        if (typeof key === SC.T_STRING) {
+          view = this[key];
+        } else {
+          key = null;
+        }
 
-      // is this is a key name, lookup view class
-      if (typeof key === SC.T_STRING) {
-        view = this[key];
-      } else {
-        key = null;
+        if (!view) {
+          //@if (debug)
+          SC.warn("Developer Warning: The child view named '%@' was not found in the view, %@.  This child view will be ignored.".fmt(key, this));
+          //@endif
+
+          // skip this one.
+          isNoLongerValid = true;
+          childViews[idx] = null;
+          continue;
+        }
+
+        // createChildView creates the view if necessary, but also sets
+        // important properties, such as parentView
+        view = this.createChildView(view);
+        if (key) { this[key] = view; } // save on key name if passed
+
+        childViews[idx] = view;
       }
 
-      if (!view) {
-        //@if (debug)
-        SC.warn("Developer Warning: The child view named '%@' was not found in the view, %@.  This child view will be ignored.".fmt(key, this));
-        //@endif
+      // Set childViews to be only the valid array.
+      if (isNoLongerValid) { this.set('childViews', childViews.compact()); }
+    }, this);
 
-        // skip this one.
-        isNoLongerValid = true;
-        childViews[idx] = null;
-        continue;
-      }
-
-      // createChildView creates the view if necessary, but also sets
-      // important properties, such as parentView
-      view = this.createChildView(view);
-      if (key) { this[key] = view; } // save on key name if passed
-
-      childViews[idx] = view;
-    }
-
-    // Set childViews to be only the valid array.
-    if (isNoLongerValid) { this.set('childViews', childViews.compact()); }
-
-    this.endPropertyChanges();
     return this;
   },
 
@@ -1856,7 +1853,7 @@ SC.CoreView.reopenClass(
 */
 SC.outlet = function (path, root) {
   return function (key) {
-    return (this[key] = SC.objectForPropertyPath(path, (root !== undefined) ? root : this));
+    return (this[key] = SC.get(root || this, path));
   }.property();
 };
 
@@ -2115,7 +2112,12 @@ SC.CoreView.unload = function () {
 SC.View = SC.CoreView.extend(/** @scope SC.View.prototype */{
   classNames: ['sc-view'],
 
-  displayProperties: []
+  displayProperties: [],
+
+  init: function () {
+    this._super();
+    this.platform = this.get('rootResponder.device.platform') || SC.Platform.create({browser: SC.browser});
+  }
 });
 
 //unload views for IE, trying to collect memory.

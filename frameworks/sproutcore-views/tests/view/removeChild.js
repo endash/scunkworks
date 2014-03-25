@@ -23,7 +23,7 @@ module("SC.View#removeChild", {
 });
 
 test("returns receiver", function() {
-	equal(parent.removeChild(child), parent, 'receiver');
+	ok(parent.removeChild(child) == parent, 'receiver');
 });
 
 test("removes child from parent.childViews array", function() {
@@ -54,7 +54,7 @@ test("invokes child.willRemoveFromParent before removing if defined", function()
   var callCount = 0;
   child.willRemoveFromParent = function() {
     // verify invoked BEFORE removal
-    equal(child.get('parentView'), parent, 'still in parent');
+    ok(child.get('parentView') == parent, 'still in parent');
     callCount++;
   };
 
@@ -67,10 +67,10 @@ test("invokes parent.willRemoveChild before removing if defined", function() {
   // monkey patch to test
   var callCount = 0;
   parent.willRemoveChild = function(view) {
-    equal(view, child, 'passed child as param');
+    ok(view == child, 'passed child as param');
 
     // verify invoked BEFORE removal
-    equal(child.get('parentView'), parent, 'still in parent');
+    ok(child.get('parentView') == parent, 'still in parent');
     callCount++;
   };
 
@@ -84,7 +84,7 @@ test("invokes child.didRemoveFromParent AFTER removing if defined", function() {
   // monkey patch to test
   var callCount = 0;
   child.didRemoveFromParent = function(view) {
-    equal(view, parent, 'passed parent as param');
+    ok(view == parent, 'passed parent as param');
 
     // verify invoked AFTER removal
     ok(!child.get('parentView'), 'no longer in parent');
@@ -100,7 +100,7 @@ test("invokes parent.didRemoveChild before removing if defined", function() {
   // monkey patch to test
   var callCount = 0;
   parent.didRemoveChild = function(view) {
-    equal(view, child, 'passed child as param');
+    ok(view == child, 'passed child as param');
 
     // verify invoked BEFORE removal
     ok(!child.get('parentView'), 'no longer in parent');
@@ -146,7 +146,7 @@ test("removes all child views", function() {
 });
 
 test("returns receiver", function() {
-	equal(view.removeAllChildren(), view, 'receiver');
+	ok(view.removeAllChildren() == view, 'receiver');
 });
 
 // .......................................................
@@ -165,7 +165,7 @@ test("removes view from parent view", function() {
 });
 
 test("returns receiver", function() {
-	equal(child.removeFromParent(), child, 'receiver');
+	ok(child.removeFromParent() == child, 'receiver');
 });
 
 test("does nothing if not in parentView", function() {

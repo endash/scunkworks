@@ -300,11 +300,11 @@ SC.Color = SC.Object.extend(
       hsl[0] = (deg % 360 + 360) % 360;
 
       rgb = SC.Color.hslToRgb(hsl[0], hsl[1], hsl[2]);
-      this.beginPropertyChanges();
-      this.set('r', rgb[0]);
-      this.set('g', rgb[1]);
-      this.set('b', rgb[2]);
-      this.endPropertyChanges();
+      this.setProperties({
+        r: rgb[0],
+        g: rgb[1],
+        b: rgb[2]
+      });
     }
     return hsl[0];
   }.property('r', 'g', 'b').cacheable(),
@@ -328,11 +328,11 @@ SC.Color = SC.Object.extend(
       hsl[1] = SC.Color.clamp(value, 0, 1);
 
       rgb = SC.Color.hslToRgb(hsl[0], hsl[1], hsl[2]);
-      this.beginPropertyChanges();
-      this.set('r', rgb[0]);
-      this.set('g', rgb[1]);
-      this.set('b', rgb[2]);
-      this.endPropertyChanges();
+      this.setProperties({
+        r: rgb[0],
+        g: rgb[1],
+        b: rgb[2]
+      });
     }
 
     return hsl[1];
@@ -357,11 +357,11 @@ SC.Color = SC.Object.extend(
       hsl[2] = SC.Color.clamp(value, 0, 1);
 
       rgb = SC.Color.hslToRgb(hsl[0], hsl[1], hsl[2]);
-      this.beginPropertyChanges();
-      this.set('r', rgb[0]);
-      this.set('g', rgb[1]);
-      this.set('b', rgb[2]);
-      this.endPropertyChanges();
+      this.setProperties({
+        r: rgb[0],
+        g: rgb[1],
+        b: rgb[2]
+      });
     }
     return hsl[2];
   }.property('r', 'g', 'b').cacheable(),
@@ -500,28 +500,30 @@ SC.Color = SC.Object.extend(
     // Setter.
     else {
       var hash = SC.Color._parse(value);
-      this.beginPropertyChanges();
       // Error state
       if (!hash) {
         // Cache current value for recovery.
         this._lastValidHash = { r: this._r, g: this._g, b: this._b, a: this._a };
-        this.set('r', 0);
-        this.set('g', 0);
-        this.set('b', 0);
-        this.set('a', 0);
-        this.set('errorValue', value);
-        this.set('isError', YES);
+        this.setProperties({
+          r: 0,
+          g: 0,
+          b: 0,
+          a: 0,
+          errorValue: value,
+          isError: true
+        });
       }
       // Happy state
       else {
-        this.setIfChanged('isError', NO);
-        this.setIfChanged('errorValue', null);
-        this.set('r', hash.r);
-        this.set('g', hash.g);
-        this.set('b', hash.b);
-        this.set('a', hash.a);
+        this.setProperties({
+          r: hash.r,
+          g: hash.g,
+          b: hash.b,
+          a: hash.a,
+          errorValue: null,
+          isError: NO
+        });
       }
-      this.endPropertyChanges();
       return value;
     }
   }.property('r', 'g', 'b', 'a').cacheable(),
@@ -549,14 +551,14 @@ SC.Color = SC.Object.extend(
     if (!this.get('isError')) return this;
     // Reset the value to the last valid hash, or default black.
     var lastValidHash = this._lastValidHash || { r: 0, g: 0, b: 0, a: 1 };
-    this.beginPropertyChanges();
-    this.set('isError', NO);
-    this.set('errorValue', null);
-    this.set('r', lastValidHash.r);
-    this.set('g', lastValidHash.g);
-    this.set('b', lastValidHash.b);
-    this.set('a', lastValidHash.a);
-    this.endPropertyChanges();
+    this.setProperties({
+      r: lastValidHash.r,
+      g: lastValidHash.g,
+      b: lastValidHash.b,
+      a: lastValidHash.a,
+      errorValue: null,
+      isError: false
+    });
     return this;
   },
 

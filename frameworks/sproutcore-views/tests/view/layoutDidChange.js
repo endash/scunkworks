@@ -25,7 +25,7 @@ test("notifies layoutStyle & frame change", function () {
   equal(layoutStyleCallCount, 0, 'should not trigger observers for layoutStyle');
 
   // Attach to the document.
-  var parent = SC.Pane.create();
+  var parent = SC.Pane.create({ rootResponder: rootResponder() });
   parent.append();
   parent.appendChild(view);
 

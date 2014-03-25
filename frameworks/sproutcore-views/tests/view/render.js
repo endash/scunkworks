@@ -14,7 +14,7 @@ module("SC.View#render");
 test("default implementation invokes renderChildViews if firstTime = YES", function() {
 
   var rendered = 0, updated = 0, parentRendered = 0, parentUpdated = 0 ;
-  var view = SC.View.create({
+  var view = SC.View.createWithMixins({
     displayProperties: ["triggerRenderProperty"],
     childViews: ["child"],
 

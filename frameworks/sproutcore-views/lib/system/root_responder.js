@@ -94,19 +94,17 @@ SC.RootResponder = SC.Object.extend(
     var currentMain = this.get('mainPane') ;
     if (currentMain === pane) return this ; // nothing to do
 
-    this.beginPropertyChanges() ;
+    Ember.changeProperties(function () {
+      // change key focus if needed.
+      if (this.get('keyPane') === currentMain) this.makeKeyPane(pane) ;
 
-    // change key focus if needed.
-    if (this.get('keyPane') === currentMain) this.makeKeyPane(pane) ;
+      // change setting
+      this.set('mainPane', pane) ;
 
-    // change setting
-    this.set('mainPane', pane) ;
-
-    // notify panes.  This will allow them to remove themselves.
-    if (currentMain) currentMain.blurMainTo(pane) ;
-    if (pane) pane.focusMainFrom(currentMain) ;
-
-    this.endPropertyChanges() ;
+      // notify panes.  This will allow them to remove themselves.
+      if (currentMain) currentMain.blurMainTo(pane) ;
+      if (pane) pane.focusMainFrom(currentMain) ;
+    }, this);
     return this ;
   },
 
@@ -406,7 +404,7 @@ SC.RootResponder = SC.Object.extend(
     this._assignDesignMode();
 
     return value;
-  }.property().cacheable(),
+  }.property(),
 
   /** @private Determine the design mode based on area and pixel density. */
   computeDesignMode: function () {
@@ -546,7 +544,7 @@ SC.RootResponder = SC.Object.extend(
     // this and the ResponderContext, but for the moment just look for a
     // ResponderContext as the defaultResponder and return it if present.
     if (typeof defaultResponder === SC.T_STRING) {
-      defaultResponder = SC.objectForPropertyPath(defaultResponder);
+      defaultResponder = SC.get(defaultResponder);
     }
 
     if (!defaultResponder) return null;
@@ -586,8 +584,7 @@ SC.RootResponder = SC.Object.extend(
     // 2. an explicit target was passed...
     if (target) {
       if (SC.typeOf(target) === SC.T_STRING) {
-        target =  SC.objectForPropertyPath(target) ||
-                  SC.objectForPropertyPath(target, sender);
+        target = target.match(/^[A-Z]/) ? SC.get(target) : SC.get(sender, target);
       }
 
       if (target && !target.isResponderContext) {
@@ -622,7 +619,7 @@ SC.RootResponder = SC.Object.extend(
     // ...still no target? check the defaultResponder...
     if (!target && (target = this.get('defaultResponder'))) {
       if (SC.typeOf(target) === SC.T_STRING) {
-        target = SC.objectForPropertyPath(target) ;
+        target = SC.get(target) ;
         if (target) this.set('defaultResponder', target) ; // cache if found
       }
       if (target && !target.isResponderContext) {
@@ -2231,7 +2228,7 @@ SC.RootResponder = SC.Object.extend(
   },
   /** @private The dragleave event comes from the browser when a data-ful drag leaves any element. */
   dragleave: function(evt) {
-    SC.run(function() { this._dragleave(evt); }, this);
+    SC.run(this, function() { this._dragleave(evt); });
   },
   /** @private */
   _dragleave: function(evt) {
@@ -2243,23 +2240,9 @@ SC.RootResponder = SC.Object.extend(
     }
     return ret;
   },
-  /** @private
-    Dragleave doesn't fire reliably in all browsers, so this method forces it (scheduled below). Note
-    that, being scheduled via SC.Timer, this method is already in a run loop.
-  */
-  _forceDragLeave: function() {
-    // Give it another runloop to ensure that we're not in the middle of a drag.
-    this.invokeLast(function() {
-      if (this._dragCounter === 0) return;
-      this._dragCounter = 0;
-      var evt = this._lastDraggedEvt;
-      this._dragover(evt);
-      this.sendAction('dataDragDidExit', null, evt);
-    });
-  },
   /** @private This event fires continuously while the dataful drag is over the document. */
   dragover: function(evt) {
-    SC.run(function() { this._dragover(evt); }, this);
+    SC.run(this, function() { this._dragover(evt); });
   },
   /** @private */
   _dragover: function(evt) {
@@ -2325,14 +2308,12 @@ SC.RootResponder = SC.Object.extend(
       }
       this._lastDraggedOver = nd;
       this._lastDraggedEvt = evt;
-      // For browsers that don't reliably call a dragleave for every dragenter, we have a timer fallback.
-      this._dragLeaveTimer = SC.Timer.schedule({ target: this, action: '_forceDragLeave', interval: 300 });
     }
   },
 
   /** @private This event is called if the most recent dragover event returned with a non-"none" dropEffect. */
   drop: function(evt) {
-    SC.run(function() { this._drop(evt); }, this);
+    SC.run(this, function() { this._drop(evt); });
   },
   /** @private */
   _drop: function(evt) {
@@ -2448,10 +2429,8 @@ SC.RootResponder = SC.Object.extend(
 
   /* @private Handler for transitionend events. */
   transitionend: function (evt) {
-    console.log('transitionend')
-
-      var view = this.targetViewForEvent(evt) ;
-      this.dispatchEvent('transitionDidEnd', evt, view) ;
+    var view = this.targetViewForEvent(evt) ;
+    this.dispatchEvent('transitionDidEnd', evt, view) ;
 
     return view ? evt.hasCustomEventHandling : YES;
   }
@@ -2597,8 +2576,8 @@ SC.mixin(SC.Touch, {
   Invoked when the document is ready, but before main is called.  Creates
   an instance and sets up event listeners as needed.
 */
-SC.ready(SC.RootResponder, SC.RootResponder.ready = function() {
-  var r;
-  r = SC.RootResponder.responder = SC.RootResponder.create() ;
-  r.setup() ;
-});
+// SC.ready(SC.RootResponder, SC.RootResponder.ready = function() {
+//   var r;
+//   r = SC.RootResponder.responder = SC.RootResponder.create() ;
+//   r.setup() ;
+// });

@@ -9,7 +9,7 @@
 /*
   We call RootResponder's browser event handlers directly with fake browser events. These
   tests are to prove RootResponder's downstream behavior.
-  
+
   Our test pane has a view tree like so:
 
   pane
@@ -44,25 +44,36 @@ function viewClassFactory() {
     dataDragHovered: CoreTest.stub(),
     dataDragExited: CoreTest.stub(),
     dataDragDropped: CoreTest.stub()
-  });  
+  });
 }
 
-var Pane = SC.MainPane.extend({
-  childViews: ['view1', 'view2'],
-  view1: viewClassFactory().extend({
-    childViews: ['view1a', 'view1b'],
-    view1a: viewClassFactory(),
-    view1b: viewClassFactory()
-  }),
-  view2: viewClassFactory()
-});
+paneTestClass = (function () {
+  var Pane = null;
+
+  return function () {
+    if (Pane) return Pane;
+
+    Pane = SC.MainPane.extend({
+      rootResponder: rootResponder(),
+      childViews: ['view1', 'view2'],
+      view1: viewClassFactory().extend({
+        childViews: ['view1a', 'view1b'],
+        view1a: viewClassFactory(),
+        view1b: viewClassFactory()
+      }),
+      view2: viewClassFactory()
+    });
+
+    return Pane;
+  }
+})();
 
 var pane, view1, view1a, view1b, view2, evt1a, evt2;
 
 module("Mouse event handling", {
   setup: function() {
     SC.run(function() {
-      pane = Pane.create().append();
+      pane = paneTestClass().create().append();
     });
     // Populate the variables for easy access.
     view1 = pane.get('view1');
@@ -118,7 +129,7 @@ test('Mouse movement', function() {
 
 
   // Move the mouse over view1a to trigger mouseEntered.
-  SC.RootResponder.responder.mousemove(evt1a);
+  rootResponder().mousemove(evt1a);
 
   equal(view1a.mouseEntered.callCount, 1, "The targeted view has received mouseEntered");
   equal(view1.mouseEntered.callCount, 1, "The targeted view's parent has received mouseEntered");
@@ -138,7 +149,7 @@ test('Mouse movement', function() {
 
 
   // Move the mouse over view1a again to trigger mouseMoved.
-  SC.RootResponder.responder.mousemove(evt1a);
+  rootResponder().mousemove(evt1a);
 
   equal(view1a.mouseMoved.callCount, 1, "The targeted view has received mouseMoved");
   equal(view1.mouseMoved.callCount, 1, "The targeted view's parent has received mouseMoved");
@@ -159,7 +170,7 @@ test('Mouse movement', function() {
   ok(isGood, 'No views have received mouseExited.');
 
   // Move the mouse over view2 to trigger mouseExited on the initial responder chain.
-  SC.RootResponder.responder.mousemove(evt2);
+  rootResponder().mousemove(evt2);
   equal(view1a.mouseExited.callCount, 1, "The targeted view has received mouseExited");
   equal(view1.mouseExited.callCount, 1, "The targeted view's parent has received mouseExited");
   equal(view1b.mouseExited.callCount, 0, "The targeted view's sibling has NOT received mouseExited");
@@ -177,8 +188,8 @@ TODO: Touch.
 
 test('Data dragging', function() {
   // For this test, we also want to test the default responder actions.
-  var previousDefaultResponder = SC.RootResponder.responder.defaultResponder;
-  var defaultResponder = SC.RootResponder.responder.defaultResponder = SC.Object.create({
+  var previousDefaultResponder = rootResponder().defaultResponder;
+  var defaultResponder = rootResponder().defaultResponder = SC.Object.create({
     dataDragDidEnter: CoreTest.stub(),
     dataDragDidHover: CoreTest.stub(),
     dataDragDidExit: CoreTest.stub(),
@@ -211,7 +222,7 @@ test('Data dragging', function() {
 
   // Drag the mouse over view1a to trigger mouseEntered.
   evt1a.type = 'dragenter';
-  SC.RootResponder.responder.dragenter(evt1a);
+  rootResponder().dragenter(evt1a);
 
   // Test default responder.
   equal(defaultResponder.dataDragDidEnter.callCount, 1, "The default responder was notified that a drag began over the app");
@@ -236,7 +247,7 @@ test('Data dragging', function() {
 
   // Hover the drag and make sure only dataDragHovered is called.
   evt1a.type = 'dragover';
-  SC.RootResponder.responder.dragover(evt1a);
+  rootResponder().dragover(evt1a);
 
   // Test the default responder.
   equal(defaultResponder.dataDragDidEnter.callCount, 1, "The default responder did NOT receive additional dataDragDidEnter on hover");
@@ -269,8 +280,8 @@ test('Data dragging', function() {
   // Note that browsers call the new dragenter prior to the old dragleave.
   evt2.type = 'dragenter';
   evt1a.type = 'dragleave';
-  SC.RootResponder.responder.dragenter(evt2);
-  SC.RootResponder.responder.dragleave(evt1a);
+  rootResponder().dragenter(evt2);
+  rootResponder().dragleave(evt1a);
 
   // Check the default responder.
   equal(defaultResponder.dataDragDidEnter.callCount, 1, "The default responder did NOT receive additional dataDragDidEnter on internal events");
@@ -287,7 +298,7 @@ test('Data dragging', function() {
 
   // Leave view2 to test document leaving.
   evt2.type = 'dragleave';
-  SC.RootResponder.responder.dragleave(evt2);
+  rootResponder().dragleave(evt2);
 
   // Check the default responder.
   equal(defaultResponder.dataDragDidEnter.callCount, 1, "The default responder did NOT receive additional dataDragDidEnter on document exit");
@@ -307,9 +318,9 @@ test('Data dragging', function() {
 
   // Test drop.
   evt1a.type = 'dragenter';
-  SC.RootResponder.responder.dragenter(evt1a);
+  rootResponder().dragenter(evt1a);
   evt1a.type = 'dragdrop';
-  SC.RootResponder.responder.drop(evt1a);
+  rootResponder().drop(evt1a);
 
   // Check the default responder.
   equal(defaultResponder.dataDragDidDrop.callCount, 1, "The default responder received a dataDragDidDrop event on drop");
@@ -320,15 +331,15 @@ test('Data dragging', function() {
 
 
   // Clean up our default responder sitch.
-  SC.RootResponder.responder.defaultResponder.destroy();
-  SC.RootResponder.responder.defaultResponder = previousDefaultResponder;
+  rootResponder().defaultResponder.destroy();
+  rootResponder().defaultResponder = previousDefaultResponder;
 });
 
 test('Data dragging content types', function() {
   // Drag the event over view 1a with type 'Files' (should cancel).
   evt1a.dataTransfer.types = ['Files'];
   evt1a.dataTransfer.dropEffect = 'copy';
-  SC.RootResponder.responder.dragover(evt1a);
+  rootResponder().dragover(evt1a);
 
   equal(evt1a.preventDefault.callCount, 1, "The default behavior was prevented for a 'Files' drag");
   equal(evt1a.dataTransfer.dropEffect, 'none', "The drop effect was set to 'none' for a 'Files' drag");
@@ -336,7 +347,7 @@ test('Data dragging content types', function() {
   // Drag the event over view 1a with type 'text/uri-list' (should cancel).
   evt1a.dataTransfer.types = ['text/uri-list'];
   evt1a.dataTransfer.dropEffect = 'copy';
-  SC.RootResponder.responder.dragover(evt1a);
+  rootResponder().dragover(evt1a);
 
   equal(evt1a.preventDefault.callCount, 2, "The default behavior was prevented for a 'text/uri-list' drag");
   equal(evt1a.dataTransfer.dropEffect, 'none', "The drop effect was set to 'none' for a 'text/uri-list' drag");
@@ -344,7 +355,7 @@ test('Data dragging content types', function() {
   // Drag the event over view 1a with type 'text/plain' (should not cancel).
   evt1a.dataTransfer.types = ['text/plain'];
   evt1a.dataTransfer.dropEffect = 'copy';
-  SC.RootResponder.responder.dragover(evt1a);
+  rootResponder().dragover(evt1a);
 
   equal(evt1a.preventDefault.callCount, 2, "The default behavior was NOT prevented for a 'text/plain' drag");
   equal(evt1a.dataTransfer.dropEffect, 'copy', "The drop effect was NOT changed for a 'text/plain' drag");

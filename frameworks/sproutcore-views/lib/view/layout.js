@@ -277,7 +277,7 @@ SC.View.reopen(
   */
   isFixedLayout: function () {
     return this.get('isFixedPosition') && this.get('isFixedSize');
-  }.property('isFixedPosition', 'isFixedSize').cacheable(),
+  }.property('isFixedPosition', 'isFixedSize'),
 
   /**
     Returns whether the position is 'fixed' or not.  A fixed position means a
@@ -314,7 +314,7 @@ SC.View.reopen(
     }
 
     return ret;
-  }.property('layout').cacheable(),
+  }.property('layout'),
 
   /**
     Returns whether the size is 'fixed' or not.  A fixed size means a fixed
@@ -340,7 +340,7 @@ SC.View.reopen(
     }
 
     return ret;
-  }.property('layout').cacheable(),
+  }.property('layout'),
 
   /**
     Converts a frame from the receiver's offset to the target offset.  Both
@@ -837,7 +837,7 @@ SC.View.reopen(
   */
   layoutView: function () {
     return this.get('parentView');
-  }.property('parentView').cacheable(),
+  }.property('parentView'),
 
   /**
     This method is called whenever a property changes that invalidates the
@@ -876,10 +876,10 @@ SC.View.reopen(
       layoutView.layoutDidChangeFor(this);
       // Check if childViewsNeedLayout is still true.
       if (layoutView.get('childViewsNeedLayout')) {
-        SC.run.scheduleOnce('render', layoutView, layoutView.layoutChildViewsIfNeeded)
+        SC.run.scheduleOnce('layout', layoutView, layoutView.layoutChildViewsIfNeeded)
       }
     } else {
-      SC.run.scheduleOnce('render', this, this.updateLayout)
+      SC.run.scheduleOnce('layout', this, this.updateLayout)
     }
 
     return this;
@@ -1018,7 +1018,7 @@ SC.View.reopen(
     this.set('childViewsNeedLayout', true);
 
     // Filter the input channel.
-    this.invokeOnce(this.layoutChildViewsIfNeeded);
+    SC.run.scheduleOnce('layout', this, this.layoutChildViewsIfNeeded);
   },
 
   /** @private Called when the child views change. */
@@ -1029,7 +1029,7 @@ SC.View.reopen(
     this.set('childViewsNeedLayout', true);
 
     // Filter the input channel.
-    this.invokeOnce(this.layoutChildViewsIfNeeded);
+    SC.run.scheduleOnce('layout', this, this.layoutChildViewsIfNeeded);
   },
 
   /** @private Add observers to the child views for automatic child view layout. */
@@ -1226,6 +1226,7 @@ SC.View.reopen(
     context = this.renderContext(this.get('layer'));
     context.setStyle(this.get('layoutStyle'));
     context.update();
+
 
     // Reset that an update is required.
     this._layoutStyleNeedsUpdate = false;

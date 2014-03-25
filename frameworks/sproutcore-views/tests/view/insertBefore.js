@@ -17,7 +17,7 @@ module("SC.View#insertBefore", {
 });
 
 test("returns receiver", function() {
-  equal(parent.insertBefore(child, null), parent, 'receiver');
+  ok(parent.insertBefore(child, null) == parent, 'receiver');
 });
 
 test("makes set child.parentView = to new parent view", function() {
@@ -30,13 +30,13 @@ test("makes set child.parentView = to new parent view", function() {
 	});
 
 	parent.insertBefore(child, null);
-	equal(child.get('parentView'), parent, 'parent is child.parentView');
+	ok(child.get('parentView') == parent, 'parent is child.parentView');
 	equal(callCount, 1, 'observer did fire');
 });
 
 test("insertBefore(child, null) appends child to end of parent.childView's array", function() {
 	parent.insertBefore(child, null);
-	equal(parent.childViews[parent.childViews.length-1], child, 'child is last childView');
+	ok(parent.childViews[parent.childViews.length-1] == child, 'child is last childView');
 });
 
 test("insertBefore(child, otherChild) inserts child before other child view", function() {
@@ -44,7 +44,7 @@ test("insertBefore(child, otherChild) inserts child before other child view", fu
   var otherChild = parent.childViews[0]; // get current first child
   ok(otherChild, 'precond - otherChild is not null');
   parent.insertBefore(child, otherChild);
-  equal(parent.childViews[0], child, 'child inserted before other child');
+  ok(parent.childViews[0] == child, 'child inserted before other child');
 });
 
 test("invokes willAddChild() on receiver if defined before adding child" ,function() {
@@ -55,8 +55,8 @@ test("invokes willAddChild() on receiver if defined before adding child" ,functi
   parent.willAddChild = function(newChild, beforeView) {
 
   	// verify params
-  	equal(newChild, child, 'passed newChild');
-  	equal(beforeView, otherChild, 'passed beforeView');
+  	ok(newChild == child, 'passed newChild');
+  	ok(beforeView == otherChild, 'passed beforeView');
 
   	// verify this is called BEFORE the view is added
   	ok(parent.childViews.indexOf(child)<0, 'should not have child yet');
@@ -77,8 +77,8 @@ test("invokes willAddToParent() on child view if defined before adding child" ,f
   child.willAddToParent = function(parentView, beforeView) {
 
   	// verify params
-  	equal(parentView, parent, 'passed parent');
-  	equal(beforeView, otherChild, 'passed beforeView');
+  	ok(parentView == parent, 'passed parent');
+  	ok(beforeView == otherChild, 'passed beforeView');
 
   	// verify this is called BEFORE the view is added
   	ok(parent.childViews.indexOf(child)<0, 'should not have child yet');
@@ -99,8 +99,8 @@ test("invokes didAddChild() on receiver if defined after adding child" ,function
   parent.didAddChild = function(newChild, beforeView) {
 
   	// verify params
-  	equal(newChild, child, 'passed newChild');
-  	equal(beforeView, otherChild, 'passed beforeView');
+  	ok(newChild == child, 'passed newChild');
+  	ok(beforeView == otherChild, 'passed beforeView');
 
   	// verify this is called AFTER the view is added
   	ok(parent.childViews.indexOf(child)>=0, 'should have child');
@@ -108,9 +108,9 @@ test("invokes didAddChild() on receiver if defined after adding child" ,function
   	callCount++;
   };
 
-  SC.RunLoop.begin();
-  parent.insertBefore(child, otherChild);
-  SC.RunLoop.end();
+  SC.run(function () {
+    parent.insertBefore(child, otherChild);
+  });
 
   equal(callCount, 1, 'invoked');
 });
@@ -123,8 +123,8 @@ test("invokes didAddToParent() on child view if defined after adding child" ,fun
   child.didAddToParent = function(parentView, beforeView) {
 
   	// verify params
-  	equal(parentView, parent, 'passed parent');
-  	equal(beforeView, otherChild, 'passed beforeView');
+  	ok(parentView == parent, 'passed parent');
+  	ok(beforeView == otherChild, 'passed beforeView');
 
   	// verify this is called AFTER the view is added
   	ok(parent.childViews.indexOf(child)>=0, 'should have child');
@@ -132,9 +132,9 @@ test("invokes didAddToParent() on child view if defined after adding child" ,fun
   	callCount++;
   };
 
-  SC.RunLoop.begin();
-  parent.insertBefore(child, otherChild);
-  SC.RunLoop.end();
+  SC.run(function () {
+    parent.insertBefore(child, otherChild);
+  });
 
   equal(callCount, 1, 'invoked');
 });
@@ -169,13 +169,13 @@ module('SC.View#appendChild', {
 });
 
 test("returns receiver", function() {
-  equal(parent.appendChild(child, null), parent, 'receiver');
+  ok(parent.appendChild(child, null) == parent, 'receiver');
 });
 
 
 test("should add child to end of childViews", function() {
   parent.appendChild(child);
-  equal(parent.childViews[parent.childViews.length-1], child, 'child is last child view');
+  ok(parent.childViews[parent.childViews.length-1] == child, 'child is last child view');
 });
 
 

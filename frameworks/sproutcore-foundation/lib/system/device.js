@@ -88,17 +88,17 @@ SC.Device = SC.Object.extend({
 
     @type Point
   */
-  mouseLocation: function() {
-    var responder = SC.RootResponder.responder,
-        lastX = responder._lastMoveX,
-        lastY = responder._lastMoveY;
-
-    if (SC.empty(lastX) || SC.empty(lastY)) {
-      return null;
-    }
-
-    return { x: lastX, y: lastY };
-  }.property(),
+  // mouseLocation: function() {
+  //   var responder = SC.RootResponder.responder,
+  //       lastX = responder._lastMoveX,
+  //       lastY = responder._lastMoveY;
+  //
+  //   if (SC.empty(lastX) || SC.empty(lastY)) {
+  //     return null;
+  //   }
+  //
+  //   return { x: lastX, y: lastY };
+  // }.property(),
 
   /**
     Computes the window size from the DOM.
@@ -142,7 +142,7 @@ SC.Device = SC.Object.extend({
   orientationHandlingShouldChange: function() {
     if (this.platform.windowSizeDeterminesOrientation) {
       SC.Event.remove(window, 'orientationchange', this, this.orientationchange);
-      this.windowSizeDidChange(SC.RootResponder.responder.get('currentWindowSize'));
+      this.windowSizeDidChange(this.get('currentWindowSize'));
     } else if (this.platform.supportsOrientationChange) {
       SC.Event.add(window, 'orientationchange', this, this.orientationchange);
       this.orientationchange();

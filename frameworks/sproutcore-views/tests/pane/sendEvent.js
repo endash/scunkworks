@@ -17,6 +17,7 @@ module("SC.Pane#dispatchEvent", {
 
     defaultResponder = SC.Object.create({ defaultEvent: handler });
     pane = SC.Pane.create({
+      rootResponder: rootResponder(),
       defaultResponder: defaultResponder,
       paneEvent: handler,
       childViews: [SC.View.extend({

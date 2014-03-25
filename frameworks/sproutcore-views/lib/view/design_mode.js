@@ -108,65 +108,62 @@ SC.View.reopen(
     modeAdjust = this.get('modeAdjust');
     if (modeAdjust) {
       // Stop observing changes for a moment.
-      this.beginPropertyChanges();
-
-      // Unset any previous properties.
-      prevProperties = this._originalProperties;
-      if (prevProperties) {
-        //@if(debug)
-        if (SC.LOG_DESIGN_MODE) {
-          SC.Logger.log('%@ — Removing previous design property overrides from "%@":'.fmt(this, lastDesignMode));
-        }
-        //@endif
-
-        for (key in prevProperties) {
+      Ember.changeProperties(function () {
+        // Unset any previous properties.
+        prevProperties = this._originalProperties;
+        if (prevProperties) {
           //@if(debug)
           if (SC.LOG_DESIGN_MODE) {
-            SC.Logger.log('  - Resetting %@ to %@'.fmt(key, prevProperties[key]));
-          }
-          //@endif
-          this.set(key, prevProperties[key]);
-        }
-
-        // Remove the cache.
-        this._originalProperties = null;
-      }
-
-      if (designMode) {
-        // Apply new properties. The orientation specific properties override the size properties.
-        if (modeAdjust[size] || modeAdjust[designMode]) {
-          newProperties = SC.merge(modeAdjust[size], modeAdjust[designMode]);
-
-          //@if(debug)
-          if (SC.LOG_DESIGN_MODE) {
-            SC.Logger.log('%@ — Applying design properties for "%@":'.fmt(this, designMode));
+            SC.Logger.log('%@ — Removing previous design property overrides from "%@":'.fmt(this, lastDesignMode));
           }
           //@endif
 
-          // Cache the original properties for reset.
-          this._originalProperties = {};
-          for (key in newProperties) {
-            // Cache the original value for reset.
-            this._originalProperties[key] = this.get(key);
+          for (key in prevProperties) {
+            //@if(debug)
+            if (SC.LOG_DESIGN_MODE) {
+              SC.Logger.log('  - Resetting %@ to %@'.fmt(key, prevProperties[key]));
+            }
+            //@endif
+            this.set(key, prevProperties[key]);
+          }
+
+          // Remove the cache.
+          this._originalProperties = null;
+        }
+
+        if (designMode) {
+          // Apply new properties. The orientation specific properties override the size properties.
+          if (modeAdjust[size] || modeAdjust[designMode]) {
+            newProperties = SC.merge(modeAdjust[size], modeAdjust[designMode]);
 
             //@if(debug)
             if (SC.LOG_DESIGN_MODE) {
-              SC.Logger.log('  - Setting %@: %@'.fmt(key, newProperties[key]));
+              SC.Logger.log('%@ — Applying design properties for "%@":'.fmt(this, designMode));
             }
             //@endif
 
-            // Apply the override.
-            if (key === 'layout') {
-              this.adjust(newProperties[key]);
-            } else {
-              this.set(key, newProperties[key]);
+            // Cache the original properties for reset.
+            this._originalProperties = {};
+            for (key in newProperties) {
+              // Cache the original value for reset.
+              this._originalProperties[key] = this.get(key);
+
+              //@if(debug)
+              if (SC.LOG_DESIGN_MODE) {
+                SC.Logger.log('  - Setting %@: %@'.fmt(key, newProperties[key]));
+              }
+              //@endif
+
+              // Apply the override.
+              if (key === 'layout') {
+                this.adjust(newProperties[key]);
+              } else {
+                this.set(key, newProperties[key]);
+              }
             }
           }
         }
-      }
-
-      // Resume observing.
-      this.endPropertyChanges();
+      }, this);
     }
 
     // Apply the design mode as a class name.

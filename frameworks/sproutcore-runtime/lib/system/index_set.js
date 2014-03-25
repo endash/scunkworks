@@ -470,8 +470,6 @@ SC.IndexSet = SC.Object.extend(
     // otherwise, merge into existing range
     } else {
 
-      if (isNaN(start)) debugger;
-
       // find nearest starting range.  split or join that range
       cur   = this.rangeStartForIndex(start);
       next  = content[cur];
@@ -681,8 +679,6 @@ SC.IndexSet = SC.Object.extend(
       content[start] = 0-last;
     }
 
-    console.log(delta)
-
     // adjust length
     if (isFinite(delta)) {
       this.set('length', this.get('length') - delta);
@@ -760,14 +756,14 @@ SC.IndexSet = SC.Object.extend(
   addEach: function (objects) {
     if (this.isFrozen) throw SC.FROZEN_ERROR;
 
-    this.beginPropertyChanges();
-    var idx = Ember.get(objects, 'length');
-    if (SC.isArray(objects) && 'function' === typeof objects.objectAt) {
-      while(--idx >= 0) this.add(objects.objectAt(idx));
-    } else if (SC.Enumerable.detect(objects)) {
-      objects.forEach(function (idx) { this.add(idx); }, this);
-    }
-    this.endPropertyChanges();
+    Ember.changeProperties(function () {
+      var idx = Ember.get(objects, 'length');
+      if (SC.isArray(objects) && 'function' === typeof objects.objectAt) {
+        while(--idx >= 0) this.add(objects.objectAt(idx));
+      } else if (SC.Enumerable.detect(objects)) {
+        objects.forEach(function (idx) { this.add(idx); }, this);
+      }
+    }, this);
 
     return this;
   },
@@ -780,16 +776,14 @@ SC.IndexSet = SC.Object.extend(
   removeEach: function (objects) {
     if (this.isFrozen) throw SC.FROZEN_ERROR;
 
-    this.beginPropertyChanges();
-
-    var idx = Ember.get(objects, 'length');
-    if (SC.isArray(objects) && 'function' === typeof objects.objectAt) {
-      while(--idx >= 0) this.remove(objects.objectAt(idx));
-    } else if (SC.Enumerable.detect(objects)) {
-      objects.forEach(function (idx) { this.remove(idx); }, this);
-    }
-
-    this.endPropertyChanges();
+    Ember.changeProperties(function () {
+      var idx = Ember.get(objects, 'length');
+      if (SC.isArray(objects) && 'function' === typeof objects.objectAt) {
+        while(--idx >= 0) this.remove(objects.objectAt(idx));
+      } else if (SC.Enumerable.detect(objects)) {
+        objects.forEach(function (idx) { this.remove(idx); }, this);
+      }
+    }, this);
 
     return this;
   },

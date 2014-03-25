@@ -37,6 +37,10 @@ SC.CSS_TRANSFORM_MAP = {
 
 /** @private */
 SC.View.LayoutStyleCalculator = {
+  platform: function () {
+    if (!this._platform) this._platform = SC.Platform.create({browser: SC.browser});
+    return this._platform
+  },
 
   /** @private If the value is undefined, make it null. */
   _valueOrNull: function (value) {
@@ -83,7 +87,7 @@ SC.View.LayoutStyleCalculator = {
     style.backgroundPosition = this._valueOrNull(layout.backgroundPosition);
 
     // Handle transforms (including reset).
-    if (SC.platform.supportsCSSTransforms) {
+    if (this.platform().supportsCSSTransforms) {
       var transformAttribute = SC.browser.experimentalStyleNameFor('transform'),
         transforms = [],
         transformMap = SC.CSS_TRANSFORM_MAP;
@@ -104,7 +108,7 @@ SC.View.LayoutStyleCalculator = {
     }
 
     // Reset any transitions.
-    if (SC.platform.supportsCSSTransitions) {
+    if (this.platform().supportsCSSTransitions) {
       style[SC.browser.experimentalStyleNameFor('transition')] = null;
     }
 
@@ -365,13 +369,13 @@ SC.View.LayoutStyleCalculator = {
         style.top = 0;
 
         // double check to make sure this is needed
-        if (SC.platform.supportsCSS3DTransforms) { style[transformAttribute] += ' translateZ(0px)'; }
+        if (this.platform().supportsCSS3DTransforms) { style[transformAttribute] += ' translateZ(0px)'; }
       }
     }
 
     // Handle animations
     if (animations) {
-      if (SC.platform.supportsCSSTransitions) {
+      if (this.platform().supportsCSSTransitions) {
         var transitions = [];
 
         for (key in animations) {
@@ -379,7 +383,7 @@ SC.View.LayoutStyleCalculator = {
             isTransformProperty = !!SC.CSS_TRANSFORM_MAP[key],
             isTurboProperty = shouldTranslate && (key === 'top' || key === 'left');
 
-          if (SC.platform.supportsCSSTransforms && (isTurboProperty || isTransformProperty)) {
+          if (this.platform().supportsCSSTransforms && (isTurboProperty || isTransformProperty)) {
             // Untrack the un-transformed property name.
             delete animations[key];
 
@@ -445,5 +449,5 @@ SC.View.reopen(
   layoutStyle: function () {
     return SC.View.LayoutStyleCalculator.calculate(this);
     // 'hasAcceleratedLayer' is dependent on 'layout' so we don't need 'layout' to be a dependency here
-  }.property('hasAcceleratedLayer', 'useStaticLayout').cacheable()
+  }.property('hasAcceleratedLayer', 'useStaticLayout', 'layout').cacheable()
 });

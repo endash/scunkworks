@@ -11,7 +11,9 @@ module("SC.View#clippingFrame", {
   setup: function() {
     htmlbody('<style> .sc-view { border: 1px blue solid; position: absolute;  overflow: hidden; }</style>');
     SC.RunLoop.begin();
-    pane = SC.Pane.design()
+    pane = SC.Pane.design({
+      rootResponder: rootResponder()
+    })
       .layout({ top: 0, left: 0, width: 200, height: 200 })
       .childView(SC.View.design()
         .layout({ top: 50, left: 50, width: 100, height: 100 })

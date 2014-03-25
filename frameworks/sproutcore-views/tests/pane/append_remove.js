@@ -24,8 +24,12 @@ module("SC.Pane#appendTo", {
   }
 });
 
+function createPane() {
+  return SC.Pane.create({rootResponder: rootResponder()});
+}
+
 test("adding to document for first time - appendTo(elem)", function() {
-  var pane = SC.Pane.create();
+  var pane = createPane();
   ok(!pane.get('layer'), 'precond - does not yet have layer');
   ok(!pane.get('isVisibleInWindow'), 'precond - isVisibleInWindow = NO');
 
@@ -45,7 +49,7 @@ test("adding to document for first time - appendTo(elem)", function() {
 });
 
 test("adding to document for first time - appendTo(string)", function() {
-  var pane = SC.Pane.create();
+  var pane = createPane();
   ok(!pane.get('layer'), 'precond - does not yet have layer');
   ok(!pane.get('isVisibleInWindow'), 'precond - isVisibleInWindow = NO');
 
@@ -62,7 +66,7 @@ test("adding to document for first time - appendTo(string)", function() {
 });
 
 test("adding to document for first time - appendTo(jquery)", function() {
-  var pane = SC.Pane.create();
+  var pane = createPane();
   ok(!pane.get('layer'), 'precond - does not yet have layer');
   ok(!pane.get('isVisibleInWindow'), 'precond - isVisibleInWindow = NO');
 
@@ -79,7 +83,7 @@ test("adding to document for first time - appendTo(jquery)", function() {
 });
 
 test("adding to document for first time - prependTo(elem)", function() {
-  var pane = SC.Pane.create();
+  var pane = createPane();
   ok(!pane.get('layer'), 'precond - does not yet have layer');
   ok(!pane.get('isVisibleInWindow'), 'precond - isVisibleInWindow = NO');
 
@@ -99,7 +103,7 @@ test("adding to document for first time - prependTo(elem)", function() {
 });
 
 test("adding to document for first time - prependTo(string)", function() {
-  var pane = SC.Pane.create();
+  var pane = createPane();
   ok(!pane.get('layer'), 'precond - does not yet have layer');
   ok(!pane.get('isVisibleInWindow'), 'precond - isVisibleInWindow = NO');
 
@@ -116,7 +120,7 @@ test("adding to document for first time - prependTo(string)", function() {
 });
 
 test("adding to document for first time - prependTo(jquery)", function() {
-  var pane = SC.Pane.create();
+  var pane = createPane();
   ok(!pane.get('layer'), 'precond - does not yet have layer');
   ok(!pane.get('isVisibleInWindow'), 'precond - isVisibleInWindow = NO');
 
@@ -135,7 +139,7 @@ test("adding to document for first time - prependTo(jquery)", function() {
 
 test("adding a pane twice should have no effect", function() {
   var cnt = 0;
-  var pane = SC.Pane.create();
+  var pane = createPane();
   pane._tmp_paneDidAttach = pane.paneDidAttach;
   pane.paneDidAttach = function() {
     cnt++;
@@ -151,7 +155,7 @@ test("adding a pane twice should have no effect", function() {
 });
 
 test("adding/remove/adding pane", function() {
-  var pane = SC.Pane.create();
+  var pane = createPane();
   var elem1 = $('body').get(0), elem2 = $('#appendtest').get(0);
   ok(elem1 && elem2, 'precond - has elem1 && elem2');
 
@@ -176,19 +180,14 @@ test("adding/remove/adding pane", function() {
 test("removeFromParent throws an exception", function() {
   var pane, exceptionCaught = false;
 
-  try {
-    pane = SC.Pane.create();
-    pane.append();
+  pane = createPane();
+  pane.append();
+
+  throws(function () {
     pane.removeFromParent();
-  } catch(e) {
-    exceptionCaught = (e instanceof SC.Error);
-  } finally {
-    pane.remove();
-  }
+  });
 
-  ok(exceptionCaught, "trying to call removeFromParent on a pane throws an exception");
-
-  // Clean up.
+  pane.remove();
   pane.destroy();
 });
 
@@ -198,7 +197,7 @@ test("removeFromParent throws an exception", function() {
 module("SC.Pane#remove");
 
 test("removes pane from DOM", function() {
-  var pane = SC.Pane.create();
+  var pane = createPane();
   var elem = $('body').get(0);
   var layer;
 
@@ -222,8 +221,8 @@ test("removes pane from DOM", function() {
 test("updates frame and clippingFrame when loading MainPane", function() {
 
   // needs a fixed layout size to make sure the sizes stay constant
-  var pane = SC.MainPane.create();
-  var w = SC.RootResponder.responder.computeWindowSize().width;
+  var pane = SC.MainPane.create({rootResponder: rootResponder()});
+  var w = $('body').width();
 
   // add the pane to the main window.  should resize the frames
   SC.run(function() {

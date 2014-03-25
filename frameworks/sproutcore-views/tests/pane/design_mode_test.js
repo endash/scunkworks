@@ -51,7 +51,6 @@ var DesignModeTestView = SC.View.extend({
 
 module("SC.View/SC.Pane Design Mode Support", {
   setup: function () {
-
     view4 = DesignModeTestView.create({});
 
     view3 = DesignModeTestView.create({
@@ -73,16 +72,14 @@ module("SC.View/SC.Pane Design Mode Support", {
     view5 = DesignModeTestView.create({});
 
     pane = SC.Pane.extend({
+      rootResponder: rootResponder(),
       childViews: [view1]
     });
   },
 
   teardown: function () {
     if (pane.remove) { pane.remove(); }
-
     pane = view1 = view2 = view3 = view4 = view5 = null;
-
-    SC.RootResponder.responder.set('designModes', null);
   }
 
 });
@@ -143,11 +140,10 @@ test("When RootResponder has no designModes, and you add a view to a pane, it do
 
 test("When RootResponder has designModes, it sets designMode on its panes and their childViews", function () {
   var windowSize,
-    responder = SC.RootResponder.responder,
-    orientation = SC.device.orientation;
+    orientation = rootResponder().device.orientation;
 
-  windowSize = responder.get('currentWindowSize');
-  responder.set('designModes', { s: ((windowSize.width - 10) * (windowSize.height - 10)) / window.devicePixelRatio, l: Infinity });
+  windowSize = rootResponder().get('currentWindowSize');
+  rootResponder().set('designModes', { s: ((windowSize.width - 10) * (windowSize.height - 10)), l: Infinity });
 
   pane = pane.create();
 
@@ -186,11 +182,10 @@ test("When RootResponder has designModes, it sets designMode on its panes and th
 
 test("When updateDesignMode() is called on a pane, it sets designMode properly on itself and its childViews.", function () {
   var windowSize,
-    responder = SC.RootResponder.responder,
-    orientation = SC.device.orientation;
+    orientation = rootResponder().device.orientation;
 
-  windowSize = responder.get('currentWindowSize');
-  responder.set('designModes', { s: ((windowSize.width - 10) * (windowSize.height - 10)) / window.devicePixelRatio, l: Infinity });
+  windowSize = rootResponder().get('currentWindowSize');
+  rootResponder().set('designModes', { s: ((windowSize.width - 10) * (windowSize.height - 10)), l: Infinity });
 
   SC.run(function () {
     pane = pane.create().append();
@@ -248,11 +243,10 @@ test("When updateDesignMode() is called on a pane, it sets designMode properly o
 
 test("When RootResponder has designModes, and you add a view to a pane, it sets designMode on the new view.", function () {
   var windowSize,
-    responder = SC.RootResponder.responder,
-    orientation = SC.device.orientation;
+    orientation = rootResponder().device.orientation;
 
-  windowSize = responder.get('currentWindowSize');
-  responder.set('designModes', { s: ((windowSize.width - 10) * (windowSize.height - 10)) / window.devicePixelRatio, l: Infinity });
+  windowSize = rootResponder().get('currentWindowSize');
+  rootResponder().set('designModes', { s: ((windowSize.width - 10) * (windowSize.height - 10)), l: Infinity });
 
   SC.run(function () {
     pane = pane.create().append();
@@ -268,9 +262,18 @@ test("When RootResponder has designModes, and you add a view to a pane, it sets 
 });
 
 test("When you set designModes on RootResponder, it sets designMode on its panes and their childViews.", function () {
+  console.log("WHEN YOU SET")
+  destroyRootResponder();
+  pane.rootResponder = rootResponder();
+
   var windowSize,
-    responder = SC.RootResponder.responder,
-    orientation = SC.device.orientation;
+    orientation = rootResponder().device.orientation;
+
+  // designMode should not be set
+  view1.set.expect(0);
+  view2.set.expect(0);
+  view3.set.expect(0);
+  view4.set.expect(0);
 
   SC.run(function () {
     pane = pane.create().append();
@@ -282,8 +285,8 @@ test("When you set designModes on RootResponder, it sets designMode on its panes
   view3.set.expect(0);
   view4.set.expect(0);
 
-  windowSize = responder.get('currentWindowSize');
-  responder.set('designModes', { s: ((windowSize.width - 10) * (windowSize.height - 10)) / window.devicePixelRatio, l: Infinity });
+  windowSize = rootResponder().get('currentWindowSize');
+  rootResponder().set('designModes', { s: ((windowSize.width - 10) * (windowSize.height - 10)), l: Infinity });
 
   // designMode should be set (for initialization)
   view1.set.expect(1);
@@ -310,11 +313,10 @@ test("When you set designModes on RootResponder, it sets designMode on its panes
 
 test("When you change designModes on RootResponder, it sets designMode on the pane and its childViews if the design mode has changed.", function () {
   var windowSize,
-    responder = SC.RootResponder.responder,
-    orientation = SC.device.orientation;
+    orientation = rootResponder().device.orientation;
 
-  windowSize = responder.get('currentWindowSize');
-  responder.set('designModes', { s: ((windowSize.width - 10) * (windowSize.height - 10)) / window.devicePixelRatio, l: Infinity });
+  windowSize = rootResponder().get('currentWindowSize');
+  rootResponder().set('designModes', { s: ((windowSize.width - 10) * (windowSize.height - 10)), l: Infinity });
 
   SC.run(function () {
     pane = pane.create().append();
@@ -343,7 +345,7 @@ test("When you change designModes on RootResponder, it sets designMode on the pa
   deepEqual(view4.get('classNames'), ['sc-view', 'sc-large'], "classNames for view4 should be");
 
   // Change the small threshold
-  responder.set('designModes', { s: ((windowSize.width + 10) * (windowSize.height + 10)) / window.devicePixelRatio, l: Infinity });
+  rootResponder().set('designModes', { s: ((windowSize.width + 10) * (windowSize.height + 10)), l: Infinity });
 
   // designMode should be set
   view1.set.expect(2);
@@ -368,9 +370,9 @@ test("When you change designModes on RootResponder, it sets designMode on the pa
   deepEqual(view4.get('classNames'), ['sc-view', 'sc-small'], "classNames for view4 should be");
 
   // Add a medium threshold
-  responder.set('designModes', {
-    s: ((windowSize.width - 10) * (windowSize.height - 10)) / window.devicePixelRatio,
-    m: ((windowSize.width + 10) * (windowSize.height + 10)) / window.devicePixelRatio,
+  rootResponder().set('designModes', {
+    s: ((windowSize.width - 10) * (windowSize.height - 10)),
+    m: ((windowSize.width + 10) * (windowSize.height + 10)),
     l: Infinity
   });
 
@@ -399,11 +401,10 @@ test("When you change designModes on RootResponder, it sets designMode on the pa
 
 test("When you unset designModes on RootResponder, it clears designMode on its panes and their childViews.", function () {
   var windowSize,
-    responder = SC.RootResponder.responder,
-    orientation = SC.device.orientation;
+    orientation = rootResponder().device.orientation;
 
-  windowSize = responder.get('currentWindowSize');
-  responder.set('designModes', { s: ((windowSize.width - 10) * (windowSize.height - 10)) / window.devicePixelRatio, l: Infinity });
+  windowSize = rootResponder().get('currentWindowSize');
+  rootResponder().set('designModes', { s: ((windowSize.width - 10) * (windowSize.height - 10)), l: Infinity });
 
   SC.run(function () {
     pane = pane.create().append();
@@ -432,7 +433,7 @@ test("When you unset designModes on RootResponder, it clears designMode on its p
   deepEqual(view4.get('classNames'), ['sc-view', 'sc-large'], "classNames of view4 should be");
 
   // Unset designModes
-  responder.set('designModes', null);
+  rootResponder().set('designModes', null);
 
   // designMode should be set
   view1.set.expect(2);

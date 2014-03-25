@@ -20,55 +20,56 @@ module("SC.offset", {
 
     htmlbody('<style> .sc-main { height: 2500px; width: 2500px; } </style>');
 
-    SC.RunLoop.begin();
+    SC.run(function () {
 
-    // Even though a full SC app doesn't really allow the viewport to be scaled or scrolled by default (thus
-    // the offset by viewport will always equal offset by document), we simulate an app that uses a
-    // scrollable viewport to test the validity of the functions.
-    var viewportEl;
-    if (SC.browser.isMobileSafari) {
-      viewportEl = $("[name='viewport']")[0];
+      // Even though a full SC app doesn't really allow the viewport to be scaled or scrolled by default (thus
+      // the offset by viewport will always equal offset by document), we simulate an app that uses a
+      // scrollable viewport to test the validity of the functions.
+      var viewportEl;
+      if (SC.browser.isMobileSafari) {
+        viewportEl = $("[name='viewport']")[0];
 
-      viewportEl.setAttribute('content','initial-scale=0.8, minimum-scale=0.5, maximum-scale=1.2, user-scalable=yes, width=device-height');
-    }
+        viewportEl.setAttribute('content','initial-scale=0.8, minimum-scale=0.5, maximum-scale=1.2, user-scalable=yes, width=device-height');
+      }
 
-    pane = SC.MainPane.create({
-      childViews: [
-        SC.View.extend({
-          classNames: 'upper'.w(),
-          layout: { top: 20, left: 20, width: 100, height: 100 },
-          childViews: [
-            SC.View.extend({
-              classNames: 'upper-inner'.w(),
-              layout: { top: 10, left: 10, width: 20, height: 20 }
-            })]
-        }),
-        SC.View.extend({
-          classNames: 'lower'.w(),
-          layout: { top: 1200, left: 20, width: 100, height: 100 },
-          childViews: [
-            SC.View.extend({
-              classNames: 'lower-inner'.w(),
-              layout: { top: 10, left: 10, width: 20, height: 20 }
-            })]
-        })]
+      pane = SC.MainPane.create({
+        rootResponder: rootResponder(),
+        childViews: [
+          SC.View.extend({
+            classNames: 'upper'.w(),
+            layout: { top: 20, left: 20, width: 100, height: 100 },
+            childViews: [
+              SC.View.extend({
+                classNames: 'upper-inner'.w(),
+                layout: { top: 10, left: 10, width: 20, height: 20 }
+              })]
+          }),
+          SC.View.extend({
+            classNames: 'lower'.w(),
+            layout: { top: 1200, left: 20, width: 100, height: 100 },
+            childViews: [
+              SC.View.extend({
+                classNames: 'lower-inner'.w(),
+                layout: { top: 10, left: 10, width: 20, height: 20 }
+              })]
+          })]
 
-      // Useful for debugging in iOS
-      // /** Allow default touch events */
-      //  touchStart: function(touch) {
-      //    if (SC.browser.isMobileSafari) touch.allowDefault();
-      //  },
-      //
-      //  touchesDragged: function(evt, touches) {
-      //    if (SC.browser.isMobileSafari) evt.allowDefault();
-      //  },
-      //
-      //  touchEnd: function(touch) {
-      //    if (SC.browser.isMobileSafari) touch.allowDefault();
-      //  }
+        // Useful for debugging in iOS
+        // /** Allow default touch events */
+        //  touchStart: function(touch) {
+        //    if (SC.browser.isMobileSafari) touch.allowDefault();
+        //  },
+        //
+        //  touchesDragged: function(evt, touches) {
+        //    if (SC.browser.isMobileSafari) evt.allowDefault();
+        //  },
+        //
+        //  touchEnd: function(touch) {
+        //    if (SC.browser.isMobileSafari) touch.allowDefault();
+        //  }
+      });
     });
     pane.append();
-    SC.RunLoop.end();
 
     view1 = pane.childViews[0];
     view2 = pane.childViews[1];
@@ -236,9 +237,7 @@ test("A regular view with window scroll offset top:10", function() {
   window.stop();
 
   window.scrollTo(0, 10);
-  SC.RunLoop.begin();
-  SC.Timer.schedule({ target: this, action: function() { return testPosition1(element1, element2, element3, element4); }, interval: 200 });
-  SC.RunLoop.end();
+  SC.run.later(this, function() { return testPosition1(element1, element2, element3, element4); }, 200);
 });
 
 test("A regular view with window scroll offset top:10, left: 10", function() {
@@ -250,9 +249,7 @@ test("A regular view with window scroll offset top:10, left: 10", function() {
   window.stop();
 
   window.scrollTo(10, 10);
-  SC.RunLoop.begin();
-  SC.Timer.schedule({ target: this, action: function() { return testPosition2(element1, element2, element3, element4); }, interval: 200 });
-  SC.RunLoop.end();
+  SC.run.later(this, function() { return testPosition2(element1, element2, element3, element4); }, 200);
 });
 
 test("A regular view with window scroll offset top:100, left: 10", function() {
@@ -264,9 +261,7 @@ test("A regular view with window scroll offset top:100, left: 10", function() {
   window.stop();
 
   window.scrollTo(10, 100);
-  SC.RunLoop.begin();
-  SC.Timer.schedule({ target: this, action: function() { return testPosition3(element1, element2, element3, element4); }, interval: 200 });
-  SC.RunLoop.end();
+  SC.run.later(this, function() { return testPosition3(element1, element2, element3, element4); }, 200);
 });
 
 test("A regular view with window scroll offset top:100, left: 100", function() {
@@ -278,7 +273,5 @@ test("A regular view with window scroll offset top:100, left: 100", function() {
   window.stop();
 
   window.scrollTo(100, 100);
-  SC.RunLoop.begin();
-  SC.Timer.schedule({ target: this, action: function() { return testPosition4(element1, element2, element3, element4); }, interval: 200 });
-  SC.RunLoop.end();
+  SC.run.later(this, function() { return testPosition4(element1, element2, element3, element4); }, 200);
 });

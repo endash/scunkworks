@@ -12,12 +12,29 @@
   <script src="sproutcore-tests.js"></script>
   <script src="https://code.jquery.com/jquery-2.1.0.js"></script>
 </head>
-<body>
+<body style="overflow:auto !important">
   <div id="qunit"></div>
   <div id="qunit-fixture"></div>
 
   <script>
-    var frameworks = ['sproutcore-runtime', 'sproutcore-foundation', 'sproutcore-views'],
+    _rootResponder = null;
+    function rootResponder(destroy) {
+      if (!_rootResponder || _rootResponder.get('isDestroyed')) _rootResponder = SC.RootResponder.create({device: SC.Device.create({platform: SC.Platform.create({browser: SC.browser})})});
+      return _rootResponder;
+    }
+
+    function destroyRootResponder() {
+      if (_rootResponder) {
+        _rootResponder.destroy();
+        _rootResponder = null;
+      }
+    }
+
+    QUnit.moduleDone(function () {
+      destroyRootResponder();
+    })
+
+    var frameworks = ['sproutcore-views'],
       len = frameworks.length,
       frameworkName, re, match, idx;
 
@@ -32,7 +49,7 @@
 
         match = moduleName.match(re);
         if (match) {
-          if (match[1] === '~tests') {
+          if (match[1] === '~tests' && match[2] != 'view') {
             minispade.require(moduleName);
           }
         }

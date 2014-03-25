@@ -776,8 +776,7 @@ SC.CoreView.reopen(
       this._callOnChildViews('_parentWillHideInDocument');
 
       // Note that visibility update is NOT conditional for this state.
-      this.invokeOnce(this._doUpdateVisibleStyle);
-
+      SC.run.scheduleOnce('render', this, this._doUpdateVisibleStyle);
       // Update states after *will* and before *did* notifications!
       this._gotoAttachedHiddenState();
       this._callOnChildViews('_parentDidHideInDocument');
@@ -1362,7 +1361,7 @@ SC.CoreView.reopen(
   /** @private Notify on attached. */
   _notifyDidAttach: function () {
     // If we don't have the layout module then we don't know the frame until appended to the document.
-    this.notifyPropertyChange('frame');
+    // this.notifyPropertyChange('frame');
 
     // Notify.
     if (this.didAppendToDocument) { this.didAppendToDocument(); }

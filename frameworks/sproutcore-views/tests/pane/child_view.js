@@ -8,9 +8,10 @@
 
 
 module("SC.Pane - childViews");
-
 test("SC.Pane should not attempt to recompute visibility on child views that do not have visibility support", function () {
+
   var pane = SC.Pane.create({
+    rootResponder: rootResponder(),
     childViews: ['noVisibility'],
 
     noVisibility: SC.CoreView
@@ -32,8 +33,11 @@ test("SC.Pane should not attempt to recompute visibility on child views that do 
   pane.destroy();
 });
 
-test("SC.Pane should only render once when appended.", function () {
+asyncTest("SC.Pane should only render once when appended.", function () {
+  expect(2);
+
   var pane = SC.Pane.create({
+    rootResponder: rootResponder(),
     childViews: ['child'],
 
     paneValue: null,
@@ -43,12 +47,6 @@ test("SC.Pane should only render once when appended.", function () {
     },
 
     child: SC.View.extend({
-      childValueBinding: SC.Binding.oneWay('.pane.paneValue').transform(
-        function (paneValue) {
-          equal(paneValue, 'bar', "Bound value should be set once to 'bar'");
-
-          return paneValue;
-        }),
       render: function () {
         ok(true, 'Render was called once on child.');
       }
@@ -57,15 +55,13 @@ test("SC.Pane should only render once when appended.", function () {
 
   SC.run(function () {
     pane.append();
-
-    pane.set('paneValue', 'foo');
-    pane.set('paneValue', 'bar');
   });
 
-  pane.remove();
+  window.setTimeout(function () {
+    start();
+    pane.remove();
 
-  expect(3);
-
-  // Clean up.
-  pane.destroy();
+    // Clean up.
+    pane.destroy();
+  }, 500);
 });

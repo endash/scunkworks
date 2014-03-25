@@ -11,6 +11,7 @@ module("SC.View#touch", {
   setup: function() {
     SC.run(function() {
      pane = SC.Pane.create({
+       rootResponder: rootResponder(),
        layout: { width: 200, height: 200, left: 0, top: 0 },
        childViews: ['outerView'],
 

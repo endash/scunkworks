@@ -14,72 +14,70 @@ var sub, newPane, oldPane, lightPane, darkPane, myPane, responder;
 
 
 module("SC.RootResponder", {
-	setup: function() {		
+	setup: function() {
 		sub = SC.Object.create({
 			action: function() { var objectA = "hello"; }
 		});
-		
-		newPane = SC.Pane.create({ owner: this});
-		oldPane = SC.Pane.create({ owner: this});
-		lightPane = SC.Pane.create({ owner: this});
-		darkPane = SC.Pane.create({ owner: this});
-		myPane = SC.Pane.create();
-		responder = SC.RootResponder.create({});
+
+		newPane = SC.Pane.create({ rootResponder: rootResponder(), owner: this});
+		oldPane = SC.Pane.create({ rootResponder: rootResponder(), owner: this});
+		lightPane = SC.Pane.create({ rootResponder: rootResponder(), owner: this});
+		darkPane = SC.Pane.create({ rootResponder: rootResponder(), owner: this});
+		myPane = SC.Pane.create({ rootResponder: rootResponder() });
+		responder = rootResponder();
 	},
-	
+
 	teardown: function() {
 		delete sub;
 	}
-	
+
 	// var objectA, submit = document.createElement('pane');
-	// 
+	//
 	//   triggerMe: function() {
 	//     SC.Event.trigger(submit, 'click');
 	//   }
-	//   
+	//
 });
 
 test("Basic requirements", function() {
-  expect(2);
   ok(SC.RootResponder, "SC.RootResponder");
-  ok(SC.RootResponder.responder, "SC.RootResponder.responder");
 });
 
 test("root_responder.makeMainPane() : Should change the new Pane to key view", function() {
 	responder.makeMainPane(newPane);
 	//Checking the mainPane property
-	equal(responder.get('mainPane'),newPane);
-	equal(responder.get('keyPane'), newPane);
+	ok(responder.get('mainPane') == newPane);
+	ok(responder.get('keyPane') == newPane);
 });
 
 test("root_responder.makeMainPane() : Should notify other panes about the changes", function() {
 	responder.makeMainPane(newPane);
-		
+
 	//Notify other panes about the changes
-	equal(newPane.get('isMainPane'),YES);
-	equal(oldPane.get('isMainPane'),NO);
-	
+	ok(newPane.get('isMainPane'));
+	ok(!oldPane.get('isMainPane'));
+
 });
 
 test("root_responder.makeKeyPane() : Should make the passed pane as the key pane", function() {
  responder.makeMainPane(oldPane);
- equal(responder.get('keyPane'), oldPane);
- 
+ ok(responder.get('keyPane') == oldPane);
+
  responder.makeKeyPane(lightPane);
- equal(responder.get('keyPane'),lightPane);
-}); 
+ ok(responder.get('keyPane') == lightPane);
+});
 
 test("root_responder.makeKeyPane() : Should make the main pane as the key pane if null is passed", function() {
  responder.makeMainPane(lightPane);
  responder.makeKeyPane(oldPane);
  // newPane is set as the Main pane
- equal(responder.get('mainPane'),lightPane);
- // KeyPane is null as it is not set yet 
- equal(responder.get('keyPane'), oldPane);
- 
+ ok(responder.get('mainPane') == lightPane);
+ // KeyPane is null as it is not set yet
+ ok(responder.get('keyPane') == oldPane);
+
  responder.makeKeyPane();
- // KeyPane is set as the mainPane as null is passed 
- equal(responder.get('keyPane'),lightPane);
+ // KeyPane is set as the mainPane as null is passed
+ ok(responder.get('keyPane') == lightPane);
 });
 
 test("root_responder.ignoreTouchHandle() : Should ignore TEXTAREA, INPUT, A, and SELECT elements", function () {
@@ -107,7 +105,7 @@ test("root_responder.ignoreTouchHandle() : Should ignore TEXTAREA, INPUT, A, and
 
 //// CLEANUP
 /// Commenting out this two functions as the methods don't exist
-//// confirm with Charles 
+//// confirm with Charles
 
 
 
@@ -115,14 +113,14 @@ test("root_responder.ignoreTouchHandle() : Should ignore TEXTAREA, INPUT, A, and
 /*
 test("root_responder.removePane() : Should be able to remove panes to set", function() {
 	responder.removePane(darkPane);
-		
+
 	//Notify other panes about the changes
 	equal(responder.get('mainPane'),null);
 });
 
 test("root_responder.addPane() : Should be able to add panes to set", function() {
 	responder.addPane(darkPane);
-		
+
 	//Notify other panes about the changes
 	equal(responder.get('mainPane'),lightPane);
 });
