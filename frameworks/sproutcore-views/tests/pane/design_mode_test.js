@@ -263,7 +263,6 @@ test("When RootResponder has designModes, and you add a view to a pane, it sets 
 
 test("When you set designModes on RootResponder, it sets designMode on its panes and their childViews.", function () {
   destroyRootResponder();
-  pane.rootResponder = rootResponder();
 
   var windowSize,
     orientation = rootResponder().device.orientation;
@@ -275,7 +274,7 @@ test("When you set designModes on RootResponder, it sets designMode on its panes
   view4.set.expect(0);
 
   SC.run(function () {
-    pane = pane.create().append();
+    pane = pane.create({ rootResponder: rootResponder() }).append();
   });
 
   // designMode should not be set

@@ -705,7 +705,7 @@ SC.View.reopen(
       width: frame.width + borderLeft + borderRight,
       height: frame.height + borderTop + borderBottom
     } : null;
-  }.property('frame').cacheable(),
+  }.property('frame'),
 
   /**
     This method may be called on your view whenever the parent view resizes.

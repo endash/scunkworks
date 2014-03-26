@@ -998,8 +998,8 @@ SC.CoreView.reopen(
         TODO Can probably have some better width/height values - CC
         FIXME This will probably not work right with borders - PW
       */
-      f.width = layer.offsetWidth;
-      f.height = layer.offsetHeight;
+      f.width = $(layer).outerWidth();
+      f.height = $(layer).outerHeight();
       return f;
     }
 
@@ -2119,6 +2119,7 @@ SC.View = SC.CoreView.extend(/** @scope SC.View.prototype */{
   init: function () {
     this._super();
     this.platform = this.get('rootResponder.device.platform') || SC.Platform.create({browser: SC.browser});
+    this.get('isVisibleInWindow');
   }
 });
 

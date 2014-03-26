@@ -315,7 +315,7 @@ SC.CoreView.reopen(
     return state & SC.CoreView.IS_ATTACHED &&
       state !== SC.CoreView.ATTACHED_HIDDEN &&
       state !== SC.CoreView.ATTACHED_HIDDEN_BY_PARENT;
-  }.property('viewState').cacheable(),
+  }.property('viewState'),
 
 
   // ------------------------------------------------------------------------
