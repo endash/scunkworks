@@ -63,11 +63,12 @@ test("When you set designModes on the root responder, it calls updateDesignMode 
     responder = rootResponder();
 
   windowSize = responder.get('currentWindowSize');
+  console.log(windowSize)
 
   pane1.updateDesignMode.expect(1);
   pane2.updateDesignMode.expect(1);
 
-  designModes = { small: ((windowSize.width - 10) * (windowSize.height - 10)) / window.devicePixelRatio, large: Infinity };
+  designModes = { small: ((windowSize.width - 10) * (windowSize.height - 10)), large: Infinity };
 
   SC.run(function () {
     responder.set('designModes', designModes);
@@ -76,7 +77,7 @@ test("When you set designModes on the root responder, it calls updateDesignMode 
   pane1.updateDesignMode.expect(2);
   pane2.updateDesignMode.expect(2);
 
-  designModes = { small: ((windowSize.width - 10) * (windowSize.height - 10)) / window.devicePixelRatio, medium: ((windowSize.width + 10) * (windowSize.height + 10)) / window.devicePixelRatio, large: Infinity };
+  designModes = { small: ((windowSize.width - 10) * (windowSize.height - 10)), medium: ((windowSize.width + 10) * (windowSize.height + 10)), large: Infinity };
 
   SC.run(function () {
     responder.set('designModes', designModes);

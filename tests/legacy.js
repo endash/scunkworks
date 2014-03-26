@@ -145,7 +145,7 @@ CoreTest = {
           ok(this.callCount > 0, CoreTest.fmt("%@ should be called at least once", this.stubName));
         } else {
           if (callCount === NO) callCount = 0;
-          equal(this.callCount, callCount, CoreTest.fmt("%@ should be called X times", this.stubName));
+          equal(this.callCount, callCount, CoreTest.fmt("%@ should be called %@ times", this.stubName, callCount));
         }
       };
     }
