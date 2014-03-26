@@ -329,7 +329,6 @@ SC.RootResponder = SC.Object.extend(
       SC.$('body').addClass('sc-focus').removeClass('sc-blur');
 
       SC.run(this, function () {
-        if (this.get('isDestroyed')) debugger;
         // If the app is getting focus again set the first responder to the first
         // valid firstResponder view in the view's tree
         if(!SC.TABBING_ONLY_INSIDE_DOCUMENT && !SC.browser.isIE8OrLower){

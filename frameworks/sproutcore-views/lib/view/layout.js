@@ -883,7 +883,7 @@ SC.View.reopen(
     }
 
     return this;
-  }.observes('parentView.frame', 'layout'),
+  }.observes('layout'),
 
   /** @private */
   _checkForResize: function () {
@@ -1271,7 +1271,7 @@ SC.View.reopen(
     this._super(oldParentView);
 
     // Our frame may change once we've been removed from a parent.
-    if (!this.isDestroyed) { this._checkForResize(); }
+    if (!this.isDestroyed && !this.isDestroying) { this._checkForResize(); }
   },
 
   /** @private Extension: The 'updatedContent' event. */

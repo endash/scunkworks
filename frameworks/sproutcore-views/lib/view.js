@@ -1239,7 +1239,7 @@ SC.CoreView.reopen(
   */
   destroy: function () {
     // Fast path!
-    if (this.get('isDestroyed')) { return this; }
+    if (this.isDestroying || this.isDestroyed) { return this; }
 
     // Do generic destroy. It takes care of mixins and sets isDestroyed to YES.
     // Do this first, since it cleans up bindings that may apply to parentView
@@ -1249,8 +1249,6 @@ SC.CoreView.reopen(
     // If our parent is already destroyed, then we can defer destroying ourself
     // and our own child views momentarily.
     if (this.get('parentView.isDestroyed')) {
-      // Complete the destroy in a bit.
-      SC.run.scheduleOnce('destroy', this, this._destroy);
     } else {
       // Immediately remove the layer if attached (ignores transitionOut). This
       // will detach the layer for all child views as well.

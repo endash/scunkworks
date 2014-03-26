@@ -77,14 +77,14 @@ test("Destroying a view, should also destroy its binding objects", function () {
 
   v2 = v.get('v2');
 
-  ok(v.hasObserverFor('foo'), "The view should have an observer on 'foo'");
+  ok(v2.hasObserverFor('parentView.foo'), "The child view should have an observer on 'parentView.foo'");
   ok(v2.hasObserverFor('bar'), "The child view should have an observer on 'bar'");
 
   SC.run(function () {
     v.destroy();
   });
 
-  ok(!v.hasObserverFor('foo'), "The view should no longer have an observer on 'foo'");
+  ok(!v2.hasObserverFor('parentView.foo'), "The child view should no longer have an observer on 'parentView.foo'");
   ok(!v2.hasObserverFor('bar'), "The child view should no longer have an observer on 'bar'");
 });
 

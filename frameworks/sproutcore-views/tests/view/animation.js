@@ -417,7 +417,7 @@ if (SC.Platform.create({browser: SC.browser}).supportsCSSTransitions) {
     // Run test.
     // stop(2000);
 
-    expect(8);
+    expect(2);
 
     // Override and wrap the problematic method to capture the error.
     view.transitionDidEnd = function () {

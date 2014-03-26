@@ -104,9 +104,10 @@ test("notifies receiver and each child if parent clipping frame changes", functi
   var callCount = 0;
 
   // setup observers
-  function observer() { callCount++; }
-  SC.addObserver(a, 'clippingFrame', observer);
-  SC.addObserver(aa, 'clippingFrame', observer);
+  function observerA() { callCount++; }
+  function observerAa() { callCount++; }
+  SC.addObserver(a, 'clippingFrame', observerA);
+  SC.addObserver(aa, 'clippingFrame', observerAa);
 
   // now, adjust layout of child so that clipping frame will change...
   SC.run(function () {
