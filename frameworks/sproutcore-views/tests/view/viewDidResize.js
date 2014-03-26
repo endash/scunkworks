@@ -50,7 +50,9 @@ test("parentViewDidResize should only be called when the parent's layout propert
 });
 
 test("The view's frame should only notify changes when its layout changes if the effective size or position actually change.", function () {
-  var view2 = SC.View.create({
+  SC.View.create() // to apply mixins to prototype
+
+  var view2 = SC.View.createWithMixins({
       frameCallCount: 0,
       frameDidChange: function() {
         this.frameCallCount++;
@@ -90,7 +92,7 @@ test("making sure that the frame value is correct inside viewDidResize()", funct
   // value and test it later.
   var cachedFrame;
 
-  var view = SC.View.create({
+  var view = SC.View.createWithMixins({
 
     layout: { left:0, top:0, width:400, height:400 },
 
@@ -127,12 +129,14 @@ test("making sure that the frame value is correct inside viewDidResize()", funct
 module("SC.View#parentViewDidResize");
 
 test("When parentViewDidResize is called on a view, it should only notify on frame and cascade the call to child views if it will be affected by the parent's resize.", function() {
-  var view = SC.View.create({
+  SC.View.create() // apply mixins to prototype
+  var view = SC.View.extend({
       // instrument...
       frameCallCount: 0,
       frameDidChange: function() {
         this.frameCallCount++;
-      }.observes('frame'),
+      }.observes('frame')
+    }).create({
       viewDidResize: CoreTest.stub('viewDidResize', SC.View.prototype.viewDidResize)
     }),
     parentView = SC.View.create({

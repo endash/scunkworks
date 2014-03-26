@@ -725,7 +725,6 @@ test("When RootResponder has designModes, and you add a view to a pane, it sets 
 });
 
 test("When you set designModes on RootResponder, it sets designMode on its panes and their childViews.", function () {
-  console.log("WHEN YOU SET")
   destroyRootResponder();
   pane.rootResponder = rootResponder();
 
@@ -1545,7 +1544,7 @@ module("SC.RootResponder#makeKeyPane");
 
 test("returns receiver", function() {
   var p1 = SC.Pane.create({ rootResponder: rootResponder() }), p2 = SC.Pane.create({ rootResponder: rootResponder(), acceptsKeyPane: YES });
-  var r = SC.RootResponder.create();
+  var r = rootResponder();
 
   equal(r.makeKeyPane(p1), r, 'returns receiver even if pane does not accept key pane');
   equal(r.makeKeyPane(p2), r, 'returns receiver');
@@ -1745,44 +1744,46 @@ test("should call focusMainFrom() on new pane, passing old pane", function() {
 
 var responder, menu;
 
-module("SC.RootResponder#makeMenuPane", {
-  setup: function() {
-    responder = SC.RootResponder.create();
-    menu = SC.Pane.create({
-      rootResponder: rootResponder(),
-      acceptsMenuPane: YES
-    });
-  },
+function setup() {
+  if (menu) menu.remove();
 
-  teardown: function() {
-    menu.remove();
-    menu = responder = null;
-  }
-});
+  destroyRootResponder();
+  responder = rootResponder();
+  menu = SC.Pane.create({
+    rootResponder: rootResponder(),
+    acceptsMenuPane: YES
+  });
+}
+
+module("SC.RootResponder#makeMenuPane");
 
 test("Returns receiver", function() {
-  equal(responder.makeMenuPane(menu), responder, 'returns receiver');
+  setup();
+  ok(responder.makeMenuPane(menu) == responder, 'returns receiver');
 });
 
 test("Sets RootResponder's menuPane", function() {
-  equal(responder.get('menuPane'), null, 'precond - menuPane should be null by default');
+  setup();
+  ok(responder.get('menuPane') == null, 'precond - menuPane should be null by default');
   responder.makeMenuPane(menu);
-  equal(responder.get('menuPane'), menu, 'menuPane should be passed menu');
+  ok(responder.get('menuPane') == menu, 'menuPane should be passed menu');
 });
 
 test("menuPane does not affect keyPane", function() {
+  setup();
   var p2 = SC.Pane.create({ rootResponder: rootResponder() });
   responder.makeKeyPane(p2);
-  equal(responder.get('keyPane'), p2, 'precond - pane should be key pane');
+  ok(responder.get('keyPane') == p2, 'precond - pane should be key pane');
   responder.makeMenuPane(menu);
-  equal(responder.get('menuPane'), menu, 'menuPane should be set');
-  equal(responder.get('keyPane'), p2, 'key pane should not change');
+  ok(responder.get('menuPane') == menu, 'menuPane should be set');
+  ok(responder.get('keyPane') == p2, 'key pane should not change');
 });
 
 test("Pane should not become menu pane if acceptsMenuPane is not YES", function() {
+  setup();
   menu.set('acceptsMenuPane', NO);
   responder.makeMenuPane(menu);
-  equal(responder.get('menuPane'), null, 'menuPane should remain null');
+  ok(responder.get('menuPane') == null, 'menuPane should remain null');
 });
 
 });minispade.register('sproutcore-views/~tests/system/root_responder/mouse_events', function() {// ==========================================================================
@@ -2925,23 +2926,11 @@ if (SC.Platform.create({browser: SC.browser}).supportsCSSTransitions) {
   asyncTest("animate + adjust: no conflict", function () {
     expect(8);
 
-    SC.run(function () {
-      view.animate('left', 100, { duration: 0.1 });
-      view.adjust('top', 100);
-      view.adjust({ 'width': null, 'right': 100 });
-    });
-
     setTimeout(function () {
       equal(view.get('layout').left, 100, 'left is');
       equal(view.get('layout').top, 100, 'top is');
       equal(view.get('layout').right, 100, 'right is');
       equal(view.get('layout').width, undefined, 'width is');
-
-      SC.run(function () {
-        view.animate('top', 200, { duration: 0.1 });
-        view.adjust('left', 0);
-        view.adjust({ 'width': 100, 'right': null });
-      });
 
       setTimeout(function () {
         equal(view.get('layout').left, 0, 'left is');
@@ -2951,16 +2940,23 @@ if (SC.Platform.create({browser: SC.browser}).supportsCSSTransitions) {
 
         start();
       }, 200);
+
+      SC.run(function () {
+        view.animate('top', 200, { duration: 0.1 });
+        view.adjust('left', 0);
+        view.adjust({ 'width': 100, 'right': null });
+      });
     }, 200);
+
+    SC.run(function () {
+      view.animate('left', 100, { duration: 0.1 });
+      view.adjust('top', 100);
+      view.adjust({ 'width': null, 'right': 100 });
+    });
   });
 
   asyncTest("animate + adjust: conflict", function () {
     expect(2);
-
-    SC.run(function () {
-      view.animate('left', 100, { duration: 0.1 });
-      view.adjust('left', 200);
-    });
 
     setTimeout(function () {
       equal(view.get('layout').left, 200, 'left is');
@@ -2977,6 +2973,11 @@ if (SC.Platform.create({browser: SC.browser}).supportsCSSTransitions) {
         start();
       }, 200);
     }, 200);
+
+    SC.run(function () {
+      view.animate('left', 100, { duration: 0.1 });
+      view.adjust('left', 200);
+    });
   });
 
   // asyncTest("callbacks work in general", function () {
@@ -3237,19 +3238,8 @@ if (SC.Platform.create({browser: SC.browser}).supportsCSSTransitions) {
   // });
 
   asyncTest("should not cancel callback when value hasn't changed", function () {
-    var callbacks = 0, wasCancelled = NO, check = 0;
-    // stop(2000);
-
-    SC.run(function () {
-      // this triggers the initial layoutStyle code
-      view.animate('left', 79, { duration: 0.5 }, function (data) {
-        callbacks++;
-        wasCancelled = data.isCancelled;
-      });
-
-      // this triggers a re-render, re-running the layoutStyle code
-      view.displayDidChange();
-    });
+    expect(3);
+    var callbacks = 0, wasCancelled = null, check = 0;
 
     setTimeout(function () {
       // capture the callbacks value
@@ -3263,6 +3253,17 @@ if (SC.Platform.create({browser: SC.browser}).supportsCSSTransitions) {
 
       start();
     }, 1000);
+
+    SC.run(function () {
+      // this triggers the initial layoutStyle code
+      view.animate('left', 79, { duration: 0.5 }, function (data) {
+        callbacks++;
+        wasCancelled = data.isCancelled;
+      });
+
+      // this triggers a re-render, re-running the layoutStyle code
+      view.displayDidChange();
+    });
   });
 
   // There was a bug in animation that once one property was animated, a null
@@ -3273,7 +3274,7 @@ if (SC.Platform.create({browser: SC.browser}).supportsCSSTransitions) {
     // Run test.
     // stop(2000);
 
-    expect(0);
+    expect(8);
 
     // Override and wrap the problematic method to capture the error.
     view.transitionDidEnd = function () {
@@ -3359,17 +3360,18 @@ if (SC.Platform.create({browser: SC.browser}).supportsCSSTransitions) {
   });
 
   asyncTest("Test that cancelAnimation() removes the animation style and fires the callback with isCancelled set.", function () {
-    // stop(2000);
-
     expect(7);
 
-    SC.run(function () {
-      view.animate({ left: 100 }, { duration: 0.5 }, function (data) {
-        ok(data.isCancelled, "The isCancelled property of the data should be true.");
-      });
-    });
-
     setTimeout(function () {
+      setTimeout(function () {
+        var style = styleFor(view);
+
+        equal(style.left, '100px', 'Tests the left style after cancel');
+        equal(style.top, '0px', 'Tests the top style after cancel');
+        equal(transitionFor(view), '', 'Tests the CSS transition property');
+        start();
+      }, 50);
+
       SC.run(function () {
         var style = styleFor(view);
 
@@ -3380,14 +3382,11 @@ if (SC.Platform.create({browser: SC.browser}).supportsCSSTransitions) {
       });
     }, 5);
 
-    setTimeout(function () {
-      var style = styleFor(view);
-
-      equal(style.left, '100px', 'Tests the left style after cancel');
-      equal(style.top, '0px', 'Tests the top style after cancel');
-      equal(transitionFor(view), '', 'Tests the CSS transition property');
-      start();
-    }, 50);
+    SC.run(function () {
+      view.animate({ left: 100 }, { duration: 0.5 }, function (data) {
+        ok(data.isCancelled, "The isCancelled property of the data should be true.");
+      });
+    });
   });
 
   asyncTest("Test that cancelAnimation(SC.LayoutState.CURRENT) removes the animation style, stops at the current position and fires the callback with isCancelled set.", function () {
@@ -3838,9 +3837,9 @@ test("Dynamic use", function() {
     backgroundColor: 'red',
     displayProperties: ['backgroundColor']
   });
-  
+
   view.createLayer();
-  view.viewState = SC.View.ATTACHED_SHOWN; // hack to get view properties to update.
+  view.viewState = SC.CoreView.ATTACHED_SHOWN; // hack to get view properties to update.
 
   equal(view.get('layer').style.backgroundColor, 'red', "PRELIM: backgroundColor sets the CSS background-color value");
 
@@ -4209,7 +4208,7 @@ var pane, a, aa ;
 module("SC.View#clippingFrame", {
   setup: function() {
     htmlbody('<style> .sc-view { border: 1px blue solid; position: absolute;  overflow: hidden; }</style>');
-    SC.RunLoop.begin();
+    SC.run.begin()
     pane = SC.Pane.design({
       rootResponder: rootResponder()
     })
@@ -4228,7 +4227,7 @@ module("SC.View#clippingFrame", {
     pane.remove();
     pane.destroy();
     pane = a = aa = null ;
-    SC.RunLoop.end();
+    SC.run.end();
     clearHtmlbody();
   }
 });
@@ -4304,11 +4303,13 @@ test("notifies receiver and each child if parent clipping frame changes", functi
 
   // setup observers
   function observer() { callCount++; }
-  a.addObserver('clippingFrame', observer);
-  aa.addObserver('clippingFrame', observer);
+  SC.addObserver(a, 'clippingFrame', observer);
+  SC.addObserver(aa, 'clippingFrame', observer);
 
   // now, adjust layout of child so that clipping frame will change...
-  a.adjust('top', -50);
+  SC.run(function () {
+    a.adjust('top', -50);
+  });
 
   // IMPORTANT:  If this test fails because the callCount is > 2 it means that
   // when you set the layout, the frame is getting invalidated more than once.
@@ -4603,16 +4604,16 @@ var parent, child;
 */
 var commonSetup = {
   setup: function() {
-    
+
     // create basic parent view
     parent = SC.View.create({
       layout: { top: 0, left: 0, width: 500, height: 500 }
     });
-    
+
     // create child view to test against.
     child = SC.View.create();
   },
-  
+
   teardown: function() {
     parent = child = null ;
   }
@@ -4620,7 +4621,7 @@ var commonSetup = {
 
 // ..........................................................
 // TEST LAYOUT WITH BASIC LAYOUT CONVERSION
-// 
+//
 
 module('BASIC LAYOUT CONVERSION', commonSetup);
 
@@ -4633,7 +4634,7 @@ test("layout {top, left, width, height}", function() {
 test("layout {top, left, bottom, right}", function() {
   var layout = { top: 10, left: 10, bottom: 10, right: 10 };
   var cl = SC.View.convertLayoutToAnchoredLayout(layout, parent.get('frame'));
-  
+
   var testLayout = { top: 10, left: 10, width: 480, height: 480 };
   deepEqual(cl, testLayout, 'conversion is equal');
 }) ;
@@ -4641,7 +4642,7 @@ test("layout {top, left, bottom, right}", function() {
 test("layout {bottom, right, width, height}", function() {
   var layout = { bottom: 10, right: 10, width: 50, height: 50 };
   var cl = SC.View.convertLayoutToAnchoredLayout(layout, parent.get('frame'));
-  
+
   var testLayout = { top: 440, left: 440, width: 50, height: 50 };
   deepEqual(cl, testLayout, 'conversion is equal');
 }) ;
@@ -4649,7 +4650,7 @@ test("layout {bottom, right, width, height}", function() {
 test("layout {centerX, centerY, width, height}", function() {
   var layout = { centerX: 10, centerY: 10, width: 50, height: 50 };
   var cl = SC.View.convertLayoutToAnchoredLayout(layout, parent.get('frame'));
-  
+
   var testLayout = { top: 235, left: 235, width: 50, height: 50 };
   deepEqual(cl, testLayout, 'conversion is equal');
 }) ;
@@ -4657,14 +4658,14 @@ test("layout {centerX, centerY, width, height}", function() {
 
 // ..........................................................
 // TEST LAYOUT WITH INVALID LAYOUT VARIATIONS
-// 
+//
 
 module('INVALID LAYOUT VARIATIONS', commonSetup);
 
 test("layout {top, left} - assume right/bottom=0", function() {
   var layout = { top: 10, left: 10 };
   var cl = SC.View.convertLayoutToAnchoredLayout(layout, parent.get('frame'));
-  
+
   var testLayout = { top: 10, left: 10, width: 490, height: 490 };
   deepEqual(cl, testLayout, 'conversion is equal');
 }) ;
@@ -4672,7 +4673,7 @@ test("layout {top, left} - assume right/bottom=0", function() {
 test("layout {height, width} - assume top/left=0", function() {
   var layout = { height: 60, width: 60 };
   var cl = SC.View.convertLayoutToAnchoredLayout(layout, parent.get('frame'));
-  
+
   var testLayout = { top: 0, left: 0, width: 60, height: 60 };
   deepEqual(cl, testLayout, 'conversion is equal');
 }) ;
@@ -4680,7 +4681,7 @@ test("layout {height, width} - assume top/left=0", function() {
 test("layout {right, bottom} - assume top/left=0", function() {
   var layout = { right: 10, bottom: 10 };
   var cl = SC.View.convertLayoutToAnchoredLayout(layout, parent.get('frame'));
-  
+
   var testLayout = { top: 0, left: 0, width: 490, height: 490 };
   deepEqual(cl, testLayout, 'conversion is equal');
 }) ;
@@ -4688,7 +4689,7 @@ test("layout {right, bottom} - assume top/left=0", function() {
 test("layout {centerX, centerY} - assume width/height=0", function() {
   var layout = { centerX: 10, centerY: 10 };
   var cl = SC.View.convertLayoutToAnchoredLayout(layout, parent.get('frame'));
-  
+
   var testLayout = { top: 260, left: 260, width: 0, height: 0 };
   deepEqual(cl, testLayout, 'conversion is equal');
 }) ;
@@ -4696,7 +4697,7 @@ test("layout {centerX, centerY} - assume width/height=0", function() {
 test("layout {top, left, centerX, centerY, height, width} - top/left take presidence", function() {
   var layout = { top: 10, left: 10, centerX: 10, centerY: 10, height: 60, width: 60 };
   var cl = SC.View.convertLayoutToAnchoredLayout(layout, parent.get('frame'));
-  
+
   var testLayout = { top: 10, left: 10, width: 60, height: 60 };
   deepEqual(cl, testLayout, 'conversion is equal');
 }) ;
@@ -4704,22 +4705,21 @@ test("layout {top, left, centerX, centerY, height, width} - top/left take presid
 test("layout {bottom, right, centerX, centerY, height, width} - bottom/right take presidence", function() {
   var layout = { bottom: 10, right: 10, centerX: 10, centerY: 10, height: 60, width: 60 };
   var cl = SC.View.convertLayoutToAnchoredLayout(layout, parent.get('frame'));
-  
+
   var testLayout = { top: 430, left: 430, width: 60, height: 60 };
   deepEqual(cl, testLayout, 'conversion is equal');
-  
+
 }) ;
 
 test("layout {top, left, bottom, right, centerX, centerY, height, width} - top/left take presidence", function() {
   var layout = { top: 10, left: 10, bottom: 10, right: 10, centerX: 10, centerY: 10, height: 60, width: 60 };
   var cl = SC.View.convertLayoutToAnchoredLayout(layout, parent.get('frame'));
-  
+
   var testLayout = { top: 10, left: 10, width: 60, height: 60 };
   deepEqual(cl, testLayout, 'conversion is equal');
 }) ;
 
 
-test("layout {centerX, centerY, width:auto, height:auto}");
 /*
 test("layout {centerX, centerY, width:auto, height:auto}", function() {
   var error=null;
@@ -4750,7 +4750,7 @@ module("SC.View#createChildViews");
 
 test("calls createChildView() for each class or string in childViews array", function() {
   var called = [];
-  var v = SC.View.create({
+  var v = SC.View.createWithMixins({
     childViews: [
       SC.View.extend({ key: 0 }), // class - should be called
       SC.View.create({ key: 1 }), // instance - will be called
@@ -4762,12 +4762,12 @@ test("calls createChildView() for each class or string in childViews array", fun
 
     // patch to record results...
     createChildView: function(childView) {
-      if(childView.isClass) {
-        called.push(childView.prototype.key);
+      if(SC.View.detect(childView)) {
+        called.push(childView.create().key);
       } else {
         called.push(childView.key);
       }
-      return this._super();
+      return this._super(childView);
     }
   });
 
@@ -4778,13 +4778,13 @@ test("calls createChildView() for each class or string in childViews array", fun
   var cv = v.childViews, len = cv.length, idx;
   for(idx=0;idx<len;idx++) {
     equal(cv[idx].key, idx, 'has correct index key');
-    ok(cv[idx].isObject, 'isObject - %@'.fmt(cv[idx]));
+    ok(cv[idx] instanceof SC.View, 'is a view instance - %@'.fmt(cv[idx]));
   }
 });
 
 test("should not error when there is a dud view name in childViews list.", function() {
   var called = [];
-  var v = SC.View.create({
+  var v = SC.View.createWithMixins({
     childViews: [
       'nonExistantClassName',       // string - should NOT be called
       null,                       // null - should NOT be called
@@ -4796,9 +4796,9 @@ test("should not error when there is a dud view name in childViews list.", funct
 
     // patch to record results...
     createChildView: function(childView) {
-      called.push(childView.prototype.key);
-      ok(childView.isClass, "childView: %@ isClass".fmt(childView));
-      return this._super();
+      called.push(childView.create().key);
+      ok(SC.View.detect(childView), "childView: %@ isClass".fmt(childView));
+      return this._super(childView);
     }
   });
 
@@ -4824,7 +4824,7 @@ test("should not create layer for created child views", function() {
   var v = SC.View.create({
     childViews: [SC.View]
   });
-  ok(v.childViews[0].isObject, 'precondition - did create child view');
+  ok(v.childViews[0] instanceof SC.View, 'precondition - did create child view');
   equal(v.childViews[0].get('layer'), null, 'childView does not have layer');
 });
 
@@ -4988,7 +4988,9 @@ module("SC.View#destroy");
 test('isDestroyed works.', function() {
   var v = SC.View.create();
   ok(!v.get('isDestroyed'), 'undestroyed view\'s isDestroyed property is false.');
-  v.destroy();
+  SC.run(function () {
+    v.destroy();
+  });
   ok(v.get('isDestroyed'), 'destroyed view\'s isDestroyed property is true.');
 });
 
@@ -4997,7 +4999,10 @@ test('childViews specified as classes are also destroyed.', function() {
       v2 = v.childViews[0],
       v3 = v2.childViews[0];
 
-  v.destroy();
+  SC.run(function () {
+    v.destroy();
+  });
+
   ok(v2.get('isDestroyed'), 'destroying a parent also destroys a child, mwaha.');
   ok(v3.get('isDestroyed'), 'destroying a parent also destroys a grandchild, mwaha.');
 
@@ -5012,7 +5017,11 @@ test('childViews specified as classes are also destroyed.', function() {
 test('childViews specified as instances are also destroyed.', function() {
   var v2 = SC.View.create(),
       v = SC.View.create({ childViews: [v2] });
-  v.destroy();
+
+  SC.run(function () {
+    v.destroy();
+  });
+
   ok(v2.get('isDestroyed'), 'destroying a parent also destroys a child, mwaha.');
 
   SC.run(function() {
@@ -5038,7 +5047,7 @@ test("Destroying a view, should also destroy its binding objects", function () {
       childViews: ['v2'],
       foo: 'baz',
       v2: SC.View.extend({
-        barBinding: '.parentView.foo'
+        barBinding: 'parentView.foo'
       })
     });
   });
@@ -5048,7 +5057,9 @@ test("Destroying a view, should also destroy its binding objects", function () {
   ok(v.hasObserverFor('foo'), "The view should have an observer on 'foo'");
   ok(v2.hasObserverFor('bar'), "The child view should have an observer on 'bar'");
 
-  v.destroy();
+  SC.run(function () {
+    v.destroy();
+  });
 
   ok(!v.hasObserverFor('foo'), "The view should no longer have an observer on 'foo'");
   ok(!v2.hasObserverFor('bar'), "The child view should no longer have an observer on 'bar'");
@@ -5059,7 +5070,9 @@ test('Resigns firstResponder when destroyed.', function() {
   var v = SC.View.create({ parentView: pane, acceptsFirstResponder: YES });
   v.becomeFirstResponder();
   ok(v.get('isFirstResponder'), 'view starts as firstResponder.');
-  v.destroy();
+  SC.run(function () {
+    v.destroy();
+  });
   ok(!v.get('isFirstResponder'), 'destroying view resigns firstResponder.');
 });
 
@@ -5894,8 +5907,7 @@ test("invokes didAddToParent() on child view if defined after adding child" ,fun
 });
 
 // VERIFY LAYER CHANGES ARE DEFERRED
-test("should not move layer immediately");
-// , function() {
+// test("should not move layer immediately", function() {
 
 //   parent.createLayer();
 //   child.createLayer();
@@ -6731,12 +6743,6 @@ test("once its discovers layer, returns the same element, even if you remove it 
   equal(child.get('layer'), childDom, 'view kept layer cached (i.e. did not do a discovery again)');
 });
 
-module("SC.View#layer - destroying");
-
-test("returns null again if it has layer and layer is destroyed");
-
-test("returns null again if parent view's layer is destroyed");
-
 var pane, view ;
 module("SC.View#$", {
   setup: function() {
@@ -6798,7 +6804,7 @@ var parentView;
 module("Notifies that layer has changed whenever re-render", {
 
   setup: function () {
-    parentView = SC.View.create({
+    parentView = SC.View.createWithMixins({
       childViews: ['a', 'b', SC.View],
 
       containerLayer: function () {
@@ -7167,7 +7173,7 @@ test("notifies layoutStyle & frame change", function () {
 test("invokes layoutDidChangeFor() on layoutView each time it is called", function () {
 
   var callCount = 0;
-  var layoutView = SC.View.create({
+  var layoutView = SC.View.createWithMixins({
     layoutDidChangeFor: function (changedView) {
       equal(this.get('childViewsNeedLayout'), YES, 'should set childViewsNeedLayout to YES before calling layoutDidChangeFor()');
 
@@ -7348,7 +7354,7 @@ test("Calling viewDidResize on a view notifies its child views", function () {
   var view = SC.View.create({
     childViews: ['regular', 'core'],
 
-    regular: SC.View.create({
+    regular: SC.View.createWithMixins({
       viewDidResize: function () {
         regularViewCounter++;
         // Make sure we call the default implementation to
@@ -7357,7 +7363,7 @@ test("Calling viewDidResize on a view notifies its child views", function () {
       }
     }),
 
-    core: SC.CoreView.create({
+    core: SC.CoreView.createWithMixins({
       viewDidResize: function () {
         coreViewCounter++;
         this._super();
@@ -8465,8 +8471,7 @@ test("invokes parent.didRemoveChild before removing if defined", function() {
 });
 
 // VERIFY LAYER CHANGES ARE DEFERRED
-test("should not move layer immediately");
-// , function() {
+// test("should not move layer immediately", function() {
 
 //   parent.createLayer();
 
@@ -8749,179 +8754,6 @@ test("creates a context and then invokes renderChildViews to call renderToContex
   view.destroy();
 });
 
-});minispade.register('sproutcore-views/~tests/view/render_delegate_support', function() {// ==========================================================================
-// Project:   SproutCore - JavaScript Application Framework
-// Copyright: ©2006-2011 Apple Inc. and contributors.
-// License:   Licensed under MIT license (see license.js)
-// ==========================================================================
-
-/*global module test equals context ok same */
-
-// .......................................................
-//  render()
-//
-module("SC.View#render");
-
-test("Supports backwards-compatible render method", function() {
-  var renderCallCount = 0;
-  var view = SC.View.create({
-    render: function(context, firstTime) {
-      renderCallCount++;
-      ok(context._STYLE_REGEX, 'passes RenderContext');
-      equal(firstTime, YES, 'passes YES for firstTime');
-    }
-  });
-
-  view.createLayer();
-
-  view.render = function(context, firstTime) {
-    renderCallCount++;
-    ok(context._STYLE_REGEX, 'passes RenderContext');
-    equal(firstTime, NO, 'passes NO for firstTime');
-  };
-
-  view.updateLayer();
-
-  equal(renderCallCount, 2, 'render should have been called twice');
-
-  // Clean up.
-  view.destroy();
-});
-
-test("Treats a view as its own render delegate", function() {
-  var renderCallCount = 0,
-      updateCallCount = 0;
-
-  var view = SC.View.create({
-    render: function(context) {
-      // Check for existence of _STYLE_REGEX to determine if this is an instance
-      // of SC.RenderContext
-      ok(context._STYLE_REGEX, 'passes render context');
-      renderCallCount++;
-    },
-
-    update: function(elem) {
-     ok(elem.jquery, 'passes a jQuery object as first parameter');
-     updateCallCount++;
-    }
-  });
-
-  view.createLayer();
-  view.updateLayer();
-  equal(renderCallCount, 1, "calls render once");
-  equal(updateCallCount, 1, "calls update once");
-
-  // Clean up.
-  view.destroy();
-});
-
-test("Passes data source as first parameter if render delegate is not the view", function() {
-  var renderCallCount = 0,
-      updateCallCount = 0;
-
-  var view;
-
-  var renderDelegate = SC.Object.create({
-    render: function(dataSource, context, firstTime) {
-      equal(dataSource, view.get('renderDelegateProxy'), "passes the view's render delegate proxy as data source");
-      ok(context._STYLE_REGEX, "passes render context");
-      equal(firstTime, undefined, "does not pass third parameter");
-      renderCallCount++;
-    },
-
-    update: function(dataSource, elem) {
-      equal(dataSource, view.get('renderDelegateProxy'), "passes view's render delegate proxy as data source");
-      ok(elem.jquery, "passes a jQuery object as first parameter");
-      updateCallCount++;
-    }
-  });
-
-  view = SC.View.create({
-    renderDelegate: renderDelegate
-  });
-
-  view.createLayer();
-  view.updateLayer();
-  equal(renderCallCount, 1, "calls render once");
-  equal(updateCallCount, 1, "calls update once");
-
-  // Clean up.
-  view.destroy();
-});
-
-test("Extending view with render delegate by implementing old render method", function() {
-  var renderCalls = 0, updateCalls = 0;
-  var parentView = SC.View.extend({
-    renderDelegate: SC.Object.create({
-      render: function(context) {
-        renderCalls++;
-      },
-
-      update: function(cq) {
-        updateCalls++;
-      }
-    })
-  });
-
-  var childView = parentView.create({
-    render: function(context, firstTime) {
-      this._super();
-    }
-  });
-
-  childView.createLayer();
-  childView.updateLayer();
-
-  equal(renderCalls, 1, "calls render on render delegate once");
-  equal(updateCalls, 1, "calls update on render delegates once");
-});
-
-test("Views that do not override render should render their child views", function() {
-  var newStyleCount = 0, oldStyleCount = 0, renderDelegateCount = 0;
-
-  var parentView = SC.View.design({
-    childViews: 'newStyle oldStyle renderDelegateView'.w(),
-
-    newStyle: SC.View.design({
-      render: function(context) {
-        newStyleCount++;
-      },
-
-      update: function() {
-        // no op
-      }
-    }),
-
-    oldStyle: SC.View.design({
-      render: function(context, firstTime) {
-        oldStyleCount++;
-      }
-    }),
-
-    renderDelegateView: SC.View.design({
-      renderDelegate: SC.Object.create({
-        render: function(dataSource, context) {
-          ok(dataSource.isViewRenderDelegateProxy, "Render delegate should get passed a view's proxy for its data source");
-          renderDelegateCount++;
-        },
-
-        update: function() {
-          // no op
-        }
-      })
-    })
-  });
-
-  parentView = parentView.create();
-
-  parentView.createLayer();
-  parentView.updateLayer();
-
-  equal(newStyleCount, 1, "calls render on new style view once");
-  equal(oldStyleCount, 1, "calls render on old style view once");
-  equal(renderDelegateCount, 1, "calls render on render delegate once");
-});
-
 });minispade.register('sproutcore-views/~tests/view/replaceAllChildren_test', function() {// ==========================================================================
 // Project:   SproutCore - JavaScript Application Framework
 // Copyright: ©2006-2011 Strobe Inc. and contributors.
@@ -9049,7 +8881,7 @@ test("Replaces all children.  ATTACHED_SHOWN parent view.", function () {
 module("SC.View.prototype.replaceAllChildren", {
 
   setup: function () {
-    parentView = SC.View.create({
+    parentView = SC.View.createWithMixins({
       childViews: ['a', 'b', SC.View],
 
       containerLayer: function () {
@@ -9284,7 +9116,6 @@ module("SC.View#touch", {
 
 function testTouches (view, left, top, boundary) {
   var frame = view.get('frame');
-
   // Just outside the touchBoundary
   ok(!view.touchIsInBoundary({ pageX: left - boundary - 1, pageY: top }), '{ pageX: %@, pageY: %@ } is not inside %@'.fmt(left - boundary - 1, top, SC.stringFromRect(view.get('_touchBoundaryFrame'))));
 
@@ -9450,70 +9281,70 @@ test("only runs _executeDoUpdateContent once if called multiple times (since lay
   equal(callCount, 1, '_executeDoUpdateContent() called only once');
 });
 
-});minispade.register('sproutcore-views/~tests/view/view', function() {// ==========================================================================
-// Project:   SproutCore - JavaScript Application Framework
-// Copyright: ©2006-2011 Strobe Inc. and contributors.
-//            ©2008-2011 Apple Inc. All rights reserved.
-// License:   Licensed under MIT license (see license.js)
-// ==========================================================================
-
-/*global module test equals context ok */
-
-module("SC.View");
-
-test("setting themeName should trigger a theme observer", function() {
-  var count = 0;
-  var view = SC.View.create({
-    themeDidChange: function() {
-      count++;
-    }.observes('theme')
-  });
-
-  view.set('themeName', 'hello');
-  equal(1, count, "theme observers should get called");
-});
-
-test("setting themeName should trigger a theme observer when extending", function() {
-  var count = 0;
-  var View = SC.View.extend({
-    themeDidChange: function() {
-      count++;
-    }.observes('theme')
-  });
-
-  View.create().set('themeName', 'hello');
-  equal(1, count, "theme observers should get called");
-});
-
-test("it still works with the backward compatible theme property", function() {
-  var count = 0;
-  var view = SC.View.create({
-    theme: 'sc-base',
-    themeDidChange: function() {
-      count++;
-    }.observes('theme')
-  });
-
-  equal(SC.Theme.find('sc-base'), view.get('theme'));
-  view.set('themeName', 'hello');
-  equal(1, count, "theme observers should get called");
-});
-
-test("it still works with the backward compatible theme property when extending", function() {
-  var count = 0;
-  var View = SC.View.extend({
-    theme: 'sc-base',
-    themeDidChange: function() {
-      count++;
-    }.observes('theme')
-  });
-
-  var view = View.create();
-  equal(SC.Theme.find('sc-base'), view.get('theme'));
-  view.set('themeName', 'hello');
-  equal(1, count, "theme observers should get called");
-});
-
+});minispade.register('sproutcore-views/~tests/view/view', function() {// // ==========================================================================
+// // Project:   SproutCore - JavaScript Application Framework
+// // Copyright: ©2006-2011 Strobe Inc. and contributors.
+// //            ©2008-2011 Apple Inc. All rights reserved.
+// // License:   Licensed under MIT license (see license.js)
+// // ==========================================================================
+//
+// /*global module test equals context ok */
+//
+// module("SC.View");
+//
+// test("setting themeName should trigger a theme observer", function() {
+//   var count = 0;
+//   var view = SC.View.create({
+//     themeDidChange: function() {
+//       count++;
+//     }.observes('theme')
+//   });
+//
+//   view.set('themeName', 'hello');
+//   equal(1, count, "theme observers should get called");
+// });
+//
+// test("setting themeName should trigger a theme observer when extending", function() {
+//   var count = 0;
+//   var View = SC.View.extend({
+//     themeDidChange: function() {
+//       count++;
+//     }.observes('theme')
+//   });
+//
+//   View.create().set('themeName', 'hello');
+//   equal(1, count, "theme observers should get called");
+// });
+//
+// test("it still works with the backward compatible theme property", function() {
+//   var count = 0;
+//   var view = SC.View.create({
+//     theme: 'sc-base',
+//     themeDidChange: function() {
+//       count++;
+//     }.observes('theme')
+//   });
+//
+//   equal(SC.Theme.find('sc-base'), view.get('theme'));
+//   view.set('themeName', 'hello');
+//   equal(1, count, "theme observers should get called");
+// });
+//
+// test("it still works with the backward compatible theme property when extending", function() {
+//   var count = 0;
+//   var View = SC.View.extend({
+//     theme: 'sc-base',
+//     themeDidChange: function() {
+//       count++;
+//     }.observes('theme')
+//   });
+//
+//   var view = View.create();
+//   equal(SC.Theme.find('sc-base'), view.get('theme'));
+//   view.set('themeName', 'hello');
+//   equal(1, count, "theme observers should get called");
+// });
+//
 
 });minispade.register('sproutcore-views/~tests/view/viewDidResize', function() {// ==========================================================================
 // Project:   SproutCore - JavaScript Application Framework
@@ -9567,7 +9398,9 @@ test("parentViewDidResize should only be called when the parent's layout propert
 });
 
 test("The view's frame should only notify changes when its layout changes if the effective size or position actually change.", function () {
-  var view2 = SC.View.create({
+  SC.View.create() // to apply mixins to prototype
+
+  var view2 = SC.View.createWithMixins({
       frameCallCount: 0,
       frameDidChange: function() {
         this.frameCallCount++;
@@ -9607,7 +9440,7 @@ test("making sure that the frame value is correct inside viewDidResize()", funct
   // value and test it later.
   var cachedFrame;
 
-  var view = SC.View.create({
+  var view = SC.View.createWithMixins({
 
     layout: { left:0, top:0, width:400, height:400 },
 
@@ -9644,12 +9477,14 @@ test("making sure that the frame value is correct inside viewDidResize()", funct
 module("SC.View#parentViewDidResize");
 
 test("When parentViewDidResize is called on a view, it should only notify on frame and cascade the call to child views if it will be affected by the parent's resize.", function() {
-  var view = SC.View.create({
+  SC.View.create() // apply mixins to prototype
+  var view = SC.View.extend({
       // instrument...
       frameCallCount: 0,
       frameDidChange: function() {
         this.frameCallCount++;
-      }.observes('frame'),
+      }.observes('frame')
+    }).create({
       viewDidResize: CoreTest.stub('viewDidResize', SC.View.prototype.viewDidResize)
     }),
     parentView = SC.View.create({
@@ -10217,7 +10052,9 @@ test("Test hiding with transitionHide", function () {
   view.destroy();
 });
 
-test("Adjusting unrelated layout property (not specified in transition's layoutProperties) during transition.", function() {
+asyncTest("Adjusting unrelated layout property (not specified in transition's layoutProperties) during transition.", function() {
+  expect(3);
+
   var transition = {
     layoutProperties: ['opacity'],
     run: function (view) {
@@ -10225,7 +10062,7 @@ test("Adjusting unrelated layout property (not specified in transition's layoutP
       SC.run.scheduleOnce('afterRender', view, view.didTransitionIn);
     }
   }
-  var view = SC.View.create({
+  var view = SC.View.createWithMixins({
     transitionIn: transition,
     layout: { height: 40 },
     didTransitionIn: function() {
@@ -10239,11 +10076,9 @@ test("Adjusting unrelated layout property (not specified in transition's layoutP
     view._doRender();
     view._doAttach(document.body);
     equal(view.get('layout.height'), 40, 'PRELIM: View height starts at 40');
-    equal(view.get('viewState'), SC.View.ATTACHED_BUILDING_IN, "PRELIM: View is building in");
+    equal(view.get('viewState'), SC.CoreView.ATTACHED_BUILDING_IN, "PRELIM: View is building in");
     view.adjust('height', 30);
-    stop(250);
   });
-
 });
 
 /** isVisible */

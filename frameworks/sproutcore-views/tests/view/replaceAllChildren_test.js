@@ -125,7 +125,7 @@ test("Replaces all children.  ATTACHED_SHOWN parent view.", function () {
 module("SC.View.prototype.replaceAllChildren", {
 
   setup: function () {
-    parentView = SC.View.create({
+    parentView = SC.View.createWithMixins({
       childViews: ['a', 'b', SC.View],
 
       containerLayer: function () {

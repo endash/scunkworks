@@ -19,9 +19,7 @@ SC.LOG_VIEW_STATES_STYLE = {
 };
 //@endif
 
-
-SC.mixin(SC.CoreView,
-  /** @scope SC.CoreView */ {
+var constants = {
 
   /**
     The view has been rendered.
@@ -183,9 +181,10 @@ SC.mixin(SC.CoreView,
     @constant
   */
   ATTACHED_HIDING: 0x03A2 // 930
+};
 
-});
 
+SC.mixin(SC.CoreView, constants);
 
 SC.CoreView.reopen(
   /** @scope SC.CoreView.prototype */ {

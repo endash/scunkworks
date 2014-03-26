@@ -923,6 +923,8 @@ SC.CoreView.reopen(
 
     this._super();
 
+    this.get('clippingFrame');
+
     // Register the view for event handling. This hash is used by
     // SC.RootResponder to dispatch incoming events.
     //@if (debug)
@@ -1070,7 +1072,7 @@ SC.CoreView.reopen(
     each child view that its clippingFrame has also changed.
   */
   _sc_view_clippingFrameDidChange: function () {
-    // this.notifyPropertyChange('clippingFrame');
+    this.notifyPropertyChange('clippingFrame');
   },
 
   /**
@@ -1364,7 +1366,7 @@ SC.CoreView.reopen(
     @test in createChildViews
   */
   createChildView: function (view, attrs) {
-    if (!view.isClass) {
+    if (!SC.CoreView.detect(view)) {
       attrs = view;
     } else {
       // attrs should always exist...
@@ -1377,7 +1379,7 @@ SC.CoreView.reopen(
     if (!attrs.page) { attrs.page = this.page; }
 
     // Now add this to the attributes and create.
-    if (view.isClass) {
+    if (SC.CoreView.detect(view)) {
       // Track that we created this view.
       attrs.createdByParent = true;
 

@@ -59,6 +59,13 @@ SC.RootResponder = SC.Object.extend(
   init: function() {
     this._super();
     this.panes = SC.Set.create();
+    if (!this.device) debugger;
+    this.platform = this.device.platform;
+  },
+
+  destroy: function () {
+    this.teardown();
+    this._super();
   },
 
   // .......................................................
@@ -322,15 +329,16 @@ SC.RootResponder = SC.Object.extend(
       SC.$('body').addClass('sc-focus').removeClass('sc-blur');
 
       SC.run(this, function () {
-      // If the app is getting focus again set the first responder to the first
-      // valid firstResponder view in the view's tree
-      if(!SC.TABBING_ONLY_INSIDE_DOCUMENT && !SC.browser.isIE8OrLower){
-        var keyPane = this.get('keyPane');
-        if (keyPane) {
-          var nextValidKeyView = keyPane.get('nextValidKeyView');
-          if (nextValidKeyView) keyPane.makeFirstResponder(nextValidKeyView);
+        if (this.get('isDestroyed')) debugger;
+        // If the app is getting focus again set the first responder to the first
+        // valid firstResponder view in the view's tree
+        if(!SC.TABBING_ONLY_INSIDE_DOCUMENT && !SC.browser.isIE8OrLower){
+          var keyPane = this.get('keyPane');
+          if (keyPane) {
+            var nextValidKeyView = keyPane.get('nextValidKeyView');
+            if (nextValidKeyView) keyPane.makeFirstResponder(nextValidKeyView);
+          }
         }
-      }
 
         this.set('hasFocus', YES);
       });
@@ -692,15 +700,27 @@ SC.RootResponder = SC.Object.extend(
     @returns {SC.RootResponder} receiver
   */
   listenFor: function(keyNames, target, receiver, useCapture) {
+    var listeners = this._listeners || (this._listeners = []);
+
     receiver = receiver ? receiver : this;
     keyNames.forEach( function(keyName) {
       var method = receiver[keyName] ;
       if (method) SC.Event.add(target, keyName, receiver, method, null, useCapture) ;
+      listeners.push([target, keyName, receiver, method]);
     },this) ;
 
     target = null ;
 
     return receiver ;
+  },
+
+  teardown: function () {
+    var listeners = this._listeners;
+    if (!this._listeners) return;
+
+    listeners.forEach(function (listener) {
+      SC.Event.remove.apply(SC.Event, listener);
+    })
   },
 
   /**
@@ -742,7 +762,7 @@ SC.RootResponder = SC.Object.extend(
     // delay the launch of the application in order to a transition test (the app won't
     // load if the browser tab is not visible), we start off by listening to everything
     // and when the test is completed, we remove the extras to avoid double callbacks.
-    if (SC.platform.supportsCSSTransitions) {
+    if (this.platform.supportsCSSTransitions) {
       var domPrefix = SC.browser.domPrefix,
         lowerDomPrefix = domPrefix.toLowerCase(),
         variation1 = lowerDomPrefix + 'transitionend',
@@ -755,7 +775,7 @@ SC.RootResponder = SC.Object.extend(
       // ex. transitionend, webkittransitionend, webkitTransitionEnd, WebkitTransitionEnd
       this.listenFor(['transitionend', variation1, variation2, variation3], document);
 
-      if (SC.platform.supportsCSSAnimations) {
+      if (this.platform.supportsCSSAnimations) {
         variation1 = lowerDomPrefix + 'animationstart';
         variation2 = lowerDomPrefix + 'AnimationStart';
         variation3 = domPrefix + 'AnimationStart';
@@ -827,9 +847,6 @@ SC.RootResponder = SC.Object.extend(
       }
     }
     SC.Event.add(document, mousewheel, this, this.mousewheel);
-
-    // do some initial set
-    this.set('currentWindowSize', this.computeWindowSize()) ;
 
     // TODO: WHAT THE HELL??
     // // TODO: Is this workaround still valid?
@@ -910,7 +927,7 @@ SC.RootResponder = SC.Object.extend(
     @returns {void}
   */
   cleanUpTransitionListeners: function () {
-    var actualEventName = SC.platform.transitionendEventName,
+    var actualEventName = this.platform.transitionendEventName,
       domPrefix = SC.browser.domPrefix,
       lowerDomPrefix = domPrefix.toLowerCase(),
       variation1 = lowerDomPrefix + 'transitionend',
@@ -940,7 +957,7 @@ SC.RootResponder = SC.Object.extend(
   cleanUpAnimationListeners: function () {
     var domPrefix = SC.browser.domPrefix,
       lowerDomPrefix = domPrefix.toLowerCase(),
-      actualEventName = SC.platform.animationendEventName,
+      actualEventName = this.platform.animationendEventName,
       variation1 = lowerDomPrefix + 'animationend',
       variation2 = lowerDomPrefix + 'AnimationEnd',
       variation3 = domPrefix + 'AnimationEnd';
@@ -954,7 +971,7 @@ SC.RootResponder = SC.Object.extend(
     }
     });
 
-    actualEventName = SC.platform.animationiterationEventName;
+    actualEventName = this.platform.animationiterationEventName;
     variation1 = lowerDomPrefix + 'animationiteration';
     variation2 = lowerDomPrefix + 'AnimationIteration';
     variation3 = domPrefix + 'AnimationIteration';
@@ -965,7 +982,7 @@ SC.RootResponder = SC.Object.extend(
       }
     });
 
-    actualEventName = SC.platform.animationstartEventName;
+    actualEventName = this.platform.animationstartEventName;
     variation1 = lowerDomPrefix + 'animationstart';
     variation2 = lowerDomPrefix + 'AnimationStart';
     variation3 = domPrefix + 'AnimationStart';

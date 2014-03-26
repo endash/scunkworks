@@ -140,8 +140,7 @@ test("invokes didAddToParent() on child view if defined after adding child" ,fun
 });
 
 // VERIFY LAYER CHANGES ARE DEFERRED
-test("should not move layer immediately");
-// , function() {
+// test("should not move layer immediately", function() {
 
 //   parent.createLayer();
 //   child.createLayer();

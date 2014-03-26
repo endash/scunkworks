@@ -23,9 +23,9 @@ test("Dynamic use", function() {
     backgroundColor: 'red',
     displayProperties: ['backgroundColor']
   });
-  
+
   view.createLayer();
-  view.viewState = SC.View.ATTACHED_SHOWN; // hack to get view properties to update.
+  view.viewState = SC.CoreView.ATTACHED_SHOWN; // hack to get view properties to update.
 
   equal(view.get('layer').style.backgroundColor, 'red', "PRELIM: backgroundColor sets the CSS background-color value");
 

@@ -104,6 +104,8 @@ SC.Pane = SC.View.extend(SC.ResponderContext,
     if (hasLayer) {
       this._attached();
     }
+
+    this.platform = this.rootResponder.device.platform;
   },
 
   /** @private */
@@ -543,7 +545,7 @@ SC.Pane = SC.View.extend(SC.ResponderContext,
     Returns YES if wantsTouchIntercept and this is a touch platform.
   */
   hasTouchIntercept: function(){
-    return this.get('wantsTouchIntercept') && SC.platform.touch;
+    return this.get('wantsTouchIntercept') && this.platform.touch;
   }.property('wantsTouchIntercept'),
 
   /**
@@ -658,7 +660,7 @@ SC.Pane = SC.View.extend(SC.ResponderContext,
      if (SC.browser.name === SC.BROWSER.ie &&
          SC.browser.compare(SC.browser.version, "7") === 0) {
 
-       var scrollbarSize = SC.platform.get('scrollbarSize');
+       var scrollbarSize = this.platform.get('scrollbarSize');
        if (document.body.scrollWidth > wDim.width) {
          wDim.width -= scrollbarSize;
        }

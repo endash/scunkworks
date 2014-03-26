@@ -8,42 +8,44 @@
 
 var responder, menu;
 
-module("SC.RootResponder#makeMenuPane", {
-  setup: function() {
-    responder = SC.RootResponder.create();
-    menu = SC.Pane.create({
-      rootResponder: rootResponder(),
-      acceptsMenuPane: YES
-    });
-  },
+function setup() {
+  if (menu) menu.remove();
 
-  teardown: function() {
-    menu.remove();
-    menu = responder = null;
-  }
-});
+  destroyRootResponder();
+  responder = rootResponder();
+  menu = SC.Pane.create({
+    rootResponder: rootResponder(),
+    acceptsMenuPane: YES
+  });
+}
+
+module("SC.RootResponder#makeMenuPane");
 
 test("Returns receiver", function() {
-  equal(responder.makeMenuPane(menu), responder, 'returns receiver');
+  setup();
+  ok(responder.makeMenuPane(menu) == responder, 'returns receiver');
 });
 
 test("Sets RootResponder's menuPane", function() {
-  equal(responder.get('menuPane'), null, 'precond - menuPane should be null by default');
+  setup();
+  ok(responder.get('menuPane') == null, 'precond - menuPane should be null by default');
   responder.makeMenuPane(menu);
-  equal(responder.get('menuPane'), menu, 'menuPane should be passed menu');
+  ok(responder.get('menuPane') == menu, 'menuPane should be passed menu');
 });
 
 test("menuPane does not affect keyPane", function() {
+  setup();
   var p2 = SC.Pane.create({ rootResponder: rootResponder() });
   responder.makeKeyPane(p2);
-  equal(responder.get('keyPane'), p2, 'precond - pane should be key pane');
+  ok(responder.get('keyPane') == p2, 'precond - pane should be key pane');
   responder.makeMenuPane(menu);
-  equal(responder.get('menuPane'), menu, 'menuPane should be set');
-  equal(responder.get('keyPane'), p2, 'key pane should not change');
+  ok(responder.get('menuPane') == menu, 'menuPane should be set');
+  ok(responder.get('keyPane') == p2, 'key pane should not change');
 });
 
 test("Pane should not become menu pane if acceptsMenuPane is not YES", function() {
+  setup();
   menu.set('acceptsMenuPane', NO);
   responder.makeMenuPane(menu);
-  equal(responder.get('menuPane'), null, 'menuPane should remain null');
+  ok(responder.get('menuPane') == null, 'menuPane should remain null');
 });

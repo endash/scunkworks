@@ -83,12 +83,6 @@ test("once its discovers layer, returns the same element, even if you remove it 
   equal(child.get('layer'), childDom, 'view kept layer cached (i.e. did not do a discovery again)');
 });
 
-module("SC.View#layer - destroying");
-
-test("returns null again if it has layer and layer is destroyed");
-
-test("returns null again if parent view's layer is destroyed");
-
 var pane, view ;
 module("SC.View#$", {
   setup: function() {
@@ -150,7 +144,7 @@ var parentView;
 module("Notifies that layer has changed whenever re-render", {
 
   setup: function () {
-    parentView = SC.View.create({
+    parentView = SC.View.createWithMixins({
       childViews: ['a', 'b', SC.View],
 
       containerLayer: function () {

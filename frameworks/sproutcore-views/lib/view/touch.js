@@ -47,7 +47,7 @@ SC.View.reopen(
     ret.height += boundary.top + boundary.bottom;
 
     return ret;
-  }.property('touchBoundary', 'clippingFrame').cacheable(),
+  }.property('touchBoundary', 'clippingFrame'),
 
   /**
     Returns YES if the provided touch is within the boundary set by

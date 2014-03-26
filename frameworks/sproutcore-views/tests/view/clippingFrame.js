@@ -10,7 +10,7 @@ var pane, a, aa ;
 module("SC.View#clippingFrame", {
   setup: function() {
     htmlbody('<style> .sc-view { border: 1px blue solid; position: absolute;  overflow: hidden; }</style>');
-    SC.RunLoop.begin();
+    SC.run.begin()
     pane = SC.Pane.design({
       rootResponder: rootResponder()
     })
@@ -29,7 +29,7 @@ module("SC.View#clippingFrame", {
     pane.remove();
     pane.destroy();
     pane = a = aa = null ;
-    SC.RunLoop.end();
+    SC.run.end();
     clearHtmlbody();
   }
 });
@@ -105,11 +105,13 @@ test("notifies receiver and each child if parent clipping frame changes", functi
 
   // setup observers
   function observer() { callCount++; }
-  a.addObserver('clippingFrame', observer);
-  aa.addObserver('clippingFrame', observer);
+  SC.addObserver(a, 'clippingFrame', observer);
+  SC.addObserver(aa, 'clippingFrame', observer);
 
   // now, adjust layout of child so that clipping frame will change...
-  a.adjust('top', -50);
+  SC.run(function () {
+    a.adjust('top', -50);
+  });
 
   // IMPORTANT:  If this test fails because the callCount is > 2 it means that
   // when you set the layout, the frame is getting invalidated more than once.

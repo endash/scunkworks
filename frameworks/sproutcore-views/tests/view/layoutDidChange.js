@@ -47,7 +47,7 @@ test("notifies layoutStyle & frame change", function () {
 test("invokes layoutDidChangeFor() on layoutView each time it is called", function () {
 
   var callCount = 0;
-  var layoutView = SC.View.create({
+  var layoutView = SC.View.createWithMixins({
     layoutDidChangeFor: function (changedView) {
       equal(this.get('childViewsNeedLayout'), YES, 'should set childViewsNeedLayout to YES before calling layoutDidChangeFor()');
 
@@ -228,7 +228,7 @@ test("Calling viewDidResize on a view notifies its child views", function () {
   var view = SC.View.create({
     childViews: ['regular', 'core'],
 
-    regular: SC.View.create({
+    regular: SC.View.createWithMixins({
       viewDidResize: function () {
         regularViewCounter++;
         // Make sure we call the default implementation to
@@ -237,7 +237,7 @@ test("Calling viewDidResize on a view notifies its child views", function () {
       }
     }),
 
-    core: SC.CoreView.create({
+    core: SC.CoreView.createWithMixins({
       viewDidResize: function () {
         coreViewCounter++;
         this._super();

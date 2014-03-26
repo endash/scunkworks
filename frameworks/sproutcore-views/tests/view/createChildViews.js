@@ -13,7 +13,7 @@ module("SC.View#createChildViews");
 
 test("calls createChildView() for each class or string in childViews array", function() {
   var called = [];
-  var v = SC.View.create({
+  var v = SC.View.createWithMixins({
     childViews: [
       SC.View.extend({ key: 0 }), // class - should be called
       SC.View.create({ key: 1 }), // instance - will be called
@@ -25,12 +25,12 @@ test("calls createChildView() for each class or string in childViews array", fun
 
     // patch to record results...
     createChildView: function(childView) {
-      if(childView.isClass) {
-        called.push(childView.prototype.key);
+      if(SC.View.detect(childView)) {
+        called.push(childView.create().key);
       } else {
         called.push(childView.key);
       }
-      return this._super();
+      return this._super(childView);
     }
   });
 
@@ -41,13 +41,13 @@ test("calls createChildView() for each class or string in childViews array", fun
   var cv = v.childViews, len = cv.length, idx;
   for(idx=0;idx<len;idx++) {
     equal(cv[idx].key, idx, 'has correct index key');
-    ok(cv[idx].isObject, 'isObject - %@'.fmt(cv[idx]));
+    ok(cv[idx] instanceof SC.View, 'is a view instance - %@'.fmt(cv[idx]));
   }
 });
 
 test("should not error when there is a dud view name in childViews list.", function() {
   var called = [];
-  var v = SC.View.create({
+  var v = SC.View.createWithMixins({
     childViews: [
       'nonExistantClassName',       // string - should NOT be called
       null,                       // null - should NOT be called
@@ -59,9 +59,9 @@ test("should not error when there is a dud view name in childViews list.", funct
 
     // patch to record results...
     createChildView: function(childView) {
-      called.push(childView.prototype.key);
-      ok(childView.isClass, "childView: %@ isClass".fmt(childView));
-      return this._super();
+      called.push(childView.create().key);
+      ok(SC.View.detect(childView), "childView: %@ isClass".fmt(childView));
+      return this._super(childView);
     }
   });
 
@@ -87,7 +87,7 @@ test("should not create layer for created child views", function() {
   var v = SC.View.create({
     childViews: [SC.View]
   });
-  ok(v.childViews[0].isObject, 'precondition - did create child view');
+  ok(v.childViews[0] instanceof SC.View, 'precondition - did create child view');
   equal(v.childViews[0].get('layer'), null, 'childView does not have layer');
 });
 

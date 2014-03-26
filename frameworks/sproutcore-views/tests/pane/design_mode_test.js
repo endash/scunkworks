@@ -262,7 +262,6 @@ test("When RootResponder has designModes, and you add a view to a pane, it sets 
 });
 
 test("When you set designModes on RootResponder, it sets designMode on its panes and their childViews.", function () {
-  console.log("WHEN YOU SET")
   destroyRootResponder();
   pane.rootResponder = rootResponder();
 

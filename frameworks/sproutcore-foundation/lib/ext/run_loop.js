@@ -151,4 +151,4 @@
 var indexOf = SC.EnumerableUtils.indexOf;
 var queues = SC.run.queues;
 
-queues.splice(indexOf(queues, 'actions')+1, 0, 'render', 'layout', 'animation', 'afterRender');
+queues.splice(indexOf(queues, 'actions')+1, 0, 'render', 'layout', 'afterRender');

@@ -69,23 +69,11 @@ if (SC.Platform.create({browser: SC.browser}).supportsCSSTransitions) {
   asyncTest("animate + adjust: no conflict", function () {
     expect(8);
 
-    SC.run(function () {
-      view.animate('left', 100, { duration: 0.1 });
-      view.adjust('top', 100);
-      view.adjust({ 'width': null, 'right': 100 });
-    });
-
     setTimeout(function () {
       equal(view.get('layout').left, 100, 'left is');
       equal(view.get('layout').top, 100, 'top is');
       equal(view.get('layout').right, 100, 'right is');
       equal(view.get('layout').width, undefined, 'width is');
-
-      SC.run(function () {
-        view.animate('top', 200, { duration: 0.1 });
-        view.adjust('left', 0);
-        view.adjust({ 'width': 100, 'right': null });
-      });
 
       setTimeout(function () {
         equal(view.get('layout').left, 0, 'left is');
@@ -95,16 +83,23 @@ if (SC.Platform.create({browser: SC.browser}).supportsCSSTransitions) {
 
         start();
       }, 200);
+
+      SC.run(function () {
+        view.animate('top', 200, { duration: 0.1 });
+        view.adjust('left', 0);
+        view.adjust({ 'width': 100, 'right': null });
+      });
     }, 200);
+
+    SC.run(function () {
+      view.animate('left', 100, { duration: 0.1 });
+      view.adjust('top', 100);
+      view.adjust({ 'width': null, 'right': 100 });
+    });
   });
 
   asyncTest("animate + adjust: conflict", function () {
     expect(2);
-
-    SC.run(function () {
-      view.animate('left', 100, { duration: 0.1 });
-      view.adjust('left', 200);
-    });
 
     setTimeout(function () {
       equal(view.get('layout').left, 200, 'left is');
@@ -121,6 +116,11 @@ if (SC.Platform.create({browser: SC.browser}).supportsCSSTransitions) {
         start();
       }, 200);
     }, 200);
+
+    SC.run(function () {
+      view.animate('left', 100, { duration: 0.1 });
+      view.adjust('left', 200);
+    });
   });
 
   // asyncTest("callbacks work in general", function () {
@@ -381,19 +381,8 @@ if (SC.Platform.create({browser: SC.browser}).supportsCSSTransitions) {
   // });
 
   asyncTest("should not cancel callback when value hasn't changed", function () {
-    var callbacks = 0, wasCancelled = NO, check = 0;
-    // stop(2000);
-
-    SC.run(function () {
-      // this triggers the initial layoutStyle code
-      view.animate('left', 79, { duration: 0.5 }, function (data) {
-        callbacks++;
-        wasCancelled = data.isCancelled;
-      });
-
-      // this triggers a re-render, re-running the layoutStyle code
-      view.displayDidChange();
-    });
+    expect(3);
+    var callbacks = 0, wasCancelled = null, check = 0;
 
     setTimeout(function () {
       // capture the callbacks value
@@ -407,6 +396,17 @@ if (SC.Platform.create({browser: SC.browser}).supportsCSSTransitions) {
 
       start();
     }, 1000);
+
+    SC.run(function () {
+      // this triggers the initial layoutStyle code
+      view.animate('left', 79, { duration: 0.5 }, function (data) {
+        callbacks++;
+        wasCancelled = data.isCancelled;
+      });
+
+      // this triggers a re-render, re-running the layoutStyle code
+      view.displayDidChange();
+    });
   });
 
   // There was a bug in animation that once one property was animated, a null
@@ -417,7 +417,7 @@ if (SC.Platform.create({browser: SC.browser}).supportsCSSTransitions) {
     // Run test.
     // stop(2000);
 
-    expect(0);
+    expect(8);
 
     // Override and wrap the problematic method to capture the error.
     view.transitionDidEnd = function () {
@@ -503,17 +503,18 @@ if (SC.Platform.create({browser: SC.browser}).supportsCSSTransitions) {
   });
 
   asyncTest("Test that cancelAnimation() removes the animation style and fires the callback with isCancelled set.", function () {
-    // stop(2000);
-
     expect(7);
 
-    SC.run(function () {
-      view.animate({ left: 100 }, { duration: 0.5 }, function (data) {
-        ok(data.isCancelled, "The isCancelled property of the data should be true.");
-      });
-    });
-
     setTimeout(function () {
+      setTimeout(function () {
+        var style = styleFor(view);
+
+        equal(style.left, '100px', 'Tests the left style after cancel');
+        equal(style.top, '0px', 'Tests the top style after cancel');
+        equal(transitionFor(view), '', 'Tests the CSS transition property');
+        start();
+      }, 50);
+
       SC.run(function () {
         var style = styleFor(view);
 
@@ -524,14 +525,11 @@ if (SC.Platform.create({browser: SC.browser}).supportsCSSTransitions) {
       });
     }, 5);
 
-    setTimeout(function () {
-      var style = styleFor(view);
-
-      equal(style.left, '100px', 'Tests the left style after cancel');
-      equal(style.top, '0px', 'Tests the top style after cancel');
-      equal(transitionFor(view), '', 'Tests the CSS transition property');
-      start();
-    }, 50);
+    SC.run(function () {
+      view.animate({ left: 100 }, { duration: 0.5 }, function (data) {
+        ok(data.isCancelled, "The isCancelled property of the data should be true.");
+      });
+    });
   });
 
   asyncTest("Test that cancelAnimation(SC.LayoutState.CURRENT) removes the animation style, stops at the current position and fires the callback with isCancelled set.", function () {

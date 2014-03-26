@@ -34,7 +34,6 @@ module("SC.View#touch", {
 
 function testTouches (view, left, top, boundary) {
   var frame = view.get('frame');
-
   // Just outside the touchBoundary
   ok(!view.touchIsInBoundary({ pageX: left - boundary - 1, pageY: top }), '{ pageX: %@, pageY: %@ } is not inside %@'.fmt(left - boundary - 1, top, SC.stringFromRect(view.get('_touchBoundaryFrame'))));
 

@@ -112,8 +112,7 @@ test("invokes parent.didRemoveChild before removing if defined", function() {
 });
 
 // VERIFY LAYER CHANGES ARE DEFERRED
-test("should not move layer immediately");
-// , function() {
+// test("should not move layer immediately", function() {
 
 //   parent.createLayer();
 

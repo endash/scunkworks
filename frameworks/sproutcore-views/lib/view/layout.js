@@ -180,7 +180,7 @@ SC.View.reopen(
           animateLayout[key] = value;
         }
 
-        if (this._pendingAnimations[key]) {
+        if (this._pendingAnimations && this._pendingAnimations[key]) {
           // Adjusting a value that was previously about to be animated cancels the animation.
           delete this._pendingAnimations[key];
         }
@@ -876,10 +876,10 @@ SC.View.reopen(
       layoutView.layoutDidChangeFor(this);
       // Check if childViewsNeedLayout is still true.
       if (layoutView.get('childViewsNeedLayout')) {
-        SC.run.scheduleOnce('layout', layoutView, layoutView.layoutChildViewsIfNeeded)
+        SC.run.scheduleOnce('afterRender', layoutView, layoutView.layoutChildViewsIfNeeded)
       }
     } else {
-      SC.run.scheduleOnce('layout', this, this.updateLayout)
+      SC.run.scheduleOnce('afterRender', this, this.updateLayout)
     }
 
     return this;
@@ -1018,7 +1018,7 @@ SC.View.reopen(
     this.set('childViewsNeedLayout', true);
 
     // Filter the input channel.
-    SC.run.scheduleOnce('layout', this, this.layoutChildViewsIfNeeded);
+    SC.run.scheduleOnce('afterRender', this, this.layoutChildViewsIfNeeded);
   },
 
   /** @private Called when the child views change. */
@@ -1029,7 +1029,7 @@ SC.View.reopen(
     this.set('childViewsNeedLayout', true);
 
     // Filter the input channel.
-    SC.run.scheduleOnce('layout', this, this.layoutChildViewsIfNeeded);
+    SC.run.scheduleOnce('afterRender', this, this.layoutChildViewsIfNeeded);
   },
 
   /** @private Add observers to the child views for automatic child view layout. */
@@ -1221,10 +1221,13 @@ SC.View.reopen(
 
   /** @private */
   _doUpdateLayoutStyle: function () {
+    // debugger;
+
     var context;
 
+    var style = this.get('layoutStyle');
     context = this.renderContext(this.get('layer'));
-    context.setStyle(this.get('layoutStyle'));
+    context.setStyle(style);
     context.update();
 
 
@@ -1265,7 +1268,7 @@ SC.View.reopen(
 
   /** @private Extension: The 'orphaned' event. */
   _orphaned: function (oldParentView) {
-    this._super();
+    this._super(oldParentView);
 
     // Our frame may change once we've been removed from a parent.
     if (!this.isDestroyed) { this._checkForResize(); }

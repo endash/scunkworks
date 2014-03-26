@@ -19,7 +19,11 @@
   <script>
     _rootResponder = null;
     function rootResponder(destroy) {
-      if (!_rootResponder || _rootResponder.get('isDestroyed')) _rootResponder = SC.RootResponder.create({device: SC.Device.create({platform: SC.Platform.create({browser: SC.browser})})});
+      if (!_rootResponder || _rootResponder.get('isDestroyed')) {
+        _rootResponder = SC.RootResponder.create({device: SC.Device.create({platform: SC.Platform.create({browser: SC.browser})})});
+        _rootResponder.setup();
+      }
+
       return _rootResponder;
     }
 

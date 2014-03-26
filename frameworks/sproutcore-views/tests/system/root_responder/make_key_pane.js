@@ -9,7 +9,7 @@ module("SC.RootResponder#makeKeyPane");
 
 test("returns receiver", function() {
   var p1 = SC.Pane.create({ rootResponder: rootResponder() }), p2 = SC.Pane.create({ rootResponder: rootResponder(), acceptsKeyPane: YES });
-  var r = SC.RootResponder.create();
+  var r = rootResponder();
 
   equal(r.makeKeyPane(p1), r, 'returns receiver even if pane does not accept key pane');
   equal(r.makeKeyPane(p2), r, 'returns receiver');

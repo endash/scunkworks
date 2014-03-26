@@ -240,7 +240,7 @@ SC.View.reopen(
       optionsDidChange = NO,
       hash, layout,
       optionsType,
-      pendingAnimations = this.__pendingAnimations,
+      pendingAnimations = this._pendingAnimations,
       timing;
 
     //@if(debug)
@@ -293,9 +293,9 @@ SC.View.reopen(
     if (options.duration === 0) {
       this.adjust(hash);
 
-      SC.run.scheduleOnce('afterRender', this, function () {
+      SC.run.later(this, function () {
         this.runAnimationCallback(options, null, false);
-      });
+      }, 1);
 
       return this;
     }
@@ -304,9 +304,9 @@ SC.View.reopen(
     if (!this.get('isVisibleInWindow')) {
       this.adjust(hash);
 
-      SC.run.scheduleOnce('afterRender', this, function () {
+      SC.run.later(this, function () {
         this.runAnimationCallback(options, null, false);
-      });
+      }, 1);
 
       return this;
     }
@@ -330,7 +330,7 @@ SC.View.reopen(
       this._prevLayout = SC.clone(this.get('layout'));
     }
 
-    if (!pendingAnimations) { pendingAnimations = this.__pendingAnimations = {}; }
+    if (!pendingAnimations) { pendingAnimations = this._pendingAnimations = {}; }
 
     // Get the layout (may be a partially adjusted one already queued up).
     layout = this._animateLayout || SC.clone(this.get('layout'));
@@ -404,15 +404,16 @@ SC.View.reopen(
       this._animateLayout = layout;
 
       // Always run the animation asynchronously so that the original layout is guaranteed to be applied to the DOM.
-      SC.run.scheduleOnce('animation', this, this._animate);
+      SC.run.later(this, this._animate, 1);
+      // SC.run.scheduleOnce('layout', this, this._animate);
       // Route.
       if (this.get('viewState') === SC.CoreView.ATTACHED_SHOWN) {
         this.set('viewState', SC.CoreView.ATTACHED_SHOWN_ANIMATING);
       }
     } else if (!optionsDidChange) {
-      SC.run.scheduleOnce('afterRender', this, function () {
+      SC.run.later(this, function () {
         this.runAnimationCallback(options, null, false);
-      });
+      }, 1);
     }
 
     return this;
@@ -420,12 +421,6 @@ SC.View.reopen(
 
   /** @private */
   _animate: function () {
-    // TODO: make the timing of layout setting and animation triggering make sense
-    // right now, being sure to allow for an initial layout to be set on the layout
-    // queue wipes out _pendingAnimations before we run _animate on the animation
-    // queue, so we do this hacky switcheroo.
-    this._pendingAnimations = this.__pendingAnimations;
-    this.__pendingAnimations = null;
     // Check for _animateLayout.  If an invokeNext call to animate *this* occurs
     // while flushing the invokeNext queue *before* this method runs, an extra
     // call to _animate will run.  Has unit test.
@@ -494,7 +489,7 @@ SC.View.reopen(
   */
   cancelAnimation: function (layoutState) {
     var activeAnimations = this._activeAnimations,
-      pendingAnimations = this._pendingAnimations,
+      _pendingAnimations = this._pendingAnimations,
       animation,
       key,
       layout,
@@ -519,12 +514,12 @@ SC.View.reopen(
     }
 
     // Immediately remove the pending animations while calling the callbacks.
-    for (key in pendingAnimations) {
-      animation = pendingAnimations[key];
+    for (key in _pendingAnimations) {
+      animation = _pendingAnimations[key];
       didCancel = YES;
 
       // Update the animation hash.  Do this first, so callbacks can check for active animations.
-      delete pendingAnimations[key];
+      delete _pendingAnimations[key];
 
       // Run the callback.
       this.runAnimationCallback(animation, null, YES);
@@ -563,7 +558,7 @@ SC.View.reopen(
   */
   didRenderAnimations: function () {
     // Transitions not supported or the document is not visible.
-    if (!SC.platform.supportsCSSTransitions || document.hidden) {
+    if (!this.platform.supportsCSSTransitions || document.hidden) {
       var pendingAnimations = this._pendingAnimations;
 
       for (var key in pendingAnimations) {

@@ -454,7 +454,9 @@ test("Test hiding with transitionHide", function () {
   view.destroy();
 });
 
-test("Adjusting unrelated layout property (not specified in transition's layoutProperties) during transition.", function() {
+asyncTest("Adjusting unrelated layout property (not specified in transition's layoutProperties) during transition.", function() {
+  expect(3);
+
   var transition = {
     layoutProperties: ['opacity'],
     run: function (view) {
@@ -462,7 +464,7 @@ test("Adjusting unrelated layout property (not specified in transition's layoutP
       SC.run.scheduleOnce('afterRender', view, view.didTransitionIn);
     }
   }
-  var view = SC.View.create({
+  var view = SC.View.createWithMixins({
     transitionIn: transition,
     layout: { height: 40 },
     didTransitionIn: function() {
@@ -476,11 +478,9 @@ test("Adjusting unrelated layout property (not specified in transition's layoutP
     view._doRender();
     view._doAttach(document.body);
     equal(view.get('layout.height'), 40, 'PRELIM: View height starts at 40');
-    equal(view.get('viewState'), SC.View.ATTACHED_BUILDING_IN, "PRELIM: View is building in");
+    equal(view.get('viewState'), SC.CoreView.ATTACHED_BUILDING_IN, "PRELIM: View is building in");
     view.adjust('height', 30);
-    stop(250);
   });
-
 });
 
 /** isVisible */
