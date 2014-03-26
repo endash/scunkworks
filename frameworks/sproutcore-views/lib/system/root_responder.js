@@ -59,7 +59,6 @@ SC.RootResponder = SC.Object.extend(
   init: function() {
     this._super();
     this.panes = SC.Set.create();
-    if (!this.device) debugger;
     this.platform = this.device.platform;
   },
 

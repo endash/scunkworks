@@ -297,7 +297,7 @@ SC.View.reopen(
     }
     // this will only happen if no views are visible and accept first responder
     return null;
-  }.property('nextKeyView'),
+  }.property('nextKeyView').cacheable(false),
 
   /**
     Optionally points to the previous key view that should gain focus when tabbing
@@ -396,6 +396,6 @@ SC.View.reopen(
     // if none of the views accept first responder and we make it back to where
     // we started, just return null
     return null;
-  }.property('previousKeyView')
+  }.property('previousKeyView').cacheable(false)
 });
 
