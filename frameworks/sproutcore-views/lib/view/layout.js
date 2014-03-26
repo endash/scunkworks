@@ -1221,8 +1221,6 @@ SC.View.reopen(
 
   /** @private */
   _doUpdateLayoutStyle: function () {
-    // debugger;
-
     var context;
 
     var style = this.get('layoutStyle');

@@ -924,6 +924,7 @@ SC.CoreView.reopen(
     this._super();
 
     this.get('clippingFrame');
+    this.get('isVisibleInWindow');
 
     // Register the view for event handling. This hash is used by
     // SC.RootResponder to dispatch incoming events.
@@ -2117,7 +2118,6 @@ SC.View = SC.CoreView.extend(/** @scope SC.View.prototype */{
   init: function () {
     this._super();
     this.platform = this.get('rootResponder.device.platform') || SC.Platform.create({browser: SC.browser});
-    this.get('isVisibleInWindow');
   }
 });
 

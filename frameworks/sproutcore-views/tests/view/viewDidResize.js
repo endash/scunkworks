@@ -129,7 +129,6 @@ test("making sure that the frame value is correct inside viewDidResize()", funct
 module("SC.View#parentViewDidResize");
 
 test("When parentViewDidResize is called on a view, it should only notify on frame and cascade the call to child views if it will be affected by the parent's resize.", function() {
-  SC.View.create() // apply mixins to prototype
   var view = SC.View.extend({
       // instrument...
       frameCallCount: 0,
@@ -139,57 +138,92 @@ test("When parentViewDidResize is called on a view, it should only notify on fra
     }).create({
       viewDidResize: CoreTest.stub('viewDidResize', SC.View.prototype.viewDidResize)
     }),
+
     parentView = SC.View.create({
       childViews: [view],
       layout: { height: 100, width: 100 }
     });
-
   // try with fixed layout
-  view.set('layout', { top: 10, left: 10, height: 10, width: 10 });
-  view.viewDidResize.reset(); view.frameCallCount = 0;
-  parentView.adjust({ width: 90, height: 90 });
+  SC.run(function () {
+    view.set('layout', { top: 10, left: 10, height: 10, width: 10 });
+  });
+  view.viewDidResize.reset();
+  view.frameCallCount = 0;
+  SC.run(function () {
+    parentView.adjust({ width: 90, height: 90 });
+  });
   view.viewDidResize.expect(0);
   equal(view.frameCallCount, 0, 'should not notify frame changed when isFixedPosition: %@ and isFixedSize: %@'.fmt(view.get('isFixedPosition'), view.get('isFixedSize')));
 
   // try with flexible height
-  view.set('layout', { top: 10, left: 10, bottom: 10, width: 10 });
-  view.viewDidResize.reset(); view.frameCallCount = 0;
-  parentView.adjust({ width: 80, height: 80 });
+  SC.run(function () {
+    view.set('layout', { top: 10, left: 10, bottom: 10, width: 10 });
+  });
+  view.viewDidResize.reset();
+  view.frameCallCount = 0;
+  SC.run(function () {
+    parentView.adjust({ width: 80, height: 80 });
+  });
   view.viewDidResize.expect(1);
   equal(view.frameCallCount, 1, 'should notify frame changed when isFixedPosition: %@ and isFixedSize: %@'.fmt(view.get('isFixedPosition'), view.get('isFixedSize')));
 
   // try with flexible width
-  view.set('layout', { top: 10, left: 10, height: 10, right: 10 });
-  view.viewDidResize.reset(); view.frameCallCount = 0;
-  parentView.adjust({ width: 70, height: 70 });
+  SC.run(function () {
+    view.set('layout', { top: 10, left: 10, height: 10, right: 10 });
+  });
+  view.viewDidResize.reset();
+  view.frameCallCount = 0;
+  SC.run(function () {
+    parentView.adjust({ width: 70, height: 70 });
+  });
   view.viewDidResize.expect(1);
   equal(view.frameCallCount, 1, 'should notify frame changed when isFixedPosition: %@ and isFixedSize: %@'.fmt(view.get('isFixedPosition'), view.get('isFixedSize')));
 
   // try with right align
-  view.set('layout', { top: 10, right: 10, height: 10, width: 10 });
-  view.viewDidResize.reset(); view.frameCallCount = 0;
-  parentView.adjust({ width: 60, height: 60 });
+  SC.run(function () {
+    view.set('layout', { top: 10, right: 10, height: 10, width: 10 });
+  });
+  view.viewDidResize.reset();
+  view.frameCallCount = 0;
+  SC.run(function () {
+    parentView.adjust({ width: 60, height: 60 });
+  });
   view.viewDidResize.expect(0);
   equal(view.frameCallCount, 1, 'right align: should notify frame changed when isFixedPosition: %@ and isFixedSize: %@'.fmt(view.get('isFixedPosition'), view.get('isFixedSize')));
 
   // try with bottom align
-  view.set('layout', { left: 10, bottom: 10, height: 10, width: 10 });
-  view.viewDidResize.reset(); view.frameCallCount = 0;
-  parentView.adjust({ width: 50, height: 50 });
+  SC.run(function () {
+    view.set('layout', { left: 10, bottom: 10, height: 10, width: 10 });
+  });
+  view.viewDidResize.reset();
+  view.frameCallCount = 0;
+  SC.run(function () {
+    parentView.adjust({ width: 50, height: 50 });
+  });
   view.viewDidResize.expect(0);
   equal(view.frameCallCount, 1, 'bottom align: should notify frame changed when isFixedPosition: %@ and isFixedSize: %@'.fmt(view.get('isFixedPosition'), view.get('isFixedSize')));
 
   // try with center horizontal align
-  view.set('layout', { centerX: 10, top: 10, height: 10, width: 10 });
-  view.viewDidResize.reset(); view.frameCallCount = 0;
-  parentView.adjust({ width: 40, height: 40 });
+  SC.run(function () {
+    view.set('layout', { centerX: 10, top: 10, height: 10, width: 10 });
+  });
+  view.viewDidResize.reset();
+  view.frameCallCount = 0;
+  SC.run(function () {
+    parentView.adjust({ width: 40, height: 40 });
+  });
   view.viewDidResize.expect(0);
   equal(view.frameCallCount, 1, 'centerX: should notify frame changed when isFixedPosition: %@ and isFixedSize: %@'.fmt(view.get('isFixedPosition'), view.get('isFixedSize')));
 
   // try with center vertical align
-  view.set('layout', { left: 10, centerY: 10, height: 10, width: 10 });
-  view.viewDidResize.reset(); view.frameCallCount = 0;
-  parentView.adjust({ width: 30, height: 30 });
+  SC.run(function () {
+    view.set('layout', { left: 10, centerY: 10, height: 10, width: 10 });
+  });
+  view.viewDidResize.reset();
+  view.frameCallCount = 0;
+  SC.run(function () {
+    parentView.adjust({ width: 30, height: 30 });
+  });
   view.viewDidResize.expect(0);
   equal(view.frameCallCount, 1, 'centerY: should notify frame changed when isFixedPosition: %@ and isFixedSize: %@'.fmt(view.get('isFixedPosition'), view.get('isFixedSize')));
 });
