@@ -70,6 +70,8 @@ test("touchIsInBoundary() should return appropriate values", function() {
   var outerView = pane.get('outerView'),
     innerView = outerView.get('innerView');
 
+  innerView.get('clippingFrame');
+
   testTouches(innerView, 100, 100, 25);
 
   // Move the inner view

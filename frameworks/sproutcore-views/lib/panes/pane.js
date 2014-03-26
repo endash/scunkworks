@@ -688,7 +688,7 @@ SC.Pane = SC.View.extend(SC.ResponderContext,
   frame: function () {
    if (this.get('designer') && SC.suppressMain) { return this._super(); }
    return this.computeFrameWithParentFrame(null);
-  }.property(),
+  }.property('useStaticLayout'),
 
   /**
    Invoked by the root responder whenever the window resizes.  This should

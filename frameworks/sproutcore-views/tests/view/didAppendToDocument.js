@@ -73,7 +73,9 @@ test("Check that childView is updated if the pane has a static layout and view d
       wrongFrame = { x:0, y:0, width: 0, height: 0 },
       correctFrame;
 
-  pane.set('useStaticLayout', YES);
+  SC.run(function () {
+    pane.set('useStaticLayout', YES);
+  });
 
   childFrame = view.get('frame');
   deepEqual(childFrame, wrongFrame, 'getting frame before layer exists on non-fixed layout childView should return an empty frame');

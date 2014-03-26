@@ -102,6 +102,8 @@ test("cuts off right of frame", function() {
 
 test("notifies receiver and each child if parent clipping frame changes", function() {
   var callCount = 0;
+  a.get('clippingFrame');
+  aa.get('clippingFrame');
 
   // setup observers
   function observerA() { callCount++; }

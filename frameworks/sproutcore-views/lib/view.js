@@ -923,9 +923,6 @@ SC.CoreView.reopen(
 
     this._super();
 
-    this.get('clippingFrame');
-    this.get('isVisibleInWindow');
-
     // Register the view for event handling. This hash is used by
     // SC.RootResponder to dispatch incoming events.
     //@if (debug)

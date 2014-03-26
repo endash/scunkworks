@@ -95,6 +95,8 @@ test("The borderFrame property of the view should be correct for view with useSt
     frame,
     pane;
 
+  view.get('isVisibleInWindow');
+
   SC.run(function () {
     view.set('useStaticLayout', true);
   });
