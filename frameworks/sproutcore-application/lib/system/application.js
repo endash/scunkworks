@@ -22,7 +22,7 @@
   @extends SC.ResponderContext
   @since SproutCore 1.0
 */
-SC.Application = SC.Responder.extend(SC.ResponderContext,
+SC.Application = SC.Namespace.extend(SC.ResponderMixin, SC.ResponderContext,
 /** SC.Application.prototype */ {
 
   /** @private UNUSED
@@ -198,23 +198,20 @@ SC.Application = SC.Responder.extend(SC.ResponderContext,
   init: function () {
     this._super();
 
-    // Initialize the value on the RootResponder when it is ready.
-    SC.ready(this, '_setDesignModes');
-    SC.ready(function () {
-      SC.device.setup();
-    })
+    var rootResponder = SC.RootResponder.create({device: SC.Device.create({platform: SC.Platform.create({browser: SC.browser})})});
+    rootResponder.setup();
+    this.set('rootResponder', rootResponder);
+    this._setDesignModes();
   },
 
   /** @private */
   _setDesignModes: function () {
     var designModes = this.get('designModes'),
-      responder = SC.RootResponder.responder;
+      responder = this.get('rootResponder');
 
     if (designModes) {
       // All we do is pass the value to the root responder for convenience.
       responder.set('designModes', designModes);
-      // UNUSED.
-      // this.bind('designMode', SC.Binding.from('SC.RootResponder.responder.currentDesignMode'));
     }
   }
 

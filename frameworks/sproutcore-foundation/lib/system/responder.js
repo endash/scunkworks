@@ -15,8 +15,7 @@
   @extends SC.Object
   @since SproutCore 1.0
 */
-SC.Responder = SC.Object.extend( /** @scope SC.Responder.prototype */ {
-
+SC.ResponderMixin = SC.Mixin.create({
   isResponder: YES,
 
   /** @property
@@ -129,3 +128,5 @@ SC.Responder = SC.Object.extend( /** @scope SC.Responder.prototype */ {
   }
 
 });
+
+SC.Responder = SC.Object.extend(SC.ResponderMixin);
